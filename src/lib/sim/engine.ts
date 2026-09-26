@@ -181,15 +181,26 @@ export function applyMove(state: GameState, content: Content, move: PlayerMove):
 		if (!event) throw new Error(`Unknown event: ${move.eventId}`);
 		const response = event.responses[move.responseIndex];
 		if (!response) throw new Error('Invalid response index');
+		if (response.next && !content.events.some((e) => e.id === response.next)) {
+			throw new Error(`Unknown chained event: ${response.next}`);
+		}
 
 		const applied = applyEffects(state, content, response.effects);
-		const next = advance({ ...applied.state, pendingEventId: null }, content);
+		const gaffed = response.riskGaffe
+			? rollGaffe(applied.state, content)
+			: { state: applied.state, gaffe: null };
+
+		// A chained response keeps the day open so the follow-up can resolve.
+		const next = response.next
+			? { ...gaffed.state, pendingEventId: response.next }
+			: advance({ ...gaffed.state, pendingEventId: null }, content);
+
 		return {
 			state: { ...next, history: [...state.history, move] },
 			flavour: response.flavour,
 			feedback: condense(applied.feedback),
-			gaffe: null,
-			triggeredEventId: null
+			gaffe: gaffed.gaffe,
+			triggeredEventId: response.next ?? null
 		};
 	}
 

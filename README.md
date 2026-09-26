@@ -24,6 +24,7 @@ Seven days, one move per day, then an election.
 - 🗓️ **A contract up front.** Hit the objectives or you are out of a job.
 - 🎭 **One move a day.** Canvass, stage a photo op, buy media, run an attack ad, or prep the candidate.
 - 🎯 **Pick your target.** Most moves are aimed at a single voter group.
+- 🎙️ **An opportunity lands early.** Take the podcast or turn it down — and if you take it, decide what to drill him on.
 - 🔥 **A scandal lands mid-week.** Three ways to handle it, all of them bad.
 - 🧠 **Candidate morale.** Grind them down and they go off-script in public, without you.
 - 📊 **Polls that lie.** Published with a margin of error, and it is not decorative.
@@ -83,16 +84,24 @@ npm run balance    # balance report
 the sack rate. The target for random play is **20–30%** — frequent enough to feel
 real, rare enough that taking stupid risks is still worth it.
 
-Current numbers (3,000 campaigns each):
+Current numbers (5,000 campaigns each):
 
 | Strategy    | Sacked | Mean share |
 | ----------- | ------ | ---------- |
-| random      | 24.8%  | 41.4       |
-| allAttack   | 100.0% | 23.2       |
-| allDoorstep | 34.0%  | 47.1       |
-| balanced    | 2.3%   | 43.9       |
+| random      | 24.8%  | 42.5       |
+| allAttack   | 100.0% | 25.3       |
+| allDoorstep | 34.5%  | 48.8       |
+| balanced    | 5.6%   | 44.9       |
 
 Degenerate strategies are punished; skilled play clearly beats naive play.
+
+### Events are data, including branching ones
+
+An event response may carry `next`, which chains into another event instead of
+ending the day — that is how the podcast offer leads into the prep choice. Events
+without a `day` are only reachable by chaining. A response may also set
+`riskGaffe`, which lets a low-morale candidate embarrass you on that specific
+choice. Arbitrary branching event trees need no engine changes.
 
 ## 🚧 Status
 

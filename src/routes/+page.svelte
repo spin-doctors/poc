@@ -217,7 +217,7 @@
 					</li>
 				{/each}
 			</ul>
-		{:else}
+		{:else if !last.triggeredEventId}
 			<p class="hint">No measurable effect. It happens.</p>
 		{/if}
 
@@ -245,7 +245,10 @@
 		<div class="actions">
 			{#each pendingEvent.responses as response, i (response.label)}
 				<button class="action" onclick={() => respond(i)}>
-					<span><strong>{response.label}</strong></span>
+					<span>
+						<strong>{response.label}</strong>
+						{#if response.hint}<em>{response.hint}</em>{/if}
+					</span>
 				</button>
 			{/each}
 		</div>

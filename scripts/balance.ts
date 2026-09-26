@@ -59,13 +59,17 @@ function playOne(strategy: Strategy, seed: number) {
 		const roll = nextRandom(rng);
 		rng = roll.state;
 
-		const move: PlayerMove = state.pendingEventId
-			? {
-					kind: 'respond',
-					eventId: state.pendingEventId,
-					responseIndex: Math.floor(roll.value * 3)
-				}
-			: strategy(state, roll.value);
+		let move: PlayerMove;
+		if (state.pendingEventId) {
+			const pending = content.events.find((e) => e.id === state.pendingEventId)!;
+			move = {
+				kind: 'respond',
+				eventId: pending.id,
+				responseIndex: Math.floor(roll.value * pending.responses.length)
+			};
+		} else {
+			move = strategy(state, roll.value);
+		}
 
 		try {
 			state = applyMove(state, content, move).state;

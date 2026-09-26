@@ -43,16 +43,22 @@ export const actionSchema = z.object({
 
 export const responseSchema = z.object({
 	label: z.string().min(1),
+	/** Shown on the button. Flavour, never numbers — the outcome stays a gamble. */
+	hint: z.string().min(1).optional(),
 	flavour: z.string().min(1),
-	effects: z.array(effectSchema)
+	effects: z.array(effectSchema),
+	/** Chains straight into another event instead of ending the day. */
+	next: z.string().min(1).optional(),
+	/** Lets a low-morale candidate go off-script on this choice. */
+	riskGaffe: z.boolean().default(false)
 });
 
 export const gameEventSchema = z.object({
 	id: z.string().min(1),
 	headline: z.string().min(1),
 	body: z.string().min(1),
-	/** Fires at the end of this day. */
-	day: z.number().int().min(1),
+	/** Fires at the end of this day. Omit for events only reached by chaining. */
+	day: z.number().int().min(1).optional(),
 	responses: z.array(responseSchema).min(2).max(4)
 });
 

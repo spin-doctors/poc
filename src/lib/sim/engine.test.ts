@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { content } from '../content';
 import { applyMove, createGame, pollEstimate, replay, runElection } from './engine';
-import type { PlayerMove } from './types';
+import type { GameState, PlayerMove } from './types';
 
 const seed = 12345;
 
@@ -9,6 +9,26 @@ function playThrough(moves: PlayerMove[]) {
 	let state = createGame(content, seed);
 	for (const move of moves) state = applyMove(state, content, move).state;
 	return state;
+}
+
+/** Plays free canvassing until the given event is pending, answering anything else on the way. */
+function playUntilEvent(eventId: string, decline = 1): GameState {
+	let state = createGame(content, seed);
+	for (let guard = 0; guard < 40 && !state.finished; guard++) {
+		if (state.pendingEventId === eventId) return state;
+		state = state.pendingEventId
+			? applyMove(state, content, {
+					kind: 'respond',
+					eventId: state.pendingEventId,
+					responseIndex: decline
+				}).state
+			: applyMove(state, content, {
+					kind: 'action',
+					actionId: 'doorstep',
+					target: 'commuters'
+				}).state;
+	}
+	throw new Error(`${eventId} never fired`);
 }
 
 describe('content', () => {
@@ -32,8 +52,32 @@ describe('content', () => {
 
 	it('only fires events on days within the contract', () => {
 		for (const event of content.events) {
+			if (event.day === undefined) continue;
 			expect(event.day).toBeLessThanOrEqual(content.contract.days);
 		}
+	});
+
+	it('chains only to events that exist', () => {
+		const ids = new Set(content.events.map((e) => e.id));
+		for (const event of content.events) {
+			for (const response of event.responses) {
+				if (response.next) expect(ids.has(response.next)).toBe(true);
+			}
+		}
+	});
+
+	it('leaves no unreachable event', () => {
+		const chained = new Set(
+			content.events.flatMap((e) => e.responses.map((r) => r.next).filter(Boolean))
+		);
+		for (const event of content.events) {
+			expect(event.day !== undefined || chained.has(event.id)).toBe(true);
+		}
+	});
+
+	it('never schedules two events on the same day', () => {
+		const days = content.events.map((e) => e.day).filter((d) => d !== undefined);
+		expect(new Set(days).size).toBe(days.length);
 	});
 
 	it('always leaves a legal move for a broke player', () => {
@@ -115,10 +159,7 @@ describe('applyMove', () => {
 	});
 
 	it('blocks further actions until a scandal is answered', () => {
-		let state = createGame(content, seed);
-		for (let i = 0; i < 4; i++) {
-			state = applyMove(state, content, { kind: 'action', actionId: 'debatePrep' }).state;
-		}
+		const state = playUntilEvent('casino');
 		expect(state.pendingEventId).toBe('casino');
 		expect(() =>
 			applyMove(state, content, { kind: 'action', actionId: 'debatePrep' })
@@ -126,10 +167,7 @@ describe('applyMove', () => {
 	});
 
 	it('advances the day once the scandal is answered', () => {
-		let state = createGame(content, seed);
-		for (let i = 0; i < 4; i++) {
-			state = applyMove(state, content, { kind: 'action', actionId: 'debatePrep' }).state;
-		}
+		const state = playUntilEvent('casino');
 		const dayBefore = state.day;
 		const result = applyMove(state, content, {
 			kind: 'respond',
@@ -141,13 +179,125 @@ describe('applyMove', () => {
 	});
 });
 
+describe('chained events', () => {
+	it('offers the podcast on day 2', () => {
+		const state = playUntilEvent('podcast');
+		expect(state.day).toBe(2);
+	});
+
+	it('chains into prep on accept without burning the day', () => {
+		const state = playUntilEvent('podcast');
+		const dayBefore = state.day;
+		const result = applyMove(state, content, {
+			kind: 'respond',
+			eventId: 'podcast',
+			responseIndex: 0
+		});
+		expect(result.state.pendingEventId).toBe('podcast-prep');
+		expect(result.state.day).toBe(dayBefore);
+		expect(result.triggeredEventId).toBe('podcast-prep');
+	});
+
+	it('ends the day on decline', () => {
+		const state = playUntilEvent('podcast');
+		const result = applyMove(state, content, {
+			kind: 'respond',
+			eventId: 'podcast',
+			responseIndex: 1
+		});
+		expect(result.state.pendingEventId).toBe(null);
+		expect(result.state.day).toBe(state.day + 1);
+	});
+
+	it('resolves the prep choice and returns to normal play', () => {
+		const accepted = applyMove(playUntilEvent('podcast'), content, {
+			kind: 'respond',
+			eventId: 'podcast',
+			responseIndex: 0
+		}).state;
+		const result = applyMove(accepted, content, {
+			kind: 'respond',
+			eventId: 'podcast-prep',
+			responseIndex: 0
+		});
+		expect(result.state.pendingEventId).toBe(null);
+		expect(result.state.day).toBe(accepted.day + 1);
+		expect(result.feedback.find((f) => f.groupId === 'commuters')!.delta).toBeGreaterThan(0);
+	});
+
+	it('gives each prep focus a different shape', () => {
+		const accepted = applyMove(playUntilEvent('podcast'), content, {
+			kind: 'respond',
+			eventId: 'podcast',
+			responseIndex: 0
+		}).state;
+		const best = [0, 1, 2].map((i) => {
+			const result = applyMove(accepted, content, {
+				kind: 'respond',
+				eventId: 'podcast-prep',
+				responseIndex: i
+			});
+			return result.feedback
+				.filter((f) => f.stat === 'support')
+				.sort((a, b) => b.delta - a.delta)[0].groupId;
+		});
+		expect(new Set(best).size).toBe(3);
+	});
+
+	it('only risks a gaffe on the unprepped option', () => {
+		const prep = content.events.find((e) => e.id === 'podcast-prep')!;
+		expect(prep.responses.filter((r) => r.riskGaffe)).toHaveLength(1);
+		expect(prep.responses.at(-1)!.riskGaffe).toBe(true);
+	});
+
+	it('lets an unprepped low-morale candidate embarrass you', () => {
+		const accepted = applyMove(playUntilEvent('podcast'), content, {
+			kind: 'respond',
+			eventId: 'podcast',
+			responseIndex: 0
+		}).state;
+		const fragile = { ...accepted, morale: 0 };
+
+		let gaffes = 0;
+		for (let s = 0; s < 40; s++) {
+			const result = applyMove({ ...fragile, rngState: s }, content, {
+				kind: 'respond',
+				eventId: 'podcast-prep',
+				responseIndex: 2
+			});
+			if (result.gaffe) gaffes++;
+		}
+		expect(gaffes).toBeGreaterThan(0);
+	});
+
+	it('never gaffes on a prepped option however low morale is', () => {
+		const accepted = applyMove(playUntilEvent('podcast'), content, {
+			kind: 'respond',
+			eventId: 'podcast',
+			responseIndex: 0
+		}).state;
+		const fragile = { ...accepted, morale: 0 };
+
+		for (let s = 0; s < 40; s++) {
+			const result = applyMove({ ...fragile, rngState: s }, content, {
+				kind: 'respond',
+				eventId: 'podcast-prep',
+				responseIndex: 0
+			});
+			expect(result.gaffe).toBe(null);
+		}
+	});
+});
+
 describe('determinism', () => {
 	it('replays identically from seed plus move list', () => {
 		const moves: PlayerMove[] = [
 			{ kind: 'action', actionId: 'attackAd', target: 'students' },
 			{ kind: 'action', actionId: 'attackAd', target: 'commuters' },
+			{ kind: 'respond', eventId: 'podcast', responseIndex: 0 },
+			{ kind: 'respond', eventId: 'podcast-prep', responseIndex: 2 },
 			{ kind: 'action', actionId: 'attackAd', target: 'retirees' },
-			{ kind: 'action', actionId: 'attackAd', target: 'students' },
+			{ kind: 'action', actionId: 'doorstep', target: 'students' },
 			{ kind: 'respond', eventId: 'casino', responseIndex: 2 }
 		];
 		const a = playThrough(moves);
@@ -168,6 +318,13 @@ describe('morale and gaffes', () => {
 	it('tanks morale when the candidate is worked too hard', () => {
 		let state = createGame(content, seed);
 		for (let i = 0; i < 3; i++) {
+			if (state.pendingEventId) {
+				state = applyMove(state, content, {
+					kind: 'respond',
+					eventId: state.pendingEventId,
+					responseIndex: 1
+				}).state;
+			}
 			state = applyMove(state, content, {
 				kind: 'action',
 				actionId: 'attackAd',
@@ -181,6 +338,13 @@ describe('morale and gaffes', () => {
 		let state = createGame(content, seed);
 		let gaffes = 0;
 		for (let i = 0; i < 3; i++) {
+			if (state.pendingEventId) {
+				state = applyMove(state, content, {
+					kind: 'respond',
+					eventId: state.pendingEventId,
+					responseIndex: 1
+				}).state;
+			}
 			const result = applyMove(state, content, { kind: 'action', actionId: 'debatePrep' });
 			if (result.gaffe) gaffes++;
 			state = result.state;

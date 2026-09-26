@@ -10,7 +10,7 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"balance": "vite-node scripts/balance.ts"
+		"balance": "vite-node -c vite.balance.config.ts scripts/balance.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "^3.0.8",
