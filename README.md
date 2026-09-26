@@ -1,61 +1,123 @@
-# Spin Doctor 🎩🗳️
+# Spin Doctors 🎩🗳️
 
-**Spin Doctor** is a political campaign management game with a satirical twist.
+**Spin Doctors** is a political campaign management game with a satirical twist.
 
-Instead of managing a football team, you manage the career of a political candidate — spinning scandals, staging photo ops, and navigating the murky world of public opinion. Start with local elections and climb the greasy pole to national dominance... if you can keep your candidate out of jail (or at least out of memes).
+You are not the candidate. You are the hired gun — the spin doctor. Someone's
+agent has put you on a retainer, handed you a budget and a list of objectives,
+and told you what happens if you miss them. Everything else is optics.
 
-## 🎮 Gameplay Overview
+If Football Manager is the model, the mapping is roughly:
 
-- 🗓️ Weekly elections: No skipping, no fast forward — every decision counts.
-- 🎭 Daily campaign activities: Prep speeches, visit schools, launch distractions.
-- 🔥 Scandals and events: Deal with crises, react to news cycles, manage damage.
-- 📊 Voter groups: Each with values, moods, and susceptibility to spin.
-- 💰 Resources: Spend on focus groups, PR stunts, media buys — or hush money.
-- 🧠 Satirical AI logic: Voter behavior shaped by personality-driven traits.
-- 🧑‍🤝‍🧑 Multiplayer mode (planned): Compete with other players in head-to-head elections.
+| Football Manager   | Spin Doctors           |
+| ------------------ | ---------------------- |
+| Club               | Candidate              |
+| Board              | Candidate and backers  |
+| Board expectations | Contract objectives    |
+| Match              | Election               |
+| Player morale      | Candidate morale       |
+| Getting sacked     | A worse candidate next |
 
-## 🛠️ Technical Stack
+## 🎮 The loop
 
-This game is being built as a **Progressive Web App** with a modular backend using **OpenAPI**, to allow flexibility and maintainability across different platforms.
+Seven days, one move per day, then an election.
 
-### Tech Outline
+- 🗓️ **A contract up front.** Hit the objectives or you are out of a job.
+- 🎭 **One move a day.** Canvass, stage a photo op, buy media, run an attack ad, or prep the candidate.
+- 🎯 **Pick your target.** Most moves are aimed at a single voter group.
+- 🔥 **A scandal lands mid-week.** Three ways to handle it, all of them bad.
+- 🧠 **Candidate morale.** Grind them down and they go off-script in public, without you.
+- 📊 **Polls that lie.** Published with a margin of error, and it is not decorative.
 
-- **Frontend**: React (or SvelteKit), deployed as PWA
-- **Backend**: Node.js with OpenAPI, using Fastify or Express
-- **Data**: JSON-based or SQLite for early prototyping
-- **Sim Engine**: Custom logic to simulate elections, scandals, and voter response
+### The design rule
 
-## 🚧 Project Status
+Relationships are **certain and legible** — you always see exactly which group
+moved and by how much. Turnout is **uncertain** — whether they actually vote is
+revealed only on election night. You always know what you did. You never quite
+know whether it was enough.
 
-Currently in **pre-alpha prototyping**. First milestone: a working single-player weekly election loop.
+## 🛠️ Tech stack
 
-## 📁 Structure (Planned)
+Deliberately minimal for the proof of concept. No backend, no database, no
+OpenAPI, no PWA until the loop is proven fun.
+
+- **App**: SvelteKit + TypeScript (strict), static adapter
+- **Validation**: Zod — schemas double as writer contract and future LLM output schema
+- **Tests**: Vitest
+- **Sim engine**: pure, deterministic, zero framework imports
+- **Saves**: seed + move list, URL-encodable
+
+### Why the engine is pure
+
+`applyMove(state, content, move)` is a deterministic function with no I/O. That
+buys four things: replayable bug reports, a headless balance harness, a trivial
+save format, and a cheap path to server-authoritative multiplayer later.
+
+## 📁 Structure
 
 ```text
-/frontend       # UI & game loop
-/backend        # API & game state
-/sim            # Election & voter logic
-/data           # JSON voter groups, events, actions
+src/lib/sim/        # pure engine — may not import from svelte
+src/lib/schema/     # Zod schemas -> inferred TypeScript types
+src/lib/content/    # loads and validates the JSON at startup
+src/routes/         # UI
+content/            # voter groups, actions, events, gaffes, contract (writer-editable)
+scripts/balance.ts  # headless harness: runs thousands of campaigns
 ```
 
-## 📌 Goals
+All game content is JSON. Adding a scandal requires no code changes and no
+TypeScript knowledge.
 
-- [ ] Define core game loop and daily/election mechanics
-- [ ] Build first vertical slice (1-week campaign → result)
-- [ ] Integrate voter simulation engine
-- [ ] Expand content/events system
-- [ ] Launch closed alpha
+## 🚀 Running it
 
-## 🤔 Why "Spin Doctor"?
+```bash
+nvm use            # Node 24, see .nvmrc
+npm install
+npm run dev        # play it
+npm test           # engine tests
+npm run check      # typecheck
+npm run balance    # balance report
+```
+
+## ⚖️ Balance
+
+`npm run balance` plays thousands of campaigns under naive strategies and reports
+the sack rate. The target for random play is **20–30%** — frequent enough to feel
+real, rare enough that taking stupid risks is still worth it.
+
+Current numbers (3,000 campaigns each):
+
+| Strategy    | Sacked | Mean share |
+| ----------- | ------ | ---------- |
+| random      | 24.8%  | 41.4       |
+| allAttack   | 100.0% | 23.2       |
+| allDoorstep | 34.0%  | 47.1       |
+| balanced    | 2.3%   | 43.9       |
+
+Degenerate strategies are punished; skilled play clearly beats naive play.
+
+## 🚧 Status
+
+**Pre-alpha proof of concept.** The single-player weekly loop is playable end to
+end. The next gate is putting it in front of five people, explaining nothing, and
+seeing whether they laugh unprompted and ask to go again.
+
+Nothing about multiplayer, PWA, backend, or art starts before that gate passes.
+
+## 📌 Next
+
+- [ ] Self-playtest and tune the numbers
+- [ ] Deploy and share run links
+- [ ] Playtest with five people
+- [ ] Expand the content pass (more scandals, more groups)
+- [ ] Career ladder: multiple contracts, real consequences for the sack
+
+## 🤔 Why "Spin Doctors"?
 
 Because in politics, **truth is optional — but optics are everything.**
 
 ## 🧠 Inspiration
 
-Inspired by games like:
-
-- Premier Manager
 - Football Manager
+- Premier Manager
 - Papers, Please
 - Democracy 3
 - Not For Broadcast

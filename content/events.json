@@ -1,0 +1,39 @@
+[
+	{
+		"id": "casino",
+		"day": 4,
+		"headline": "CANDIDATE PHOTOGRAPHED LEAVING CASINO AT 4AM",
+		"body": "The Ashcombe Echo has a picture. In it, your candidate is squinting, holding a complimentary tote bag, and appears to be explaining something important to a bollard. The photographer has three more and is asking what they're worth.",
+		"responses": [
+			{
+				"label": "Deny everything",
+				"flavour": "You state that the candidate was at a constituency fundraiser. The Echo prints the photo next to your statement, which is the worst possible layout.",
+				"effects": [
+					{ "on": "retirees", "stat": "support", "delta": -12 },
+					{ "on": "students", "stat": "support", "delta": 4, "spin": true },
+					{ "on": "all", "stat": "morale", "delta": 6 }
+				]
+			},
+			{
+				"label": "Half-apology, full contrition tour",
+				"flavour": "The candidate is very sorry that people feel the way they do about the thing that did not technically happen.",
+				"effects": [
+					{ "on": "all", "stat": "support", "delta": -3 },
+					{ "on": "retirees", "stat": "support", "delta": 5 },
+					{ "on": "all", "stat": "morale", "delta": -12 },
+					{ "on": "all", "stat": "money", "delta": -4000 }
+				]
+			},
+			{
+				"label": "Bury it under a bigger story",
+				"flavour": "You leak a completely unrelated planning scandal to a rival paper. It works. It works so well that nobody can remember what your candidate stands for either.",
+				"effects": [
+					{ "on": "all", "stat": "support", "delta": 1 },
+					{ "on": "all", "stat": "turnout", "delta": -7 },
+					{ "on": "all", "stat": "money", "delta": -9000 },
+					{ "on": "all", "stat": "morale", "delta": 4 }
+				]
+			}
+		]
+	}
+]

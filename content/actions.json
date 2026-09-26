@@ -1,0 +1,61 @@
+[
+	{
+		"id": "doorstep",
+		"name": "Doorstep Canvassing",
+		"description": "Free, slow, and genuinely effective. Nobody ever won a news cycle knocking on doors.",
+		"flavour": "Four hours of doorsteps. Two dogs, one shouting match, and a man who wanted to discuss the bins for forty minutes.",
+		"cost": 0,
+		"targeted": true,
+		"effects": [
+			{ "on": "target", "stat": "support", "delta": 6 },
+			{ "on": "all", "stat": "morale", "delta": -5 }
+		]
+	},
+	{
+		"id": "photoOp",
+		"name": "Staged Photo Op",
+		"description": "High impact with the credulous. Everyone else can smell the staging.",
+		"flavour": "The candidate holds a locally-sourced vegetable at an unnatural angle for nine minutes.",
+		"cost": 7000,
+		"targeted": true,
+		"effects": [
+			{ "on": "target", "stat": "support", "delta": 12, "spin": true },
+			{ "on": "all", "stat": "support", "delta": -1.5 },
+			{ "on": "all", "stat": "morale", "delta": 7 }
+		]
+	},
+	{
+		"id": "mediaBuy",
+		"name": "Media Buy",
+		"description": "Expensive, broad, shallow. Buys a little goodwill absolutely everywhere.",
+		"flavour": "Thirty seconds of drone footage over the seafront and a voiceover that says the word 'future' four times.",
+		"cost": 14000,
+		"targeted": false,
+		"effects": [{ "on": "all", "stat": "support", "delta": 5, "spin": true }]
+	},
+	{
+		"id": "attackAd",
+		"name": "Attack Ad",
+		"description": "Enormous with the group you aim it at. Everyone else finds it a bit much.",
+		"flavour": "A grainy black-and-white photograph of the opponent, slowly zooming, set to a cello.",
+		"cost": 6000,
+		"targeted": true,
+		"effects": [
+			{ "on": "target", "stat": "support", "delta": 14, "spin": true },
+			{ "on": "all", "stat": "support", "delta": -4 },
+			{ "on": "all", "stat": "morale", "delta": -10 }
+		]
+	},
+	{
+		"id": "debatePrep",
+		"name": "Debate Prep",
+		"description": "Moves no polls today. Steadies the candidate and gets your own voters to actually turn up.",
+		"flavour": "Six hours in a function room teaching a grown adult not to say the first thing they think.",
+		"cost": 3000,
+		"targeted": false,
+		"effects": [
+			{ "on": "all", "stat": "morale", "delta": 22 },
+			{ "on": "all", "stat": "turnout", "delta": 5 }
+		]
+	}
+]
