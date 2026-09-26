@@ -135,7 +135,35 @@ An action may carry `requires`, a list of `{ stat, min, label }`. The label is
 shown to the player while the action is locked, so requirements read as goals.
 Adding a new unlockable is a content change, not a code change.
 
-## 🚧 Status
+## � Deployment
+
+Deployed to GitHub Pages by Actions on every push to `main`:
+**https://spin-doctors.github.io/poc/**
+
+- [ci.yml](.github/workflows/ci.yml) — typecheck, tests, a balance smoke run and a build, on every push and PR
+- [deploy.yml](.github/workflows/deploy.yml) — builds with `BASE_PATH=/poc` and publishes to Pages
+
+No secrets or third-party accounts are needed. The build is fully static, so
+there is nothing to run server-side.
+
+### One-time setup
+
+In **Settings → Pages**, set **Source** to **GitHub Actions**. Until that is
+done the deploy job will fail — it is the only manual step.
+
+### Base path
+
+Project pages serve from `/<repo>`, so the deploy workflow sets `BASE_PATH`.
+Locally `BASE_PATH` is unset and everything serves from `/`. To reproduce the
+deployed layout:
+
+```bash
+BASE_PATH=/poc npm run build
+```
+
+Moving to a custom domain later means dropping `BASE_PATH` from the workflow.
+
+## �🚧 Status
 
 **Pre-alpha proof of concept.** The single-player weekly loop is playable end to
 end. The next gate is putting it in front of five people, explaining nothing, and
@@ -146,7 +174,7 @@ Nothing about multiplayer, PWA, backend, or art starts before that gate passes.
 ## 📌 Next
 
 - [ ] Self-playtest and tune the numbers
-- [ ] Deploy and share run links
+- [x] Deploy and share run links
 - [ ] Playtest with five people
 - [ ] Expand the content pass (more scandals, more groups)
 - [ ] Career ladder: multiple contracts, real consequences for the sack

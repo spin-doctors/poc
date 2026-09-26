@@ -1,5 +1,5 @@
 {
-	"name": "spin-doctors-poc",
+	"name": "@spin-doctors/poc",
 	"version": "0.0.1",
 	"private": true,
 	"type": "module",
