@@ -193,4 +193,4 @@ Because in politics, **truth is optional — but optics are everything.**
 
 ## 📜 License
 
-[MIT](LICENSE)
+[Apache-2.0](LICENSE)
