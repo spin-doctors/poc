@@ -1,4 +1,11 @@
-import type { Content, Effect, GameAction, GameEvent, VoterGroup } from '../schema/content';
+import type {
+	Content,
+	Effect,
+	GameAction,
+	GameEvent,
+	Requirement,
+	VoterGroup
+} from '../schema/content';
 import { nextRandom, randomRange } from './rng';
 import type {
 	ElectionResult,
@@ -29,6 +36,10 @@ export function createGame(content: Content, seed: number): GameState {
 		day: 1,
 		money: content.contract.budget,
 		morale: content.contract.startingMorale,
+		credibility: content.contract.startingCredibility,
+		ruthlessness: content.contract.startingRuthlessness,
+		personalFunds: content.contract.personalFunds,
+		pollAccuracy: 0,
 		support,
 		turnout,
 		pendingEventId: null,
@@ -46,6 +57,21 @@ function spinScale(group: VoterGroup): number {
 	return group.gullibility / 50;
 }
 
+const GLOBAL_STATS = {
+	morale: { label: 'Candidate morale', min: 0, max: 100 },
+	credibility: { label: 'Your credibility', min: 0, max: 100 },
+	ruthlessness: { label: 'Your reputation for ruthlessness', min: 0, max: 100 },
+	pollAccuracy: { label: 'Polling accuracy', min: 0, max: 2.5 },
+	money: { label: 'Budget', min: 0, max: Infinity },
+	personalFunds: { label: 'Your personal funds', min: 0, max: Infinity }
+} as const;
+
+type GlobalStat = keyof typeof GLOBAL_STATS;
+
+function isGlobal(stat: Effect['stat']): stat is GlobalStat {
+	return stat in GLOBAL_STATS;
+}
+
 function applyEffects(
 	state: GameState,
 	content: Content,
@@ -54,31 +80,26 @@ function applyEffects(
 ): { state: GameState; feedback: FeedbackLine[] } {
 	const support = { ...state.support };
 	const turnout = { ...state.turnout };
-	let morale = state.morale;
-	let money = state.money;
+	const globals: Record<GlobalStat, number> = {
+		morale: state.morale,
+		credibility: state.credibility,
+		ruthlessness: state.ruthlessness,
+		pollAccuracy: state.pollAccuracy,
+		money: state.money,
+		personalFunds: state.personalFunds
+	};
 	const feedback: FeedbackLine[] = [];
 
 	for (const effect of effects) {
-		if (effect.stat === 'morale') {
-			const before = morale;
-			morale = clamp(morale + effect.delta, 0, 100);
+		if (isGlobal(effect.stat)) {
+			const spec = GLOBAL_STATS[effect.stat];
+			const before = globals[effect.stat];
+			globals[effect.stat] = clamp(before + effect.delta, spec.min, spec.max);
 			feedback.push({
 				groupId: null,
-				label: 'Candidate morale',
-				stat: 'morale',
-				delta: round1(morale - before),
-				certain: true
-			});
-			continue;
-		}
-
-		if (effect.stat === 'money') {
-			money = Math.max(0, money + effect.delta);
-			feedback.push({
-				groupId: null,
-				label: 'Budget',
-				stat: 'money',
-				delta: effect.delta,
+				label: spec.label,
+				stat: effect.stat,
+				delta: round1(globals[effect.stat] - before),
 				certain: true
 			});
 			continue;
@@ -117,7 +138,7 @@ function applyEffects(
 		}
 	}
 
-	return { state: { ...state, support, turnout, morale, money }, feedback };
+	return { state: { ...state, support, turnout, ...globals }, feedback };
 }
 
 /** Merges repeated hits on the same group/stat so the player sees one number per line. */
@@ -172,6 +193,19 @@ export function canAfford(state: GameState, action: GameAction): boolean {
 	return state.money >= action.cost;
 }
 
+/** Locked actions are still shown to the player, so these read as goals not errors. */
+export function unmetRequirements(state: GameState, action: GameAction): Requirement[] {
+	return action.requires.filter((r) => state[r.stat] < r.min);
+}
+
+export function isUnlocked(state: GameState, action: GameAction): boolean {
+	return unmetRequirements(state, action).length === 0;
+}
+
+export function isAvailable(state: GameState, action: GameAction): boolean {
+	return canAfford(state, action) && isUnlocked(state, action);
+}
+
 export function applyMove(state: GameState, content: Content, move: PlayerMove): MoveResult {
 	if (state.finished) throw new Error('Campaign is over');
 
@@ -211,6 +245,7 @@ export function applyMove(state: GameState, content: Content, move: PlayerMove):
 	if (action.targeted && !move.target) throw new Error(`${action.name} needs a target group`);
 	if (action.targeted && !findGroup(content, move.target!)) throw new Error('Unknown target group');
 	if (!canAfford(state, action)) throw new Error('Not enough money');
+	if (!isUnlocked(state, action)) throw new Error(`${action.name} is not unlocked`);
 
 	const paid = { ...state, money: state.money - action.cost };
 	const applied = applyEffects(paid, content, action.effects, move.target);
@@ -247,8 +282,9 @@ export function pollEstimate(
 		ours += cast * (state.support[group.id] / 100);
 	}
 	const truth = votes === 0 ? 0 : (ours / votes) * 100;
-	const noise = randomRange(state.seed + state.day * 7919, -3, 3).value;
-	return { share: round1(clamp(truth + noise, 0, 100)), margin: 3 };
+	const margin = round1(Math.max(0.5, 3 - state.pollAccuracy));
+	const noise = randomRange(state.seed + state.day * 7919, -margin, margin).value;
+	return { share: round1(clamp(truth + noise, 0, 100)), margin };
 }
 
 export function runElection(state: GameState, content: Content): ElectionResult {

@@ -26,8 +26,24 @@ Seven days, one move per day, then an election.
 - 🎯 **Pick your target.** Most moves are aimed at a single voter group.
 - 🎙️ **An opportunity lands early.** Take the podcast or turn it down — and if you take it, decide what to drill him on.
 - 🔥 **A scandal lands mid-week.** Three ways to handle it, all of them bad.
+- 🔓 **Unlockable moves.** Your own credibility and ruthlessness decide what you get offered.
 - 🧠 **Candidate morale.** Grind them down and they go off-script in public, without you.
 - 📊 **Polls that lie.** Published with a margin of error, and it is not decorative.
+
+### Two ways to be good at this
+
+You have two stats of your own, and they pull against each other. Honest graft
+raises **credibility**; attack ads and dirty tricks raise **ruthlessness** while
+burning credibility down.
+
+| Path | Unlocks | What it buys |
+| ---- | ------- | ------------ |
+| Credibility 68 | **The Inside Track** | Tightens your poll's margin of error — the only way to buy certainty |
+| Ruthlessness 45 | **Throw a Dead Cat** | A huge, cheap swing at one group, and a bill your candidate pays |
+
+Locked moves are **visible from day one** with their thresholds shown, so they
+shape the whole week rather than arriving as a late surprise. Playing the safe
+middle unlocks neither.
 
 ### The design rule
 
@@ -84,16 +100,26 @@ npm run balance    # balance report
 the sack rate. The target for random play is **20–30%** — frequent enough to feel
 real, rare enough that taking stupid risks is still worth it.
 
-Current numbers (5,000 campaigns each):
+Current numbers (4,000 campaigns each):
 
-| Strategy    | Sacked | Mean share |
-| ----------- | ------ | ---------- |
-| random      | 24.8%  | 42.5       |
-| allAttack   | 100.0% | 25.3       |
-| allDoorstep | 34.5%  | 48.8       |
-| balanced    | 5.6%   | 44.9       |
+| Strategy    | Sacked | Mean share | Notes                          |
+| ----------- | ------ | ---------- | ------------------------------ |
+| random      | 26.9%  | 41.9       | naive play, the target band    |
+| allAttack   | 100.0% | 25.3       | degenerate control             |
+| allDoorstep | 34.3%  | 48.8       | great share, wrecked candidate |
+| balanced    | 5.9%   | 44.5       | safe, unlocks nothing          |
+| cleanHands  | 13.4%  | 43.3       | credibility path               |
+| bareKnuckle | 22.9%  | 42.3       | ruthless path, higher variance |
 
-Degenerate strategies are punished; skilled play clearly beats naive play.
+The two identity paths land close on mean share but differ on risk, which is the
+intended shape: going dirty should be a gamble, not a strictly worse choice.
+
+### Known tuning issue
+
+`balanced` — spamming staged photo ops — currently has both the lowest sack rate
+and a high mean share, making the safe middle a little too strong. Its real cost
+(drifting to low credibility with nothing to show for it) only bites once the
+career layer exists. Worth revisiting after playtesting.
 
 ### Events are data, including branching ones
 
@@ -102,6 +128,12 @@ ending the day — that is how the podcast offer leads into the prep choice. Eve
 without a `day` are only reachable by chaining. A response may also set
 `riskGaffe`, which lets a low-morale candidate embarrass you on that specific
 choice. Arbitrary branching event trees need no engine changes.
+
+### Actions are data too, including locked ones
+
+An action may carry `requires`, a list of `{ stat, min, label }`. The label is
+shown to the player while the action is locked, so requirements read as goals.
+Adding a new unlockable is a content change, not a code change.
 
 ## 🚧 Status
 

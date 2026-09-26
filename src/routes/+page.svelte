@@ -6,8 +6,10 @@
 		applyMove,
 		canAfford,
 		createGame,
+		isUnlocked,
 		pollEstimate,
-		runElection
+		runElection,
+		unmetRequirements
 	} from '$lib/sim/engine';
 	import type { ElectionResult, FeedbackLine, GameState, MoveResult } from '$lib/sim/types';
 
@@ -105,11 +107,12 @@
 	const groupName = (id: string) => groups.find((g) => g.id === id)?.name ?? id;
 
 	function formatDelta(line: FeedbackLine) {
-		if (line.stat === 'money') {
+		if (line.stat === 'money' || line.stat === 'personalFunds') {
 			const amount = new Intl.NumberFormat('en-GB').format(Math.abs(line.delta));
 			return `${line.delta > 0 ? '+' : '−'}£${amount}`;
 		}
-		return `${sign(line.delta)}${line.stat === 'morale' ? '' : '%'}`;
+		const suffix = line.stat === 'support' || line.stat === 'turnout' ? '%' : '';
+		return `${sign(line.delta)}${suffix}`;
 	}
 </script>
 
@@ -130,8 +133,20 @@
 				<strong>&pound;{money}</strong>
 			</div>
 			<div>
+				<span>Your funds</span>
+				<strong>&pound;{new Intl.NumberFormat('en-GB').format(game.personalFunds)}</strong>
+			</div>
+			<div>
 				<span>Candidate morale</span>
 				<strong>{Math.round(game.morale)}</strong>
+			</div>
+			<div>
+				<span>Your credibility</span>
+				<strong>{Math.round(game.credibility)}</strong>
+			</div>
+			<div>
+				<span>Your ruthlessness</span>
+				<strong>{Math.round(game.ruthlessness)}</strong>
 			</div>
 			<div>
 				<span>Poll</span>
@@ -154,6 +169,10 @@
 			</ul>
 			<p class="hint">
 				Miss any objective and you are out of a job. You get one move a day.
+			</p>
+			<p class="hint">
+				Some moves are locked. Your credibility and your reputation for ruthlessness
+				decide which ones open up — and they pull in opposite directions.
 			</p>
 			<button onclick={() => (phase = 'day')}>Take the job</button>
 		</div>
@@ -183,14 +202,19 @@
 
 		<div class="actions">
 			{#each actions as action (action.id)}
+				{@const locks = unmetRequirements(game, action)}
 				<button
 					class="action"
-					disabled={!canAfford(game, action)}
+					class:locked={locks.length > 0}
+					disabled={!canAfford(game, action) || locks.length > 0}
 					onclick={() => take(action.id, action.targeted)}
 				>
 					<span>
 						<strong>{action.name}{action.targeted ? ` → ${groupName(target)}` : ''}</strong>
 						<em>{action.description}</em>
+						{#each locks as lock (lock.stat)}
+							<em class="lock">🔒 {lock.label}</em>
+						{/each}
 					</span>
 					<span class="cost">
 						{action.cost === 0 ? 'Free' : `£${new Intl.NumberFormat('en-GB').format(action.cost)}`}

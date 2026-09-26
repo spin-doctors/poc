@@ -1,4 +1,4 @@
-import type { Content } from '../schema/content';
+import type { Content, Effect } from '../schema/content';
 
 export interface GameState {
 	seed: number;
@@ -6,6 +6,12 @@ export interface GameState {
 	day: number;
 	money: number;
 	morale: number;
+	/** Your own standing as an operator, which gates what you get offered. */
+	credibility: number;
+	ruthlessness: number;
+	personalFunds: number;
+	/** Shaves the published poll's margin of error. Inside information. */
+	pollAccuracy: number;
 	/** Current support percentage per group id. */
 	support: Record<string, number>;
 	/** Additive turnout modifier per group id. */
@@ -23,7 +29,7 @@ export type PlayerMove =
 export interface FeedbackLine {
 	groupId: string | null;
 	label: string;
-	stat: 'support' | 'turnout' | 'morale' | 'money';
+	stat: Effect['stat'];
 	delta: number;
 	certain: boolean;
 }

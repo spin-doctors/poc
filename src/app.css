@@ -165,6 +165,19 @@ button.ghost:hover:not(:disabled) {
 	font-size: 0.9rem;
 }
 
+.action.locked {
+	border-style: dashed;
+	background: transparent;
+}
+
+.action .lock {
+	display: block;
+	margin-top: 0.3rem;
+	color: var(--accent);
+	font-size: 0.8rem;
+	letter-spacing: 0.01em;
+}
+
 fieldset {
 	border: 1px solid var(--rule);
 	margin: 0 0 1rem;

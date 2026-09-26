@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { content } from '../content';
-import { applyMove, createGame, pollEstimate, replay, runElection } from './engine';
+import { applyMove, createGame, isUnlocked, pollEstimate, replay, runElection, unmetRequirements } from './engine';
 import type { GameState, PlayerMove } from './types';
 
 const seed = 12345;
@@ -34,7 +34,7 @@ function playUntilEvent(eventId: string, decline = 1): GameState {
 describe('content', () => {
 	it('validates against the schema', () => {
 		expect(content.groups.length).toBeGreaterThan(0);
-		expect(content.actions.length).toBe(5);
+		expect(content.actions.filter((a) => a.requires.length === 0)).toHaveLength(5);
 		expect(content.contract.days).toBe(7);
 	});
 
@@ -81,7 +81,121 @@ describe('content', () => {
 	});
 
 	it('always leaves a legal move for a broke player', () => {
-		expect(content.actions.some((a) => a.cost === 0)).toBe(true);
+		const free = content.actions.filter((a) => a.cost === 0 && a.requires.length === 0);
+		expect(free.length).toBeGreaterThan(0);
+	});
+
+	it('only gates on stats the engine tracks', () => {
+		const state = createGame(content, seed);
+		for (const action of content.actions) {
+			for (const requirement of action.requires) {
+				expect(typeof state[requirement.stat]).toBe('number');
+			}
+		}
+	});
+
+	it('ships unlockables for both play styles', () => {
+		const gated = content.actions.filter((a) => a.requires.length > 0);
+		const stats = new Set(gated.flatMap((a) => a.requires.map((r) => r.stat)));
+		expect(stats.has('credibility')).toBe(true);
+		expect(stats.has('ruthlessness')).toBe(true);
+	});
+});
+
+describe('unlockable actions', () => {
+	const insideTrack = content.actions.find((a) => a.id === 'insideTrack')!;
+	const deadCat = content.actions.find((a) => a.id === 'deadCat')!;
+
+	it('starts with both identity actions locked', () => {
+		const state = createGame(content, seed);
+		expect(isUnlocked(state, insideTrack)).toBe(false);
+		expect(isUnlocked(state, deadCat)).toBe(false);
+	});
+
+	it('reports what is missing so the UI can show it as a goal', () => {
+		const state = createGame(content, seed);
+		const unmet = unmetRequirements(state, insideTrack);
+		expect(unmet).toHaveLength(1);
+		expect(unmet[0].stat).toBe('credibility');
+		expect(unmet[0].label).toMatch(/credibility/i);
+	});
+
+	it('refuses a locked action', () => {
+		const state = createGame(content, seed);
+		expect(() =>
+			applyMove(state, content, { kind: 'action', actionId: 'deadCat', target: 'students' })
+		).toThrow(/not unlocked/);
+	});
+
+	it('opens the inside track once credibility is earned', () => {
+		const state = { ...createGame(content, seed), credibility: 70 };
+		expect(isUnlocked(state, insideTrack)).toBe(true);
+		expect(() =>
+			applyMove(state, content, { kind: 'action', actionId: 'insideTrack', target: 'retirees' })
+		).not.toThrow();
+	});
+
+	it('opens the dead cat once ruthlessness is earned', () => {
+		const state = { ...createGame(content, seed), ruthlessness: 50 };
+		expect(isUnlocked(state, deadCat)).toBe(true);
+	});
+
+	it('pushes credibility and ruthlessness in opposite directions', () => {
+		const state = createGame(content, seed);
+		const clean = applyMove(state, content, {
+			kind: 'action',
+			actionId: 'doorstep',
+			target: 'commuters'
+		}).state;
+		const dirty = applyMove(state, content, {
+			kind: 'action',
+			actionId: 'attackAd',
+			target: 'commuters'
+		}).state;
+
+		expect(clean.credibility).toBeGreaterThan(state.credibility);
+		expect(clean.ruthlessness).toBe(state.ruthlessness);
+		expect(dirty.credibility).toBeLessThan(state.credibility);
+		expect(dirty.ruthlessness).toBeGreaterThan(state.ruthlessness);
+	});
+
+	it('cannot reach either threshold without committing to a style', () => {
+		// Three days of the safe middle option should unlock nothing.
+		let state = createGame(content, seed);
+		for (let i = 0; i < 2; i++) {
+			state = applyMove(state, content, {
+				kind: 'action',
+				actionId: 'photoOp',
+				target: 'commuters'
+			}).state;
+			if (state.pendingEventId) {
+				state = applyMove(state, content, {
+					kind: 'respond',
+					eventId: state.pendingEventId,
+					responseIndex: 1
+				}).state;
+			}
+		}
+		expect(isUnlocked(state, insideTrack)).toBe(false);
+		expect(isUnlocked(state, deadCat)).toBe(false);
+	});
+});
+
+describe('inside information', () => {
+	it('tightens the poll margin, which nothing else does', () => {
+		const state = { ...createGame(content, seed), credibility: 70 };
+		const before = pollEstimate(state, content).margin;
+		const after = applyMove(state, content, {
+			kind: 'action',
+			actionId: 'insideTrack',
+			target: 'retirees'
+		}).state;
+		expect(pollEstimate(after, content).margin).toBeLessThan(before);
+	});
+
+	it('never lets the poll become perfect', () => {
+		const state = { ...createGame(content, seed), pollAccuracy: 99 };
+		expect(pollEstimate(state, content).margin).toBeGreaterThan(0);
 	});
 });
 

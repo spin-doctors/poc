@@ -19,7 +19,8 @@
 				"effects": [
 					{ "on": "students", "stat": "support", "delta": -5, "spin": true },
 					{ "on": "commuters", "stat": "support", "delta": -2 },
-					{ "on": "all", "stat": "morale", "delta": 4 }
+					{ "on": "all", "stat": "morale", "delta": 4 },
+					{ "on": "all", "stat": "credibility", "delta": -4 }
 				]
 			}
 		]
@@ -36,7 +37,8 @@
 				"effects": [
 					{ "on": "commuters", "stat": "support", "delta": 14, "spin": true },
 					{ "on": "all", "stat": "money", "delta": -2000 },
-					{ "on": "all", "stat": "morale", "delta": -6 }
+					{ "on": "all", "stat": "morale", "delta": -6 },
+					{ "on": "all", "stat": "credibility", "delta": 9 }
 				]
 			},
 			{
@@ -47,7 +49,8 @@
 					{ "on": "retirees", "stat": "support", "delta": 13 },
 					{ "on": "students", "stat": "support", "delta": -3, "spin": true },
 					{ "on": "all", "stat": "money", "delta": -3000 },
-					{ "on": "all", "stat": "morale", "delta": 9 }
+					{ "on": "all", "stat": "morale", "delta": 9 },
+					{ "on": "all", "stat": "credibility", "delta": 6 }
 				]
 			},
 			{
@@ -76,7 +79,9 @@
 				"effects": [
 					{ "on": "retirees", "stat": "support", "delta": -12 },
 					{ "on": "students", "stat": "support", "delta": 4, "spin": true },
-					{ "on": "all", "stat": "morale", "delta": 6 }
+					{ "on": "all", "stat": "morale", "delta": 6 },
+					{ "on": "all", "stat": "credibility", "delta": -11 },
+					{ "on": "all", "stat": "ruthlessness", "delta": 9 }
 				]
 			},
 			{
@@ -86,7 +91,8 @@
 					{ "on": "all", "stat": "support", "delta": -3 },
 					{ "on": "retirees", "stat": "support", "delta": 5 },
 					{ "on": "all", "stat": "morale", "delta": -12 },
-					{ "on": "all", "stat": "money", "delta": -4000 }
+					{ "on": "all", "stat": "money", "delta": -4000 },
+					{ "on": "all", "stat": "credibility", "delta": 12 }
 				]
 			},
 			{
@@ -96,7 +102,9 @@
 					{ "on": "all", "stat": "support", "delta": 1 },
 					{ "on": "all", "stat": "turnout", "delta": -7 },
 					{ "on": "all", "stat": "money", "delta": -9000 },
-					{ "on": "all", "stat": "morale", "delta": 4 }
+					{ "on": "all", "stat": "morale", "delta": 4 },
+					{ "on": "all", "stat": "credibility", "delta": -13 },
+					{ "on": "all", "stat": "ruthlessness", "delta": 18 }
 				]
 			}
 		]

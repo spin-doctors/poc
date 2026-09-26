@@ -14,7 +14,16 @@ export const effectTargetSchema = z.union([
 
 export const effectSchema = z.object({
 	on: effectTargetSchema,
-	stat: z.enum(['support', 'turnout', 'morale', 'money']),
+	stat: z.enum([
+		'support',
+		'turnout',
+		'morale',
+		'money',
+		'credibility',
+		'ruthlessness',
+		'personalFunds',
+		'pollAccuracy'
+	]),
 	delta: z.number(),
 	/** Spin effects are amplified/damped by a group's gullibility. Facts are not. */
 	spin: z.boolean().default(false)
@@ -30,6 +39,13 @@ export const voterGroupSchema = z.object({
 	gullibility: z.number().min(0).max(100)
 });
 
+/** Locked actions stay visible from day one so they can shape the week's plan. */
+export const requirementSchema = z.object({
+	stat: z.enum(['credibility', 'ruthlessness', 'personalFunds']),
+	min: z.number(),
+	label: z.string().min(1)
+});
+
 export const actionSchema = z.object({
 	id: z.string().min(1),
 	name: z.string().min(1),
@@ -38,6 +54,7 @@ export const actionSchema = z.object({
 	cost: z.number().min(0),
 	/** Targeted actions make the player choose which group to court that day. */
 	targeted: z.boolean().default(false),
+	requires: z.array(requirementSchema).default([]),
 	effects: z.array(effectSchema).min(1)
 });
 
@@ -77,6 +94,11 @@ export const contractSchema = z.object({
 	days: z.number().int().positive(),
 	budget: z.number().positive(),
 	startingMorale: z.number().min(0).max(100),
+	/** The spin doctor's own standing, not the candidate's. */
+	startingCredibility: z.number().min(0).max(100),
+	startingRuthlessness: z.number().min(0).max(100),
+	/** Your own money. Spending it on the campaign is legally grey. */
+	personalFunds: z.number().min(0),
 	objectives: z.array(objectiveSchema).min(1),
 	sackMessage: z.string().min(1),
 	keepMessage: z.string().min(1),
@@ -98,6 +120,7 @@ export const contentSchema = z.object({
 });
 
 export type Effect = z.infer<typeof effectSchema>;
+export type Requirement = z.infer<typeof requirementSchema>;
 export type VoterGroup = z.infer<typeof voterGroupSchema>;
 export type GameAction = z.infer<typeof actionSchema>;
 export type EventResponse = z.infer<typeof responseSchema>;
