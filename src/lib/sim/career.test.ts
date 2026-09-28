@@ -264,6 +264,8 @@ describe("career", () => {
     expect(after.stats.personalFunds).toBe(0);
     expect(after.company?.cash).toBeGreaterThanOrEqual(2000 + contract.fee);
     expect(after.history.at(-1)?.feeEarned).toBe(contract.fee);
+    expect(startingStats(after).credibility).toBe(after.company?.credibility);
+    expect(startingStats(after).ruthlessness).toBe(after.company?.ruthlessness);
   });
 
   it("rejects re-incorporation after incorporation", () => {
@@ -301,5 +303,29 @@ describe("career", () => {
         values: [],
       }),
     ).toThrow(/Corrupted career incorporation state/);
+  });
+
+  it("replays incorporated careers with matching company state", () => {
+    const initial = fresh();
+    const first = playOut(initial, defaultScenarioId, winAshcombe);
+    const afterFirst = completeCampaign(initial, scenarios, first);
+    const profile = {
+      name: "Replayable Co",
+      logo: "badge.svg",
+      values: ["Care", "Precision"],
+    };
+    const incorporated = incorporateCareer(afterFirst, profile);
+    const second = playOut(incorporated, defaultScenarioId, winAshcombe);
+    const completed = completeCampaign(incorporated, scenarios, second);
+
+    const replayed = replayCareer(
+      scenarios,
+      defaultScenarioId,
+      initial.careerSeed,
+      [first, second],
+      { afterCampaigns: 1, profile },
+    );
+
+    expect(replayed).toEqual(completed);
   });
 });

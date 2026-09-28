@@ -1,5 +1,5 @@
 import { z } from "zod/v3";
-import type { CampaignRecord } from "./sim/career";
+import type { CampaignRecord, IncorporationRecord } from "./sim/career";
 
 const KEY = "spin-doctors:career:v1";
 
@@ -22,17 +22,31 @@ const recordSchema = z.object({
   moves: z.array(moveSchema),
 });
 
+const companyProfileSchema = z.object({
+  name: z.string(),
+  logo: z.string().nullable(),
+  values: z.array(z.string()),
+});
+
+const incorporationSchema = z.object({
+  afterCampaigns: z.number().int().min(0),
+  profile: companyProfileSchema,
+});
+
 const savedCareerSchema = z.object({
   careerSeed: z.number(),
   completed: z.array(recordSchema),
   /** Null between campaigns, while offers are on the table. */
   current: recordSchema.nullable(),
+  /** Null until the player incorporates. */
+  incorporation: incorporationSchema.nullable().default(null),
 });
 
 export interface SavedCareer {
   careerSeed: number;
   completed: CampaignRecord[];
   current: CampaignRecord | null;
+  incorporation: IncorporationRecord | null;
 }
 
 /** Null for no save or an unreadable one; the caller starts a fresh career. */

@@ -44,7 +44,7 @@
 		const careerSeed = Math.floor(Math.random() * 2 ** 31);
 		const career = startCareer(scenarios, defaultScenarioId, careerSeed);
 		const current = { scenarioId: defaultScenarioId, seed: nextCampaignSeed(career), moves: [] };
-		return { saved: { careerSeed, completed: [], current }, career };
+		return { saved: { careerSeed, completed: [], current, incorporation: null }, career };
 	}
 
 	const initial = freshCareer();
@@ -102,7 +102,13 @@
 		let rebuilt: CareerState | null = null;
 		if (loaded) {
 			try {
-				rebuilt = replayCareer(scenarios, defaultScenarioId, loaded.careerSeed, loaded.completed);
+				rebuilt = replayCareer(
+					scenarios,
+					defaultScenarioId,
+					loaded.careerSeed,
+					loaded.completed,
+					loaded.incorporation
+				);
 			} catch {
 				loaded = null;
 			}
@@ -224,7 +230,7 @@
 	function incorporate() {
 		if (replaying || career.company) return;
 		if (!canIncorporate(career)) return;
-		career = incorporateCareer(career, {
+		const nextCareer = incorporateCareer(career, {
 			name: companyName.trim() || 'Untitled Strategy Group',
 			logo: companyLogo.trim() || null,
 			values: companyValues
@@ -232,6 +238,17 @@
 				.map((value) => value.trim())
 				.filter(Boolean)
 		});
+		career = nextCareer;
+		if (!saved.incorporation && nextCareer.company) {
+			saved = {
+				...saved,
+				incorporation: {
+					afterCampaigns: nextCareer.history.length,
+					profile: nextCareer.company.profile
+				}
+			};
+			saveCareer(saved);
+		}
 	}
 
 	async function copyLink() {

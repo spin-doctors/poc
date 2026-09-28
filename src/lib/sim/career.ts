@@ -26,6 +26,11 @@ export interface CompanyState {
   recognition: number;
 }
 
+export interface IncorporationRecord {
+  afterCampaigns: number;
+  profile: CompanyProfile;
+}
+
 export interface CampaignRecord {
   scenarioId: string;
   seed: number;
@@ -69,6 +74,16 @@ function normalizeProfile(profile: CompanyProfile): CompanyProfile {
     logo: profile.logo?.trim() ? profile.logo.trim() : null,
     values: profile.values.map((v) => v.trim()).filter(Boolean),
   };
+}
+
+function isCanonicalProfile(profile: CompanyProfile): boolean {
+  const normalized = normalizeProfile(profile);
+  return (
+    normalized.name === profile.name &&
+    normalized.logo === profile.logo &&
+    normalized.values.length === profile.values.length &&
+    normalized.values.every((value, i) => value === profile.values[i])
+  );
 }
 
 export function startCareer(
@@ -116,8 +131,15 @@ function incorporationStatus(career: CareerState): "pre" | "post" | "invalid" {
   if (!career.company) return "pre";
   const { profile, cash, credibility, ruthlessness, recognition } =
     career.company;
+  const validProfile = (() => {
+    try {
+      return isCanonicalProfile(profile);
+    } catch {
+      return false;
+    }
+  })();
   const valid =
-    profile.name.trim().length > 0 &&
+    validProfile &&
     Number.isFinite(cash) &&
     Number.isFinite(credibility) &&
     Number.isFinite(ruthlessness) &&
@@ -286,9 +308,31 @@ export function replayCareer(
   firstScenarioId: string,
   careerSeed: number,
   records: CampaignRecord[],
+  incorporation: IncorporationRecord | null = null,
 ): CareerState {
+  if (incorporation) {
+    const max = records.length;
+    if (
+      incorporation.afterCampaigns < 0 ||
+      incorporation.afterCampaigns > max
+    ) {
+      throw new Error("Invalid incorporation index");
+    }
+  }
   let career = startCareer(scenarios, firstScenarioId, careerSeed);
-  for (const record of records)
+  const maybeIncorporate = () => {
+    if (
+      incorporation &&
+      incorporation.afterCampaigns === career.history.length &&
+      !career.company
+    ) {
+      career = incorporateCareer(career, incorporation.profile);
+    }
+  };
+  for (const record of records) {
+    maybeIncorporate();
     career = completeCampaign(career, scenarios, record);
+  }
+  maybeIncorporate();
   return career;
 }
