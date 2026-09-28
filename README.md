@@ -36,10 +36,10 @@ You have two stats of your own, and they pull against each other. Honest graft
 raises **credibility**; attack ads and dirty tricks raise **ruthlessness** while
 burning credibility down.
 
-| Path | Unlocks | What it buys |
-| ---- | ------- | ------------ |
-| Credibility 68 | **The Inside Track** | Tightens your poll's margin of error — the only way to buy certainty |
-| Ruthlessness 45 | **Throw a Dead Cat** | A huge, cheap swing at one group, and a bill your candidate pays |
+| Path            | Unlocks              | What it buys                                                         |
+| --------------- | -------------------- | -------------------------------------------------------------------- |
+| Credibility 68  | **The Inside Track** | Tightens your poll's margin of error — the only way to buy certainty |
+| Ruthlessness 45 | **Throw a Dead Cat** | A huge, cheap swing at one group, and a bill your candidate pays     |
 
 Locked moves are **visible from day one** with their thresholds shown, so they
 shape the whole week rather than arriving as a late surprise. Playing the safe

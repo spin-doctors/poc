@@ -1,132 +1,132 @@
 [
-	{
-		"id": "doorstep",
-		"name": "Doorstep Canvassing",
-		"description": "Free, slow, and genuinely effective. Nobody ever won a news cycle knocking on doors.",
-		"flavour": "Four hours of doorsteps. Two dogs, one shouting match, and a man who wanted to discuss the bins for forty minutes.",
-		"cost": 0,
-		"targeted": true,
-		"effects": [
-			{ "on": "target", "stat": "support", "delta": 6 },
-			{ "on": "all", "stat": "morale", "delta": -5 },
-			{ "on": "all", "stat": "credibility", "delta": 5 }
-		]
-	},
-	{
-		"id": "photoOp",
-		"name": "Staged Photo Op",
-		"description": "High impact with the credulous. Everyone else can smell the staging.",
-		"flavour": "The candidate holds a locally-sourced vegetable at an unnatural angle for nine minutes.",
-		"cost": 7000,
-		"targeted": true,
-		"effects": [
-			{ "on": "target", "stat": "support", "delta": 12, "spin": true },
-			{ "on": "all", "stat": "support", "delta": -1.5 },
-			{ "on": "all", "stat": "morale", "delta": 7 },
-			{ "on": "all", "stat": "credibility", "delta": -3 },
-			{ "on": "all", "stat": "ruthlessness", "delta": 2 }
-		]
-	},
-	{
-		"id": "mediaBuy",
-		"name": "Media Buy",
-		"description": "Expensive, broad, shallow. Buys a little goodwill absolutely everywhere.",
-		"flavour": "Thirty seconds of drone footage over the seafront and a voiceover that says the word 'future' four times.",
-		"cost": 14000,
-		"targeted": false,
-		"effects": [{ "on": "all", "stat": "support", "delta": 5, "spin": true }]
-	},
-	{
-		"id": "attackAd",
-		"name": "Attack Ad",
-		"description": "Enormous with the group you aim it at. Everyone else finds it a bit much.",
-		"flavour": "A grainy black-and-white photograph of the opponent, slowly zooming, set to a cello.",
-		"cost": 6000,
-		"targeted": true,
-		"effects": [
-			{ "on": "target", "stat": "support", "delta": 14, "spin": true },
-			{ "on": "all", "stat": "support", "delta": -4 },
-			{ "on": "all", "stat": "morale", "delta": -10 },
-			{ "on": "all", "stat": "credibility", "delta": -9 },
-			{ "on": "all", "stat": "ruthlessness", "delta": 15 }
-		]
-	},
-	{
-		"id": "debatePrep",
-		"name": "Debate Prep",
-		"description": "Moves no polls today. Steadies the candidate and gets your own voters to actually turn up.",
-		"flavour": "Six hours in a function room teaching a grown adult not to say the first thing they think.",
-		"cost": 3000,
-		"targeted": false,
-		"effects": [
-			{ "on": "all", "stat": "morale", "delta": 22 },
-			{ "on": "all", "stat": "turnout", "delta": 5 },
-			{ "on": "all", "stat": "credibility", "delta": 4 }
-		]
-	},
-	{
-		"id": "insideTrack",
-		"name": "The Inside Track",
-		"description": "A quiet word with someone who owes you one. You stop guessing and start knowing.",
-		"flavour": "A returning officer you were decent to in 2019 buys you a coffee and talks, at length, about postal vote patterns. You take no notes. You do not need to.",
-		"cost": 1000,
-		"targeted": true,
-		"requires": [
-			{
-				"stat": "credibility",
-				"min": 68,
-				"label": "Credibility 68 — people only tip off operators they respect"
-			}
-		],
-		"effects": [
-			{ "on": "all", "stat": "pollAccuracy", "delta": 1.25 },
-			{ "on": "target", "stat": "turnout", "delta": 9 },
-			{ "on": "target", "stat": "support", "delta": 5 },
-			{ "on": "all", "stat": "credibility", "delta": 2 }
-		]
-	},
-	{
-		"id": "deadCat",
-		"name": "Throw a Dead Cat",
-		"description": "You have a file. It is not strictly relevant. It is, however, extremely interesting.",
-		"flavour": "By lunchtime nobody is discussing the hospital. By teatime a man you have never met is resigning live on the local news, and your candidate is asking you questions you would rather he did not.",
-		"cost": 2500,
-		"targeted": true,
-		"requires": [
-			{
-				"stat": "ruthlessness",
-				"min": 45,
-				"label": "Ruthlessness 45 — this file only reaches people who would use it"
-			}
-		],
-		"effects": [
-			{ "on": "target", "stat": "support", "delta": 23, "spin": true },
-			{ "on": "all", "stat": "support", "delta": -1.5 },
-			{ "on": "retirees", "stat": "support", "delta": -3 },
-			{ "on": "all", "stat": "morale", "delta": -6 },
-			{ "on": "all", "stat": "credibility", "delta": -14 },
-			{ "on": "all", "stat": "ruthlessness", "delta": 10 }
-		]
-	},
-	{
-		"id": "personalCheque",
-		"name": "Write a Personal Cheque",
-		"description": "Your own money into the campaign account. Technically declarable. Eventually.",
-		"flavour": "You move fifteen thousand pounds of your own money and tell yourself it is an investment in the relationship. The treasurer does not ask, and you do not volunteer.",
-		"cost": 0,
-		"targeted": false,
-		"requires": [
-			{
-				"stat": "personalFunds",
-				"min": 15000,
-				"label": "£15,000 of your own money left to burn"
-			}
-		],
-		"effects": [
-			{ "on": "all", "stat": "personalFunds", "delta": -15000 },
-			{ "on": "all", "stat": "money", "delta": 15000 },
-			{ "on": "all", "stat": "credibility", "delta": -8 },
-			{ "on": "all", "stat": "ruthlessness", "delta": 6 }
-		]
-	}
+  {
+    "id": "doorstep",
+    "name": "Doorstep Canvassing",
+    "description": "Free, slow, and genuinely effective. Nobody ever won a news cycle knocking on doors.",
+    "flavour": "Four hours of doorsteps. Two dogs, one shouting match, and a man who wanted to discuss the bins for forty minutes.",
+    "cost": 0,
+    "targeted": true,
+    "effects": [
+      { "on": "target", "stat": "support", "delta": 6 },
+      { "on": "all", "stat": "morale", "delta": -5 },
+      { "on": "all", "stat": "credibility", "delta": 5 }
+    ]
+  },
+  {
+    "id": "photoOp",
+    "name": "Staged Photo Op",
+    "description": "High impact with the credulous. Everyone else can smell the staging.",
+    "flavour": "The candidate holds a locally-sourced vegetable at an unnatural angle for nine minutes.",
+    "cost": 7000,
+    "targeted": true,
+    "effects": [
+      { "on": "target", "stat": "support", "delta": 12, "spin": true },
+      { "on": "all", "stat": "support", "delta": -1.5 },
+      { "on": "all", "stat": "morale", "delta": 7 },
+      { "on": "all", "stat": "credibility", "delta": -3 },
+      { "on": "all", "stat": "ruthlessness", "delta": 2 }
+    ]
+  },
+  {
+    "id": "mediaBuy",
+    "name": "Media Buy",
+    "description": "Expensive, broad, shallow. Buys a little goodwill absolutely everywhere.",
+    "flavour": "Thirty seconds of drone footage over the seafront and a voiceover that says the word 'future' four times.",
+    "cost": 14000,
+    "targeted": false,
+    "effects": [{ "on": "all", "stat": "support", "delta": 5, "spin": true }]
+  },
+  {
+    "id": "attackAd",
+    "name": "Attack Ad",
+    "description": "Enormous with the group you aim it at. Everyone else finds it a bit much.",
+    "flavour": "A grainy black-and-white photograph of the opponent, slowly zooming, set to a cello.",
+    "cost": 6000,
+    "targeted": true,
+    "effects": [
+      { "on": "target", "stat": "support", "delta": 14, "spin": true },
+      { "on": "all", "stat": "support", "delta": -4 },
+      { "on": "all", "stat": "morale", "delta": -10 },
+      { "on": "all", "stat": "credibility", "delta": -9 },
+      { "on": "all", "stat": "ruthlessness", "delta": 15 }
+    ]
+  },
+  {
+    "id": "debatePrep",
+    "name": "Debate Prep",
+    "description": "Moves no polls today. Steadies the candidate and gets your own voters to actually turn up.",
+    "flavour": "Six hours in a function room teaching a grown adult not to say the first thing they think.",
+    "cost": 3000,
+    "targeted": false,
+    "effects": [
+      { "on": "all", "stat": "morale", "delta": 22 },
+      { "on": "all", "stat": "turnout", "delta": 5 },
+      { "on": "all", "stat": "credibility", "delta": 4 }
+    ]
+  },
+  {
+    "id": "insideTrack",
+    "name": "The Inside Track",
+    "description": "A quiet word with someone who owes you one. You stop guessing and start knowing.",
+    "flavour": "A returning officer you were decent to in 2019 buys you a coffee and talks, at length, about postal vote patterns. You take no notes. You do not need to.",
+    "cost": 1000,
+    "targeted": true,
+    "requires": [
+      {
+        "stat": "credibility",
+        "min": 68,
+        "label": "Credibility 68 — people only tip off operators they respect"
+      }
+    ],
+    "effects": [
+      { "on": "all", "stat": "pollAccuracy", "delta": 1.25 },
+      { "on": "target", "stat": "turnout", "delta": 9 },
+      { "on": "target", "stat": "support", "delta": 5 },
+      { "on": "all", "stat": "credibility", "delta": 2 }
+    ]
+  },
+  {
+    "id": "deadCat",
+    "name": "Throw a Dead Cat",
+    "description": "You have a file. It is not strictly relevant. It is, however, extremely interesting.",
+    "flavour": "By lunchtime nobody is discussing the hospital. By teatime a man you have never met is resigning live on the local news, and your candidate is asking you questions you would rather he did not.",
+    "cost": 2500,
+    "targeted": true,
+    "requires": [
+      {
+        "stat": "ruthlessness",
+        "min": 45,
+        "label": "Ruthlessness 45 — this file only reaches people who would use it"
+      }
+    ],
+    "effects": [
+      { "on": "target", "stat": "support", "delta": 23, "spin": true },
+      { "on": "all", "stat": "support", "delta": -1.5 },
+      { "on": "retirees", "stat": "support", "delta": -3 },
+      { "on": "all", "stat": "morale", "delta": -6 },
+      { "on": "all", "stat": "credibility", "delta": -14 },
+      { "on": "all", "stat": "ruthlessness", "delta": 10 }
+    ]
+  },
+  {
+    "id": "personalCheque",
+    "name": "Write a Personal Cheque",
+    "description": "Your own money into the campaign account. Technically declarable. Eventually.",
+    "flavour": "You move fifteen thousand pounds of your own money and tell yourself it is an investment in the relationship. The treasurer does not ask, and you do not volunteer.",
+    "cost": 0,
+    "targeted": false,
+    "requires": [
+      {
+        "stat": "personalFunds",
+        "min": 15000,
+        "label": "£15,000 of your own money left to burn"
+      }
+    ],
+    "effects": [
+      { "on": "all", "stat": "personalFunds", "delta": -15000 },
+      { "on": "all", "stat": "money", "delta": 15000 },
+      { "on": "all", "stat": "credibility", "delta": -8 },
+      { "on": "all", "stat": "ruthlessness", "delta": 6 }
+    ]
+  }
 ]
