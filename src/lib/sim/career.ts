@@ -8,6 +8,24 @@ interface CareerStats extends StartingStats {
   recognition: number;
 }
 
+export interface CompanyProfile {
+  name: string;
+  logo: string | null;
+  values: string[];
+}
+
+interface OperatingStats extends CareerStats {
+  cash: number;
+}
+
+export interface CompanyState {
+  profile: CompanyProfile;
+  cash: number;
+  credibility: number;
+  ruthlessness: number;
+  recognition: number;
+}
+
 export interface CampaignRecord {
   scenarioId: string;
   seed: number;
@@ -25,6 +43,7 @@ export interface CampaignOutcome {
 export interface CareerState {
   careerSeed: number;
   stats: CareerStats;
+  company: CompanyState | null;
   history: CampaignOutcome[];
 }
 
@@ -37,6 +56,7 @@ type Scenarios = Record<string, Content>;
 
 const MAX_MARGIN_BONUS = 10;
 const TIER_ORDER = ["parliamentary", "council"] as const;
+export const INCORPORATION_FEE = 10_000;
 
 const clamp = (n: number, min: number, max: number) =>
   Math.min(max, Math.max(min, n));
@@ -52,6 +72,7 @@ export function startCareer(
       ...defaultStart(scenarioOrThrow(scenarios, firstScenarioId)),
       recognition: 0,
     },
+    company: null,
     history: [],
   };
 }
@@ -63,8 +84,50 @@ function scenarioOrThrow(scenarios: Scenarios, id: string): Content {
 }
 
 export function startingStats(career: CareerState): StartingStats {
-  const { credibility, ruthlessness, personalFunds } = career.stats;
+  const { credibility, ruthlessness, cash } = operatingStats(career);
+  const personalFunds = cash;
   return { credibility, ruthlessness, personalFunds };
+}
+
+function operatingStats(career: CareerState): OperatingStats {
+  if (career.company) {
+    return {
+      credibility: career.company.credibility,
+      ruthlessness: career.company.ruthlessness,
+      personalFunds: 0,
+      recognition: career.company.recognition,
+      cash: career.company.cash,
+    };
+  }
+  return { ...career.stats, cash: career.stats.personalFunds };
+}
+
+export function canIncorporate(career: CareerState): boolean {
+  return !career.company && career.stats.personalFunds >= INCORPORATION_FEE;
+}
+
+export function incorporateCareer(
+  career: CareerState,
+  profile: CompanyProfile,
+): CareerState {
+  if (career.company) throw new Error("Already incorporated");
+  if (!canIncorporate(career)) throw new Error("Not enough personal funds");
+  return {
+    ...career,
+    stats: {
+      credibility: 0,
+      ruthlessness: 0,
+      personalFunds: 0,
+      recognition: 0,
+    },
+    company: {
+      profile,
+      cash: career.stats.personalFunds - INCORPORATION_FEE,
+      credibility: career.stats.credibility,
+      ruthlessness: career.stats.ruthlessness,
+      recognition: career.stats.recognition,
+    },
+  };
 }
 
 /** Derived rather than stored, so a career replays from its seed alone. */
@@ -95,6 +158,7 @@ export function completeCampaign(
   if (!state.finished) throw new Error("Campaign is not finished");
   const election = runElection(state, content);
   const { contract } = content;
+  const current = operatingStats(career);
 
   const shareTarget = Math.max(
     0,
@@ -111,20 +175,34 @@ export function completeCampaign(
     ? contract.recognition.sacked
     : contract.recognition.kept + marginBonus;
   const feeEarned = election.sacked ? 0 : contract.fee;
-  const recognition = clamp(
-    career.stats.recognition + recognitionDelta,
-    0,
-    100,
-  );
+  const recognition = clamp(current.recognition + recognitionDelta, 0, 100);
+
+  const updated = {
+    recognition,
+    credibility: state.credibility,
+    ruthlessness: state.ruthlessness,
+    cash: state.personalFunds + feeEarned,
+  };
 
   return {
     ...career,
-    stats: {
-      recognition,
-      credibility: state.credibility,
-      ruthlessness: state.ruthlessness,
-      personalFunds: state.personalFunds + feeEarned,
-    },
+    stats: career.company
+      ? career.stats
+      : {
+          recognition: updated.recognition,
+          credibility: updated.credibility,
+          ruthlessness: updated.ruthlessness,
+          personalFunds: updated.cash,
+        },
+    company: career.company
+      ? {
+          ...career.company,
+          recognition: updated.recognition,
+          credibility: updated.credibility,
+          ruthlessness: updated.ruthlessness,
+          cash: updated.cash,
+        }
+      : null,
     history: [
       ...career.history,
       {
@@ -132,7 +210,7 @@ export function completeCampaign(
         start,
         election,
         feeEarned,
-        recognitionDelta: recognition - career.stats.recognition,
+        recognitionDelta: recognition - current.recognition,
       },
     ],
   };
@@ -154,7 +232,10 @@ export function careerOffers(
     .map((content) => ({
       scenarioId: content.contract.id,
       tier: TIER_ORDER.indexOf(content.contract.tier),
-      unmet: unmetCareerRequirements(career.stats, content.contract.requires),
+      unmet: unmetCareerRequirements(
+        operatingStats(career),
+        content.contract.requires,
+      ),
     }))
     .sort((a, b) => a.tier - b.tier)
     .map(({ scenarioId, unmet }) => ({ scenarioId, unmet }));

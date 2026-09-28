@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { defaultScenarioId, scenarios } from "../content";
 import {
+  canIncorporate,
   careerOffers,
   completeCampaign,
+  incorporateCareer,
+  INCORPORATION_FEE,
   nextCampaignSeed,
   replayCareer,
   startCareer,
@@ -75,6 +78,7 @@ describe("career", () => {
       personalFunds: contract.personalFunds,
     });
     expect(career.history).toEqual([]);
+    expect(career.company).toBeNull();
   });
 
   it("pays the fee and earns recognition when you keep the account", () => {
@@ -182,5 +186,69 @@ describe("career", () => {
     expect(
       replayCareer(scenarios, defaultScenarioId, careerSeed, records),
     ).toEqual(career);
+  });
+
+  it("can incorporate once personal funds cover the fee", () => {
+    const career = {
+      ...fresh(),
+      stats: { ...fresh().stats, personalFunds: INCORPORATION_FEE - 1 },
+    };
+    expect(canIncorporate(career)).toBe(false);
+    const funded = {
+      ...career,
+      stats: { ...career.stats, personalFunds: INCORPORATION_FEE },
+    };
+    expect(canIncorporate(funded)).toBe(true);
+  });
+
+  it("transfers personal stats into the company on incorporation", () => {
+    const career = {
+      ...fresh(),
+      stats: {
+        ...fresh().stats,
+        recognition: 12,
+        credibility: 65,
+        ruthlessness: 34,
+        personalFunds: INCORPORATION_FEE + 5000,
+      },
+    };
+    const incorporated = incorporateCareer(career, {
+      name: "Heliotrope Strategies",
+      logo: null,
+      values: ["Transparency", "Results"],
+    });
+    expect(incorporated.stats).toEqual({
+      recognition: 0,
+      credibility: 0,
+      ruthlessness: 0,
+      personalFunds: 0,
+    });
+    expect(incorporated.company).toEqual({
+      profile: {
+        name: "Heliotrope Strategies",
+        logo: null,
+        values: ["Transparency", "Results"],
+      },
+      recognition: 12,
+      credibility: 65,
+      ruthlessness: 34,
+      cash: 5000,
+    });
+  });
+
+  it("routes fees to the company after incorporation", () => {
+    const career = incorporateCareer(
+      {
+        ...fresh(),
+        stats: { ...fresh().stats, personalFunds: INCORPORATION_FEE + 2000 },
+      },
+      { name: "Night Shift PR", logo: null, values: [] },
+    );
+    const record = playOut(career, defaultScenarioId, winAshcombe);
+    const after = completeCampaign(career, scenarios, record);
+    const contract = scenarios[defaultScenarioId].contract;
+    expect(after.stats.personalFunds).toBe(0);
+    expect(after.company?.cash).toBeGreaterThanOrEqual(2000 + contract.fee);
+    expect(after.history.at(-1)?.feeEarned).toBe(contract.fee);
   });
 });
