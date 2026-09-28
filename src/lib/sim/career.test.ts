@@ -251,4 +251,23 @@ describe("career", () => {
     expect(after.company?.cash).toBeGreaterThanOrEqual(2000 + contract.fee);
     expect(after.history.at(-1)?.feeEarned).toBe(contract.fee);
   });
+
+  it("treats incorporation as one-way even if company data is tampered", () => {
+    const incorporated = incorporateCareer(
+      {
+        ...fresh(),
+        stats: { ...fresh().stats, personalFunds: INCORPORATION_FEE + 1 },
+      },
+      { name: "Permanent Ltd", logo: null, values: [] },
+    );
+    const tampered = { ...incorporated, company: null };
+    expect(canIncorporate(tampered)).toBe(false);
+    expect(() =>
+      incorporateCareer(tampered, {
+        name: "Second Attempt",
+        logo: null,
+        values: [],
+      }),
+    ).toThrow(/Already incorporated/);
+  });
 });

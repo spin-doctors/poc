@@ -44,6 +44,7 @@ export interface CareerState {
   careerSeed: number;
   stats: CareerStats;
   company: CompanyState | null;
+  incorporatedOnCampaign: number | null;
   history: CampaignOutcome[];
 }
 
@@ -73,6 +74,7 @@ export function startCareer(
       recognition: 0,
     },
     company: null,
+    incorporatedOnCampaign: null,
     history: [],
   };
 }
@@ -102,15 +104,22 @@ function operatingStats(career: CareerState): OperatingStats {
   return { ...career.stats, cash: career.stats.personalFunds };
 }
 
+function isPreIncorporationState(career: CareerState): boolean {
+  return career.incorporatedOnCampaign === null && career.company === null;
+}
+
 export function canIncorporate(career: CareerState): boolean {
-  return !career.company && career.stats.personalFunds >= INCORPORATION_FEE;
+  return (
+    isPreIncorporationState(career) &&
+    career.stats.personalFunds >= INCORPORATION_FEE
+  );
 }
 
 export function incorporateCareer(
   career: CareerState,
   profile: CompanyProfile,
 ): CareerState {
-  if (career.company) throw new Error("Already incorporated");
+  if (!isPreIncorporationState(career)) throw new Error("Already incorporated");
   if (!canIncorporate(career)) throw new Error("Not enough personal funds");
   return {
     ...career,
@@ -127,6 +136,7 @@ export function incorporateCareer(
       ruthlessness: career.stats.ruthlessness,
       recognition: career.stats.recognition,
     },
+    incorporatedOnCampaign: career.history.length,
   };
 }
 
