@@ -6,8 +6,11 @@
 	import { defaultScenarioId, scenarios } from '$lib/content';
 	import { decodeRun, encodeRun } from '$lib/share';
 	import {
+		canIncorporate,
 		careerOffers,
 		completeCampaign,
+		INCORPORATION_FEE,
+		incorporateCareer,
 		nextCampaignSeed,
 		replayCareer,
 		startCareer,
@@ -57,6 +60,9 @@
 	let outcome = $state<CampaignOutcome | null>(null);
 	let target = $state(scenarios[defaultScenarioId].groups[0].id);
 	let copied = $state(false);
+	let companyName = $state('');
+	let companyLogo = $state('');
+	let companyValues = $state('');
 	/** Opened from a share link: playable, but never written into the saved career. */
 	let replaying = $state(false);
 
@@ -72,6 +78,9 @@
 	const money = $derived(new Intl.NumberFormat('en-GB').format(game.money));
 	const offers = $derived(careerOffers(career, scenarios));
 	const kept = $derived(career.history.filter((h) => !h.election.sacked).length);
+	const incorporationFee = $derived(
+		new Intl.NumberFormat('en-GB').format(INCORPORATION_FEE)
+	);
 
 	function beginCampaign(record: CampaignRecord, start: StartingStats) {
 		const next = scenarios[record.scenarioId];
@@ -212,6 +221,19 @@
 		loadSavedCareer();
 	}
 
+	function incorporate() {
+		if (replaying || career.company) return;
+		if (!canIncorporate(career)) return;
+		career = incorporateCareer(career, {
+			name: companyName.trim() || 'Untitled Strategy Group',
+			logo: companyLogo.trim() || null,
+			values: companyValues
+				.split(',')
+				.map((value) => value.trim())
+				.filter(Boolean)
+		});
+	}
+
 	async function copyLink() {
 		const code = encodeRun({ seed: game.seed, moves: game.history, scenarioId, start: game.start });
 		const url = `${window.location.origin}${window.location.pathname}?r=${code}`;
@@ -253,14 +275,52 @@
 
 	{#snippet careerSummary()}
 		<div class="card">
-			<h3>Your career</h3>
-			<section class="status">
-				<div><span>Recognition</span><strong>{Math.round(career.stats.recognition)}</strong></div>
-				<div><span>Credibility</span><strong>{Math.round(career.stats.credibility)}</strong></div>
-				<div><span>Ruthlessness</span><strong>{Math.round(career.stats.ruthlessness)}</strong></div>
-				<div><span>Your funds</span><strong>{pounds(career.stats.personalFunds)}</strong></div>
-				<div><span>Accounts kept</span><strong>{kept} / {career.history.length}</strong></div>
-			</section>
+			<h3>Company management</h3>
+			{#if career.company}
+				<p class="hint"><strong>{career.company.profile.name}</strong></p>
+				<section class="status">
+					<div><span>Company cash</span><strong>{pounds(career.company.cash)}</strong></div>
+					<div><span>Credibility</span><strong>{Math.round(career.company.credibility)}</strong></div>
+					<div><span>Ruthlessness</span><strong>{Math.round(career.company.ruthlessness)}</strong></div>
+					<div><span>Recognition</span><strong>{Math.round(career.company.recognition)}</strong></div>
+					<div><span>Accounts kept</span><strong>{kept} / {career.history.length}</strong></div>
+				</section>
+				{#if career.company.profile.logo}
+					<p class="hint">Logo: {career.company.profile.logo}</p>
+				{/if}
+				{#if career.company.profile.values.length > 0}
+					<p class="hint">Values: {career.company.profile.values.join(' · ')}</p>
+				{/if}
+			{:else}
+				<p class="hint">
+					Unincorporated operators are paid directly, and campaign credibility effects hit them personally.
+				</p>
+				<section class="status">
+					<div><span>Recognition</span><strong>{Math.round(career.stats.recognition)}</strong></div>
+					<div><span>Credibility</span><strong>{Math.round(career.stats.credibility)}</strong></div>
+					<div><span>Ruthlessness</span><strong>{Math.round(career.stats.ruthlessness)}</strong></div>
+					<div><span>Your funds</span><strong>{pounds(career.stats.personalFunds)}</strong></div>
+					<div><span>Accounts kept</span><strong>{kept} / {career.history.length}</strong></div>
+				</section>
+				<fieldset>
+					<legend>Incorporate your firm (£{incorporationFee})</legend>
+					<label>
+						Company name
+						<input bind:value={companyName} placeholder="Untitled Strategy Group" />
+					</label>
+					<label>
+						Logo (optional)
+						<input bind:value={companyLogo} placeholder="e.g. /logos/mark.svg" />
+					</label>
+					<label>
+						Values (comma-separated)
+						<input bind:value={companyValues} placeholder="Integrity, Service, Winning" />
+					</label>
+				</fieldset>
+				<button class="ghost" disabled={!canIncorporate(career)} onclick={incorporate}>
+					{canIncorporate(career) ? 'Incorporate now' : `Need £${incorporationFee} to incorporate`}
+				</button>
+			{/if}
 			<button class="ghost" onclick={newCareer}>Start a new career</button>
 		</div>
 	{/snippet}
