@@ -65,6 +65,36 @@
     ]
   },
   {
+    "id": "quickPoll",
+    "name": "Commission a Quick Poll",
+    "description": "A small sample, a fast turnaround, and a margin of error you could drive a campaign bus through.",
+    "flavour": "The pollster phones in the topline. They sound confident. Their methodology is three people outside the post office.",
+    "cost": 2500,
+    "targeted": false,
+    "pollMargin": 5,
+    "effects": []
+  },
+  {
+    "id": "constituencyPoll",
+    "name": "Commission a Constituency Poll",
+    "description": "A proper local sample. Accurate enough to change your mind, not enough to sleep well.",
+    "flavour": "The crosstabs arrive in a spreadsheet with 47 tabs and one cell labelled 'probably fine'. The headline number is probably fine.",
+    "cost": 6000,
+    "targeted": false,
+    "pollMargin": 3,
+    "effects": []
+  },
+  {
+    "id": "fullPoll",
+    "name": "Commission a Full-Sample Poll",
+    "description": "A large, weighted sample with proper fieldwork. The best estimate money can buy; still an estimate.",
+    "flavour": "The agency sends a leather-bound report. It contains 86 pages, two contradictory recommendations, and a chart that makes the candidate look electable.",
+    "cost": 12000,
+    "targeted": false,
+    "pollMargin": 1.5,
+    "effects": []
+  },
+  {
     "id": "insideTrack",
     "name": "The Inside Track",
     "description": "A quiet word with someone who owes you one. You stop guessing and start knowing.",

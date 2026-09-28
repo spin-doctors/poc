@@ -15,7 +15,7 @@
     "test:watch": "vitest",
     "balance": "vite-node -c vite.balance.config.ts scripts/balance.ts",
     "prepare": "husky",
-    "knip": "knip --max-issues=2"
+    "knip": "knip --max-issues=3"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown"

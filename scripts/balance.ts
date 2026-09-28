@@ -9,6 +9,7 @@ import { content } from "../src/lib/content/index.js";
 import {
   applyMove,
   createGame,
+  forecastAction,
   isAvailable,
   isUnlocked,
   runElection,
@@ -43,6 +44,20 @@ const fallback = (pick: number): PlayerMove => ({
 
 const strategies: Record<string, Strategy> = {
   random: (state, pick) => {
+    const available = content.actions.filter(
+      (a) => a.pollMargin === undefined && isAvailable(state, a),
+    );
+    const action = available[Math.floor(pick * available.length)];
+    if (!action) return fallback(pick);
+    return {
+      kind: "action",
+      actionId: action.id,
+      target: action.targeted
+        ? groupIds[Math.floor(pick * groupIds.length)]
+        : undefined,
+    };
+  },
+  randomIncludingPolls: (state, pick) => {
     const available = content.actions.filter((a) => isAvailable(state, a));
     const action = available[Math.floor(pick * available.length)];
     if (!action) return fallback(pick);
@@ -53,6 +68,44 @@ const strategies: Record<string, Strategy> = {
         ? groupIds[Math.floor(pick * groupIds.length)]
         : undefined,
     };
+  },
+  pollWise: (state, pick) => {
+    if (state.pollReport?.availableOnDay === state.day) {
+      const forecasts = content.actions
+        .filter((action) => isAvailable(state, action))
+        .map((action) => ({
+          action,
+          forecast: forecastAction(
+            state,
+            content,
+            action,
+            action.targeted
+              ? groupIds[Math.floor(pick * groupIds.length)]
+              : undefined,
+          ),
+        }))
+        .filter((item) => item.forecast !== null)
+        .sort((a, b) => b.forecast!.share - a.forecast!.share);
+      const best = forecasts[0]?.action;
+      if (best) {
+        return {
+          kind: "action",
+          actionId: best.id,
+          target: best.targeted
+            ? groupIds[Math.floor(pick * groupIds.length)]
+            : undefined,
+        };
+      }
+    }
+    if (
+      state.day === 1 &&
+      !state.history.some(
+        (move) => move.kind === "action" && move.actionId === "fullPoll",
+      )
+    ) {
+      return { kind: "action", actionId: "fullPoll" };
+    }
+    return strategies.balanced(state, pick);
   },
   allAttack: (state, pick) => use(state, "attackAd", pick) ?? fallback(pick),
   allDoorstep: () => ({
@@ -171,5 +224,5 @@ for (const [name, strategy] of Object.entries(strategies)) {
 }
 
 console.log(
-  `\nTarget sack rate for naive play (random): 20-30%. Skilled play should beat it clearly.\n`,
+  `\nRandom excludes polls for comparison with the prior baseline; randomIncludingPolls shows the cost of commissioning without using information.\n`,
 );

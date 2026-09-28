@@ -16,6 +16,7 @@ export interface GameState {
   support: Record<string, number>;
   /** Additive turnout modifier per group id. */
   turnout: Record<string, number>;
+  pollReport: PollReport | null;
   pendingEventId: string | null;
   history: PlayerMove[];
   finished: boolean;
@@ -40,6 +41,17 @@ export interface MoveResult {
   feedback: FeedbackLine[];
   gaffe: GaffeReport | null;
   triggeredEventId: string | null;
+  pollCommissioned: boolean;
+}
+
+export interface PollReport {
+  availableOnDay: number;
+  margin: number;
+}
+
+export interface PollForecast {
+  share: number;
+  margin: number;
 }
 
 export interface GaffeReport {
