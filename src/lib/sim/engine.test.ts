@@ -193,11 +193,16 @@ describe("carried-over stats", () => {
 describe("unlockable actions", () => {
   const insideTrack = content.actions.find((a) => a.id === "insideTrack")!;
   const deadCat = content.actions.find((a) => a.id === "deadCat")!;
+  const personalCheque = content.actions.find(
+    (a) => a.id === "personalCheque",
+  )!;
 
-  it("starts with both identity actions locked", () => {
+  it("starts with gated actions locked", () => {
     const state = createGame(content, seed);
     expect(isUnlocked(state, insideTrack)).toBe(false);
     expect(isUnlocked(state, deadCat)).toBe(false);
+    expect(state.personalFunds).toBeLessThan(15000);
+    expect(isUnlocked(state, personalCheque)).toBe(false);
   });
 
   it("reports what is missing so the UI can show it as a goal", () => {
@@ -237,7 +242,7 @@ describe("unlockable actions", () => {
   });
 
   it("pushes credibility and ruthlessness in opposite directions", () => {
-    const state = createGame(content, seed);
+    const state = { ...createGame(content, seed), credibility: 50 };
     const clean = applyMove(state, content, {
       kind: "action",
       actionId: "doorstep",

@@ -124,6 +124,17 @@ describe("career", () => {
     expect(career.company).toBeNull();
   });
 
+  it("starts every scenario below the personal spending thresholds", () => {
+    for (const scenario of Object.values(scenarios)) {
+      const career = startCareer(scenarios, scenario.contract.id, careerSeed);
+      expect(career.stats.credibility).toBe(0);
+      expect(career.stats.ruthlessness).toBe(0);
+      expect(career.stats.personalFunds).toBe(6000);
+      expect(career.stats.personalFunds).toBeLessThan(INCORPORATION_FEE);
+      expect(canIncorporate(career)).toBe(false);
+    }
+  });
+
   it("runs only one account before incorporating", () => {
     const run = driver();
     run.apply({ kind: "accept", scenarioId: defaultScenarioId });
