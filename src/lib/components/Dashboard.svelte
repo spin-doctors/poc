@@ -63,7 +63,7 @@
 {#if rows.length === 0}
 	<p class="hint">No clients on the books. Take a job from the offers below.</p>
 {:else}
-	<table class="accounts">
+	<table class="accounts accounts-active">
 		<thead>
 			<tr>
 				<th>Client</th>
