@@ -278,7 +278,7 @@ describe("career", () => {
     ).toThrow(/Already incorporated/);
   });
 
-  it("throws a corruption error for inconsistent incorporation flags", () => {
+  it("throws a corruption error for inconsistent incorporation state", () => {
     const corrupt = {
       ...fresh(),
       company: {
@@ -288,7 +288,6 @@ describe("career", () => {
         ruthlessness: 50,
         recognition: 10,
       },
-      incorporatedOnCampaign: null,
     };
     expect(() =>
       incorporateCareer(corrupt, {

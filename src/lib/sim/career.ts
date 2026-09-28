@@ -44,7 +44,6 @@ export interface CareerState {
   careerSeed: number;
   stats: CareerStats;
   company: CompanyState | null;
-  incorporatedOnCampaign: number | null;
   history: CampaignOutcome[];
 }
 
@@ -74,7 +73,6 @@ export function startCareer(
       recognition: 0,
     },
     company: null,
-    incorporatedOnCampaign: null,
     history: [],
   };
 }
@@ -106,11 +104,13 @@ function operatingStats(career: CareerState): OperatingStats {
 
 function incorporationStatus(career: CareerState): "pre" | "post" | "invalid" {
   const hasCompany = career.company !== null;
-  const markedIncorporated =
-    career.incorporatedOnCampaign !== null &&
-    career.incorporatedOnCampaign !== undefined;
-  if (!hasCompany && !markedIncorporated) return "pre";
-  if (hasCompany && markedIncorporated) return "post";
+  const personalCleared =
+    career.stats.credibility === 0 &&
+    career.stats.ruthlessness === 0 &&
+    career.stats.personalFunds === 0 &&
+    career.stats.recognition === 0;
+  if (!hasCompany && !personalCleared) return "pre";
+  if (hasCompany && personalCleared) return "post";
   return "invalid";
 }
 
@@ -146,7 +146,6 @@ export function incorporateCareer(
       ruthlessness: career.stats.ruthlessness,
       recognition: career.stats.recognition,
     },
-    incorporatedOnCampaign: career.history.length,
   };
 }
 
