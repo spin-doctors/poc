@@ -236,6 +236,20 @@ describe("career", () => {
     });
   });
 
+  it("rejects incorporation with a blank company name", () => {
+    const career = {
+      ...fresh(),
+      stats: { ...fresh().stats, personalFunds: INCORPORATION_FEE + 1000 },
+    };
+    expect(() =>
+      incorporateCareer(career, {
+        name: "   ",
+        logo: null,
+        values: ["Anything"],
+      }),
+    ).toThrow(/Company name is required/);
+  });
+
   it("routes fees to the company after incorporation", () => {
     const career = incorporateCareer(
       {

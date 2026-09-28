@@ -61,6 +61,16 @@ export const INCORPORATION_FEE = 10_000;
 const clamp = (n: number, min: number, max: number) =>
   Math.min(max, Math.max(min, n));
 
+function normalizeProfile(profile: CompanyProfile): CompanyProfile {
+  const name = profile.name.trim();
+  if (!name) throw new Error("Company name is required");
+  return {
+    name,
+    logo: profile.logo?.trim() ? profile.logo.trim() : null,
+    values: profile.values.map((v) => v.trim()).filter(Boolean),
+  };
+}
+
 export function startCareer(
   scenarios: Scenarios,
   firstScenarioId: string,
@@ -132,6 +142,7 @@ export function incorporateCareer(
     throw new Error("Corrupted career incorporation state");
   if (career.stats.personalFunds < INCORPORATION_FEE)
     throw new Error("Not enough personal funds");
+  const normalizedProfile = normalizeProfile(profile);
   return {
     ...career,
     stats: {
@@ -141,7 +152,7 @@ export function incorporateCareer(
       recognition: 0,
     },
     company: {
-      profile,
+      profile: normalizedProfile,
       cash: career.stats.personalFunds - INCORPORATION_FEE,
       credibility: career.stats.credibility,
       ruthlessness: career.stats.ruthlessness,
