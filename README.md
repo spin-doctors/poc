@@ -27,6 +27,7 @@ Seven days, one move per day, then an election.
 - 🎯 **Pick your target.** Most moves are aimed at a single voter group.
 - 🎙️ **An opportunity lands early.** Take the podcast or turn it down — and if you take it, decide what to drill him on.
 - 🔥 **A scandal lands mid-week.** Three ways to handle it, all of them bad.
+- 🏢 **Reality occasionally glitches.** Back a data-centre blockade and watch the campaign feed develop an entirely temporary problem.
 - 🔓 **Unlockable moves.** Your own credibility and ruthlessness decide what you get offered.
 - 🧠 **Candidate morale.** Grind them down and they go off-script in public, without you.
 - 📊 **Polls that lie.** Published with a margin of error, and it is not decorative.
@@ -103,19 +104,22 @@ real, rare enough that taking stupid risks is still worth it.
 
 Current numbers (4,000 campaigns each):
 
-| Strategy             | Sacked | Mean share | Notes                                   |
-| -------------------- | ------ | ---------- | --------------------------------------- |
-| random               | 26.9%  | 41.9       | random campaign moves, target band      |
-| randomIncludingPolls | 48.0%  | 38.4       | commissions polls without using reports |
-| pollWise             | 3.5%   | 44.8       | buys a full poll, chooses by forecast   |
-| allAttack            | 100.0% | 25.3       | degenerate control                      |
-| allDoorstep          | 34.3%  | 48.8       | great share, wrecked candidate          |
-| balanced             | 5.9%   | 44.5       | safe, unlocks nothing                   |
-| cleanHands           | 13.4%  | 43.3       | credibility path                        |
-| bareKnuckle          | 22.9%  | 42.3       | ruthless path, higher variance          |
+| Strategy             | Sacked | Mean share | Notes                                             |
+| -------------------- | ------ | ---------- | ------------------------------------------------- |
+| random               | 18.9%  | 61.1       | random campaign moves; 100% branch lifts the mean |
+| randomIncludingPolls | 31.9%  | 58.8       | commissions polls without using reports           |
+| pollWise             | 2.0%   | 63.1       | buys a full poll, chooses by forecast             |
+| allAttack            | 100.0% | 50.1       | degenerate control; morale still collapses        |
+| allDoorstep          | 28.4%  | 65.9       | high share, candidate morale is fragile           |
+| balanced             | 3.5%   | 62.9       | safe, unlocks nothing                             |
+| cleanHands           | 6.3%   | 62.2       | credibility path                                  |
+| bareKnuckle          | 14.9%  | 61.5       | ruthless path, higher variance                    |
 
 The two identity paths land close on mean share but differ on risk, which is the
 intended shape: going dirty should be a gamble, not a strictly worse choice.
+These figures now include the low-probability data-centre branch: backing the
+blockade produces the guaranteed 100% support result, but does not waive the
+separate candidate-morale contract objective.
 
 ### Commissioning polls
 
@@ -141,10 +145,18 @@ career layer exists. Worth revisiting after playtesting.
 ### Events are data, including branching ones
 
 An event response may carry `next`, which chains into another event instead of
-ending the day — that is how the podcast offer leads into the prep choice. Events
+ending the day — that is how the podcast offer leads into the prep choice. A
+response may carry `nextDay` to queue a follow-up after advancing one day. Events
 without a `day` are only reachable by chaining. A response may also set
 `riskGaffe`, which lets a low-morale candidate embarrass you on that specific
-choice. Arbitrary branching event trees need no engine changes.
+choice. Events can opt into a `corrupted-feed` presentation for a readable,
+interactive narrative outage; it never breaks real navigation or controls.
+
+The day-5 data-centre story is a deliberately surreal branch: backing the
+blockade schedules an outage the next day and a restoration reveal after that.
+The reveal changes the candidate's recorded position, clamps all support to
+100%, and resolves through the normal election flow. The whole outcome replays
+deterministically from the seed and move history.
 
 ### Actions are data too, including locked ones
 

@@ -60,17 +60,27 @@ export const actionSchema = z.object({
   effects: z.array(effectSchema),
 });
 
-export const responseSchema = z.object({
-  label: z.string().min(1),
-  /** Shown on the button. Flavour, never numbers — the outcome stays a gamble. */
-  hint: z.string().min(1).optional(),
-  flavour: z.string().min(1),
-  effects: z.array(effectSchema),
-  /** Chains straight into another event instead of ending the day. */
-  next: z.string().min(1).optional(),
-  /** Lets a low-morale candidate go off-script on this choice. */
-  riskGaffe: z.boolean().default(false),
-});
+export const responseSchema = z
+  .object({
+    label: z.string().min(1),
+    /** Shown on the button. Flavour, never numbers — the outcome stays a gamble. */
+    hint: z.string().min(1).optional(),
+    flavour: z.string().min(1),
+    effects: z.array(effectSchema),
+    /** Chains straight into another event instead of ending the day. */
+    next: z.string().min(1).optional(),
+    /** Queues a follow-up for the next campaign day. */
+    nextDay: z.string().min(1).optional(),
+    /** Records the candidate's public position on an issue. */
+    positionChange: z
+      .object({ issue: z.string().min(1), position: z.string().min(1) })
+      .optional(),
+    /** Lets a low-morale candidate go off-script on this choice. */
+    riskGaffe: z.boolean().default(false),
+  })
+  .refine((response) => !(response.next && response.nextDay), {
+    message: "A response may chain now or next day, but not both",
+  });
 
 export const gameEventSchema = z.object({
   id: z.string().min(1),
@@ -78,7 +88,9 @@ export const gameEventSchema = z.object({
   body: z.string().min(1),
   /** Fires at the end of this day. Omit for events only reached by chaining. */
   day: z.number().int().min(1).optional(),
-  responses: z.array(responseSchema).min(2).max(4),
+  /** Presentation treatment for narrative events; never disables the real UI. */
+  presentation: z.enum(["normal", "corrupted-feed"]).default("normal"),
+  responses: z.array(responseSchema).min(1).max(4),
 });
 
 export const objectiveSchema = z.object({

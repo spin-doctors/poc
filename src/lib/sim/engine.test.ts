@@ -80,6 +80,7 @@ describe("content", () => {
     for (const event of content.events) {
       for (const response of event.responses) {
         if (response.next) expect(ids.has(response.next)).toBe(true);
+        if (response.nextDay) expect(ids.has(response.nextDay)).toBe(true);
       }
     }
   });
@@ -87,7 +88,7 @@ describe("content", () => {
   it("leaves no unreachable event", () => {
     const chained = new Set(
       content.events.flatMap((e) =>
-        e.responses.map((r) => r.next).filter(Boolean),
+        e.responses.flatMap((r) => [r.next, r.nextDay]).filter(Boolean),
       ),
     );
     for (const event of content.events) {
@@ -100,6 +101,11 @@ describe("content", () => {
       .map((e) => e.day)
       .filter((d) => d !== undefined);
     expect(new Set(days).size).toBe(days.length);
+  });
+
+  it("schedules the data-centre protest mid-week", () => {
+    const state = playUntilEvent("data-centre-protest");
+    expect(state.day).toBe(5);
   });
 
   it("always leaves a legal move for a broke player", () => {
@@ -228,6 +234,16 @@ describe("inside information", () => {
   it("never lets the poll become perfect", () => {
     const state = { ...createGame(content, seed), pollAccuracy: 99 };
     expect(pollEstimate(state, content).margin).toBeGreaterThan(0);
+  });
+
+  it("reports the data-centre branch's unanimous support as exactly 100%", () => {
+    const state = {
+      ...createGame(content, seed),
+      support: Object.fromEntries(
+        content.groups.map((group) => [group.id, 100]),
+      ),
+    };
+    expect(pollEstimate(state, content).share).toBe(100);
   });
 });
 
@@ -557,6 +573,84 @@ describe("chained events", () => {
       });
       expect(result.gaffe).toBe(null);
     }
+  });
+});
+
+describe("data-centre storyline", () => {
+  it("queues the outage for day 6 only when backing the blockade", () => {
+    const protest = playUntilEvent("data-centre-protest");
+    const result = applyMove(protest, content, {
+      kind: "respond",
+      eventId: "data-centre-protest",
+      responseIndex: 0,
+    });
+
+    expect(result.state.day).toBe(6);
+    expect(result.state.pendingEventId).toBe("data-centre-outage");
+    expect(result.state.positions["Meridian data centre"]).toMatch(/Opposes/);
+  });
+
+  it("restores on day 7, reverses the stance, and produces the absurd 100% result", () => {
+    const protest = playUntilEvent("data-centre-protest");
+    const outage = applyMove(protest, content, {
+      kind: "respond",
+      eventId: "data-centre-protest",
+      responseIndex: 0,
+    }).state;
+    const outageResponse = applyMove(outage, content, {
+      kind: "respond",
+      eventId: "data-centre-outage",
+      responseIndex: 0,
+    });
+    expect(outageResponse.triggeredEventId).toBe("data-centre-restored");
+    const restoration = outageResponse.state;
+
+    expect(restoration.day).toBe(7);
+    expect(restoration.pendingEventId).toBe("data-centre-restored");
+
+    const finished = applyMove(restoration, content, {
+      kind: "respond",
+      eventId: "data-centre-restored",
+      responseIndex: 0,
+    }).state;
+
+    expect(finished.finished).toBe(true);
+    expect(finished.positions["Meridian data centre"]).toMatch(
+      /denies ever opposing/,
+    );
+    expect(
+      Object.values(finished.support).every((support) => support === 100),
+    ).toBe(true);
+    expect(runElection(finished, content).voteShare).toBe(100);
+  });
+
+  it("does not trigger the supernatural sequel when condemning the riot", () => {
+    const protest = playUntilEvent("data-centre-protest");
+    const result = applyMove(protest, content, {
+      kind: "respond",
+      eventId: "data-centre-protest",
+      responseIndex: 1,
+    });
+    expect(result.state.day).toBe(6);
+    expect(result.state.pendingEventId).toBeNull();
+    expect(result.state.positions["Meridian data centre"]).toMatch(/Supports/);
+  });
+
+  it("replays the outage and restoration branch from move history", () => {
+    const protest = playUntilEvent("data-centre-protest");
+    let state = protest;
+    for (const [eventId, responseIndex] of [
+      ["data-centre-protest", 0],
+      ["data-centre-outage", 0],
+      ["data-centre-restored", 0],
+    ] as const) {
+      state = applyMove(state, content, {
+        kind: "respond",
+        eventId,
+        responseIndex,
+      }).state;
+    }
+    expect(replay(content, seed, state.history)).toEqual(state);
   });
 });
 
