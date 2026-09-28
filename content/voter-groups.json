@@ -1,29 +1,29 @@
 [
-	{
-		"id": "commuters",
-		"name": "Ashcombe Commuters",
-		"blurb": "Leave at six, home at eight, furious about the 07:42. Will vote for anyone who mentions the railway.",
-		"size": 14000,
-		"baseSupport": 31,
-		"baseTurnout": 58,
-		"gullibility": 45
-	},
-	{
-		"id": "retirees",
-		"name": "Seafront Retirees",
-		"blurb": "Reliable voters, long memories, and a deep suspicion of anyone under fifty who owns a scooter.",
-		"size": 9000,
-		"baseSupport": 26,
-		"baseTurnout": 81,
-		"gullibility": 30
-	},
-	{
-		"id": "students",
-		"name": "Polytechnic Students",
-		"blurb": "Enormously enthusiastic, extremely online, and statistically unlikely to leave the house on a Thursday.",
-		"size": 11000,
-		"baseSupport": 38,
-		"baseTurnout": 29,
-		"gullibility": 70
-	}
+  {
+    "id": "commuters",
+    "name": "Ashcombe Commuters",
+    "blurb": "Leave at six, home at eight, furious about the 07:42. Will vote for anyone who mentions the railway.",
+    "size": 14000,
+    "baseSupport": 31,
+    "baseTurnout": 58,
+    "gullibility": 45
+  },
+  {
+    "id": "retirees",
+    "name": "Seafront Retirees",
+    "blurb": "Reliable voters, long memories, and a deep suspicion of anyone under fifty who owns a scooter.",
+    "size": 9000,
+    "baseSupport": 26,
+    "baseTurnout": 81,
+    "gullibility": 30
+  },
+  {
+    "id": "students",
+    "name": "Polytechnic Students",
+    "blurb": "Enormously enthusiastic, extremely online, and statistically unlikely to leave the house on a Thursday.",
+    "size": 11000,
+    "baseSupport": 38,
+    "baseTurnout": 29,
+    "gullibility": 70
+  }
 ]

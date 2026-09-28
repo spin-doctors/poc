@@ -1,112 +1,112 @@
 [
-	{
-		"id": "podcast",
-		"day": 2,
-		"headline": "THE ASHCOMBE HOUR WANTS YOUR CANDIDATE FOR A FULL HOUR",
-		"body": "A local politics podcast with a startlingly large audience and a host who does actual research. An hour is a long time. Your candidate has not been interesting for an hour at any point in his life.",
-		"responses": [
-			{
-				"label": "Accept the invitation",
-				"hint": "An hour is a very long time to fill.",
-				"flavour": "You accept before you can think better of it. They record on Thursday. You have one afternoon to get him ready.",
-				"effects": [],
-				"next": "podcast-prep"
-			},
-			{
-				"label": "Politely decline",
-				"hint": "Nothing ventured.",
-				"flavour": "The host reads your decline statement aloud on air, slowly, in full, and then leaves a pause long enough to park a bus in.",
-				"effects": [
-					{ "on": "students", "stat": "support", "delta": -5, "spin": true },
-					{ "on": "commuters", "stat": "support", "delta": -2 },
-					{ "on": "all", "stat": "morale", "delta": 4 },
-					{ "on": "all", "stat": "credibility", "delta": -4 }
-				]
-			}
-		]
-	},
-	{
-		"id": "podcast-prep",
-		"headline": "ONE AFTERNOON. WHAT DO YOU PREP HIM ON?",
-		"body": "He will be asked about the railway, the hospital, and — because the host is good at this — his own record. You can only drill one thing properly.",
-		"responses": [
-			{
-				"label": "Railway policy, line by line",
-				"hint": "Dry, thorough, aimed squarely at the commute.",
-				"flavour": "He is word-perfect on the 07:42 and visibly bored by minute nine. The commuter forums call it 'the most substantial interview of the campaign', which is not a compliment about the campaign.",
-				"effects": [
-					{ "on": "commuters", "stat": "support", "delta": 14, "spin": true },
-					{ "on": "all", "stat": "money", "delta": -2000 },
-					{ "on": "all", "stat": "morale", "delta": -6 },
-					{ "on": "all", "stat": "credibility", "delta": 9 }
-				]
-			},
-			{
-				"label": "Warmth, family, the personal story",
-				"hint": "Humanise him. Risk being cloying.",
-				"flavour": "He talks about his father's allotment for eleven uninterrupted minutes. Two listeners write in to say they cried. One writes in to complain about the allotment waiting list.",
-				"effects": [
-					{ "on": "retirees", "stat": "support", "delta": 13 },
-					{ "on": "students", "stat": "support", "delta": -3, "spin": true },
-					{ "on": "all", "stat": "money", "delta": -3000 },
-					{ "on": "all", "stat": "morale", "delta": 9 },
-					{ "on": "all", "stat": "credibility", "delta": 6 }
-				]
-			},
-			{
-				"label": "No prep. Let him be himself",
-				"hint": "Unfiltered. Could be electric. Could be a clip.",
-				"flavour": "He is loose, funny, and entirely unmanaged. Forty seconds of it are already a sound-on-loop with 200,000 views and a caption you would not have chosen.",
-				"effects": [
-					{ "on": "students", "stat": "support", "delta": 17, "spin": true },
-					{ "on": "retirees", "stat": "support", "delta": -7 },
-					{ "on": "commuters", "stat": "support", "delta": 2 },
-					{ "on": "all", "stat": "morale", "delta": 12 }
-				],
-				"riskGaffe": true
-			}
-		]
-	},
-	{
-		"id": "casino",
-		"day": 4,
-		"headline": "CANDIDATE PHOTOGRAPHED LEAVING CASINO AT 4AM",
-		"body": "The Ashcombe Echo has a picture. In it, your candidate is squinting, holding a complimentary tote bag, and appears to be explaining something important to a bollard. The photographer has three more and is asking what they're worth.",
-		"responses": [
-			{
-				"label": "Deny everything",
-				"flavour": "You state that the candidate was at a constituency fundraiser. The Echo prints the photo next to your statement, which is the worst possible layout.",
-				"effects": [
-					{ "on": "retirees", "stat": "support", "delta": -12 },
-					{ "on": "students", "stat": "support", "delta": 4, "spin": true },
-					{ "on": "all", "stat": "morale", "delta": 6 },
-					{ "on": "all", "stat": "credibility", "delta": -11 },
-					{ "on": "all", "stat": "ruthlessness", "delta": 9 }
-				]
-			},
-			{
-				"label": "Half-apology, full contrition tour",
-				"flavour": "The candidate is very sorry that people feel the way they do about the thing that did not technically happen.",
-				"effects": [
-					{ "on": "all", "stat": "support", "delta": -3 },
-					{ "on": "retirees", "stat": "support", "delta": 5 },
-					{ "on": "all", "stat": "morale", "delta": -12 },
-					{ "on": "all", "stat": "money", "delta": -4000 },
-					{ "on": "all", "stat": "credibility", "delta": 12 }
-				]
-			},
-			{
-				"label": "Bury it under a bigger story",
-				"flavour": "You leak a completely unrelated planning scandal to a rival paper. It works. It works so well that nobody can remember what your candidate stands for either.",
-				"effects": [
-					{ "on": "all", "stat": "support", "delta": 1 },
-					{ "on": "all", "stat": "turnout", "delta": -7 },
-					{ "on": "all", "stat": "money", "delta": -9000 },
-					{ "on": "all", "stat": "morale", "delta": 4 },
-					{ "on": "all", "stat": "credibility", "delta": -13 },
-					{ "on": "all", "stat": "ruthlessness", "delta": 18 }
-				]
-			}
-		]
-	}
+  {
+    "id": "podcast",
+    "day": 2,
+    "headline": "THE ASHCOMBE HOUR WANTS YOUR CANDIDATE FOR A FULL HOUR",
+    "body": "A local politics podcast with a startlingly large audience and a host who does actual research. An hour is a long time. Your candidate has not been interesting for an hour at any point in his life.",
+    "responses": [
+      {
+        "label": "Accept the invitation",
+        "hint": "An hour is a very long time to fill.",
+        "flavour": "You accept before you can think better of it. They record on Thursday. You have one afternoon to get him ready.",
+        "effects": [],
+        "next": "podcast-prep"
+      },
+      {
+        "label": "Politely decline",
+        "hint": "Nothing ventured.",
+        "flavour": "The host reads your decline statement aloud on air, slowly, in full, and then leaves a pause long enough to park a bus in.",
+        "effects": [
+          { "on": "students", "stat": "support", "delta": -5, "spin": true },
+          { "on": "commuters", "stat": "support", "delta": -2 },
+          { "on": "all", "stat": "morale", "delta": 4 },
+          { "on": "all", "stat": "credibility", "delta": -4 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "podcast-prep",
+    "headline": "ONE AFTERNOON. WHAT DO YOU PREP HIM ON?",
+    "body": "He will be asked about the railway, the hospital, and — because the host is good at this — his own record. You can only drill one thing properly.",
+    "responses": [
+      {
+        "label": "Railway policy, line by line",
+        "hint": "Dry, thorough, aimed squarely at the commute.",
+        "flavour": "He is word-perfect on the 07:42 and visibly bored by minute nine. The commuter forums call it 'the most substantial interview of the campaign', which is not a compliment about the campaign.",
+        "effects": [
+          { "on": "commuters", "stat": "support", "delta": 14, "spin": true },
+          { "on": "all", "stat": "money", "delta": -2000 },
+          { "on": "all", "stat": "morale", "delta": -6 },
+          { "on": "all", "stat": "credibility", "delta": 9 }
+        ]
+      },
+      {
+        "label": "Warmth, family, the personal story",
+        "hint": "Humanise him. Risk being cloying.",
+        "flavour": "He talks about his father's allotment for eleven uninterrupted minutes. Two listeners write in to say they cried. One writes in to complain about the allotment waiting list.",
+        "effects": [
+          { "on": "retirees", "stat": "support", "delta": 13 },
+          { "on": "students", "stat": "support", "delta": -3, "spin": true },
+          { "on": "all", "stat": "money", "delta": -3000 },
+          { "on": "all", "stat": "morale", "delta": 9 },
+          { "on": "all", "stat": "credibility", "delta": 6 }
+        ]
+      },
+      {
+        "label": "No prep. Let him be himself",
+        "hint": "Unfiltered. Could be electric. Could be a clip.",
+        "flavour": "He is loose, funny, and entirely unmanaged. Forty seconds of it are already a sound-on-loop with 200,000 views and a caption you would not have chosen.",
+        "effects": [
+          { "on": "students", "stat": "support", "delta": 17, "spin": true },
+          { "on": "retirees", "stat": "support", "delta": -7 },
+          { "on": "commuters", "stat": "support", "delta": 2 },
+          { "on": "all", "stat": "morale", "delta": 12 }
+        ],
+        "riskGaffe": true
+      }
+    ]
+  },
+  {
+    "id": "casino",
+    "day": 4,
+    "headline": "CANDIDATE PHOTOGRAPHED LEAVING CASINO AT 4AM",
+    "body": "The Ashcombe Echo has a picture. In it, your candidate is squinting, holding a complimentary tote bag, and appears to be explaining something important to a bollard. The photographer has three more and is asking what they're worth.",
+    "responses": [
+      {
+        "label": "Deny everything",
+        "flavour": "You state that the candidate was at a constituency fundraiser. The Echo prints the photo next to your statement, which is the worst possible layout.",
+        "effects": [
+          { "on": "retirees", "stat": "support", "delta": -12 },
+          { "on": "students", "stat": "support", "delta": 4, "spin": true },
+          { "on": "all", "stat": "morale", "delta": 6 },
+          { "on": "all", "stat": "credibility", "delta": -11 },
+          { "on": "all", "stat": "ruthlessness", "delta": 9 }
+        ]
+      },
+      {
+        "label": "Half-apology, full contrition tour",
+        "flavour": "The candidate is very sorry that people feel the way they do about the thing that did not technically happen.",
+        "effects": [
+          { "on": "all", "stat": "support", "delta": -3 },
+          { "on": "retirees", "stat": "support", "delta": 5 },
+          { "on": "all", "stat": "morale", "delta": -12 },
+          { "on": "all", "stat": "money", "delta": -4000 },
+          { "on": "all", "stat": "credibility", "delta": 12 }
+        ]
+      },
+      {
+        "label": "Bury it under a bigger story",
+        "flavour": "You leak a completely unrelated planning scandal to a rival paper. It works. It works so well that nobody can remember what your candidate stands for either.",
+        "effects": [
+          { "on": "all", "stat": "support", "delta": 1 },
+          { "on": "all", "stat": "turnout", "delta": -7 },
+          { "on": "all", "stat": "money", "delta": -9000 },
+          { "on": "all", "stat": "morale", "delta": 4 },
+          { "on": "all", "stat": "credibility", "delta": -13 },
+          { "on": "all", "stat": "ruthlessness", "delta": 18 }
+        ]
+      }
+    ]
+  }
 ]
