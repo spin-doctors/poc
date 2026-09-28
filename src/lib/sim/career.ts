@@ -127,7 +127,8 @@ export function incorporateCareer(
   if (status === "post") throw new Error("Already incorporated");
   if (status === "invalid")
     throw new Error("Corrupted career incorporation state");
-  if (!canIncorporate(career)) throw new Error("Not enough personal funds");
+  if (career.stats.personalFunds < INCORPORATION_FEE)
+    throw new Error("Not enough personal funds");
   return {
     ...career,
     stats: {
