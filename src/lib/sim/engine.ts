@@ -21,6 +21,7 @@ import type {
 } from "./types";
 
 const MORALE_GAFFE_THRESHOLD = 30;
+export const IDLE_MORALE_PENALTY = 5;
 
 const clamp = (n: number, min: number, max: number) =>
   Math.min(max, Math.max(min, n));
@@ -61,6 +62,8 @@ export function createGame(
     pollReport: null,
     positions: {},
     pendingEventId: null,
+    queuedEventId: null,
+    turnTaken: false,
     history: [],
     finished: false,
   };
@@ -205,13 +208,27 @@ function eventForDay(content: Content, day: number): GameEvent | undefined {
   return content.events.find((e) => e.day === day);
 }
 
-function advance(state: GameState, content: Content): GameState {
+/** Closes the day. A campaign left without a finished move loses the day and some morale. */
+export function endDay(state: GameState, content: Content): GameState {
+  if (state.finished) throw new Error("Campaign is over");
+  const morale = state.turnTaken
+    ? state.morale
+    : clamp(state.morale - IDLE_MORALE_PENALTY, 0, 100);
   const day = state.day + 1;
   const pollReport =
     state.pollReport && state.day >= state.pollReport.availableOnDay
       ? null
       : state.pollReport;
-  return { ...state, day, pollReport, finished: day > content.contract.days };
+  return {
+    ...state,
+    morale,
+    day,
+    pollReport,
+    pendingEventId: state.turnTaken ? state.queuedEventId : null,
+    queuedEventId: null,
+    turnTaken: false,
+    finished: day > content.contract.days,
+  };
 }
 
 export function canAfford(state: GameState, action: GameAction): boolean {
@@ -234,12 +251,26 @@ export function isAvailable(state: GameState, action: GameAction): boolean {
   return canAfford(state, action) && isUnlocked(state, action);
 }
 
+/** One move and its immediate day-end: the single-campaign flow used by replays and balance. */
 export function applyMove(
   state: GameState,
   content: Content,
   move: PlayerMove,
 ): MoveResult {
+  const result = playTurn(state, content, move);
+  return result.state.turnTaken
+    ? { ...result, state: endDay(result.state, content) }
+    : result;
+}
+
+/** Plays a move without ending the day; chained same-day events keep the turn open. */
+export function playTurn(
+  state: GameState,
+  content: Content,
+  move: PlayerMove,
+): MoveResult {
   if (state.finished) throw new Error("Campaign is over");
+  if (state.turnTaken) throw new Error("Today's move is already done");
 
   if (move.kind === "respond") {
     if (state.pendingEventId !== move.eventId)
@@ -271,15 +302,14 @@ export function applyMove(
       : gaffed.state.positions;
     const responseState = { ...gaffed.state, positions };
 
-    // Same-day chains keep the turn; next-day chains advance before queuing.
     const next = response.next
       ? { ...responseState, pendingEventId: response.next }
-      : response.nextDay
-        ? {
-            ...advance({ ...responseState, pendingEventId: null }, content),
-            pendingEventId: response.nextDay,
-          }
-        : advance({ ...responseState, pendingEventId: null }, content);
+      : {
+          ...responseState,
+          pendingEventId: null,
+          queuedEventId: response.nextDay ?? null,
+          turnTaken: true,
+        };
 
     return {
       state: { ...next, history: [...state.history, move] },
@@ -323,7 +353,7 @@ export function applyMove(
   const event = eventForDay(content, state.day);
   const afterEvent = event
     ? { ...commissioned, pendingEventId: event.id }
-    : advance(commissioned, content);
+    : { ...commissioned, turnTaken: true };
 
   return {
     state: { ...afterEvent, history: [...state.history, move] },

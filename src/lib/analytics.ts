@@ -1,8 +1,5 @@
 export type AnalyticsEvent =
-  | "campaign-started"
-  | "campaign-kept"
-  | "campaign-sacked"
-  | "share-link-copied";
+  "campaign-started" | "campaign-kept" | "campaign-sacked";
 
 interface GoatCounter {
   path?: () => string;

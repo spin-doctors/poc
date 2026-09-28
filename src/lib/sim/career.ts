@@ -1,7 +1,19 @@
 import type { CareerRequirement, Content } from "../schema/content";
-import { defaultStart, replay, runElection } from "./engine";
+import {
+  createGame,
+  defaultStart,
+  endDay,
+  playTurn,
+  runElection,
+} from "./engine";
 import { nextRandom } from "./rng";
-import type { ElectionResult, PlayerMove, StartingStats } from "./types";
+import type {
+  ElectionResult,
+  GameState,
+  MoveResult,
+  PlayerMove,
+  StartingStats,
+} from "./types";
 
 interface CareerStats extends StartingStats {
   /** How widely known you are; opens bigger contracts. */
@@ -14,7 +26,10 @@ export interface CompanyProfile {
   values: string[];
 }
 
-interface OperatingStats extends CareerStats {
+interface OperatingStats {
+  credibility: number;
+  ruthlessness: number;
+  recognition: number;
   cash: number;
 }
 
@@ -24,37 +39,49 @@ export interface CompanyState {
   credibility: number;
   ruthlessness: number;
   recognition: number;
+  staff: number;
 }
 
-export interface IncorporationRecord {
-  afterCampaigns: number;
-  profile: CompanyProfile;
-}
+/** The save format: a career is rebuilt by replaying these in order. */
+export type CareerEntry =
+  | { kind: "accept"; scenarioId: string }
+  | { kind: "move"; campaignId: number; move: PlayerMove }
+  | { kind: "tick" }
+  | { kind: "incorporate"; profile: CompanyProfile }
+  | { kind: "hire" };
 
-export interface CampaignRecord {
+interface ActiveCampaign {
+  id: number;
   scenarioId: string;
-  seed: number;
-  moves: PlayerMove[];
+  /** Operator stats inside are stale; read them through `campaignView`. */
+  state: GameState;
 }
 
 export interface CampaignOutcome {
-  record: CampaignRecord;
+  campaignId: number;
+  scenarioId: string;
   start: StartingStats;
   election: ElectionResult;
   feeEarned: number;
   recognitionDelta: number;
+  /** The career day whose close decided the election. */
+  decidedOnDay: number;
 }
 
 export interface CareerState {
   careerSeed: number;
+  day: number;
   stats: CareerStats;
   company: CompanyState | null;
+  active: ActiveCampaign[];
   history: CampaignOutcome[];
+  accepted: number;
 }
 
 export interface Offer {
   scenarioId: string;
   unmet: CareerRequirement[];
+  running: boolean;
 }
 
 type Scenarios = Record<string, Content>;
@@ -62,6 +89,8 @@ type Scenarios = Record<string, Content>;
 const MAX_MARGIN_BONUS = 10;
 const TIER_ORDER = ["parliamentary", "council"] as const;
 export const INCORPORATION_FEE = 10_000;
+export const HIRE_FEE = 5_000;
+export const DAILY_WAGE = 500;
 
 const clamp = (n: number, min: number, max: number) =>
   Math.min(max, Math.max(min, n));
@@ -86,6 +115,12 @@ function isCanonicalProfile(profile: CompanyProfile): boolean {
   );
 }
 
+function scenarioOrThrow(scenarios: Scenarios, id: string): Content {
+  const content = scenarios[id];
+  if (!content) throw new Error(`Unknown scenario: ${id}`);
+  return content;
+}
+
 export function startCareer(
   scenarios: Scenarios,
   firstScenarioId: string,
@@ -93,43 +128,48 @@ export function startCareer(
 ): CareerState {
   return {
     careerSeed,
+    day: 1,
     stats: {
       ...defaultStart(scenarioOrThrow(scenarios, firstScenarioId)),
       recognition: 0,
     },
     company: null,
+    active: [],
     history: [],
+    accepted: 0,
   };
 }
 
-function scenarioOrThrow(scenarios: Scenarios, id: string): Content {
-  const content = scenarios[id];
-  if (!content) throw new Error(`Unknown scenario: ${id}`);
-  return content;
-}
-
-export function startingStats(career: CareerState): StartingStats {
-  const { credibility, ruthlessness, cash } = operatingStats(career);
-  const personalFunds = cash;
-  return { credibility, ruthlessness, personalFunds };
-}
-
 function operatingStats(career: CareerState): OperatingStats {
+  const source = career.company ?? career.stats;
+  return {
+    credibility: source.credibility,
+    ruthlessness: source.ruthlessness,
+    recognition: source.recognition,
+    cash: career.company ? career.company.cash : career.stats.personalFunds,
+  };
+}
+
+function withOperatingStats(
+  career: CareerState,
+  stats: OperatingStats,
+): CareerState {
   if (career.company) {
-    return {
-      credibility: career.company.credibility,
-      ruthlessness: career.company.ruthlessness,
-      personalFunds: 0,
-      recognition: career.company.recognition,
-      cash: career.company.cash,
-    };
+    return { ...career, company: { ...career.company, ...stats } };
   }
-  return { ...career.stats, cash: career.stats.personalFunds };
+  const { cash, ...rest } = stats;
+  return { ...career, stats: { ...rest, personalFunds: cash } };
+}
+
+/** The shared operator pool, as a campaign sees it. */
+function startingStats(career: CareerState): StartingStats {
+  const { credibility, ruthlessness, cash } = operatingStats(career);
+  return { credibility, ruthlessness, personalFunds: cash };
 }
 
 function incorporationStatus(career: CareerState): "pre" | "post" | "invalid" {
   if (!career.company) return "pre";
-  const { profile, cash, credibility, ruthlessness, recognition } =
+  const { profile, cash, credibility, ruthlessness, recognition, staff } =
     career.company;
   const validProfile = (() => {
     try {
@@ -140,10 +180,9 @@ function incorporationStatus(career: CareerState): "pre" | "post" | "invalid" {
   })();
   const valid =
     validProfile &&
-    Number.isFinite(cash) &&
-    Number.isFinite(credibility) &&
-    Number.isFinite(ruthlessness) &&
-    Number.isFinite(recognition);
+    [cash, credibility, ruthlessness, recognition, staff].every(
+      Number.isFinite,
+    );
   return valid ? "post" : "invalid";
 }
 
@@ -164,7 +203,6 @@ export function incorporateCareer(
     throw new Error("Corrupted career incorporation state");
   if (career.stats.personalFunds < INCORPORATION_FEE)
     throw new Error("Not enough personal funds");
-  const normalizedProfile = normalizeProfile(profile);
   return {
     ...career,
     stats: {
@@ -174,23 +212,47 @@ export function incorporateCareer(
       recognition: 0,
     },
     company: {
-      profile: normalizedProfile,
+      profile: normalizeProfile(profile),
       cash: career.stats.personalFunds - INCORPORATION_FEE,
       credibility: career.stats.credibility,
       ruthlessness: career.stats.ruthlessness,
       recognition: career.stats.recognition,
+      staff: 0,
     },
   };
 }
 
+export function canHire(career: CareerState): boolean {
+  return career.company !== null && career.company.cash >= HIRE_FEE;
+}
+
+function hireStaff(career: CareerState): CareerState {
+  if (!career.company) throw new Error("Incorporate before hiring staff");
+  if (career.company.cash < HIRE_FEE)
+    throw new Error("Not enough company cash");
+  return {
+    ...career,
+    company: {
+      ...career.company,
+      cash: career.company.cash - HIRE_FEE,
+      staff: career.company.staff + 1,
+    },
+  };
+}
+
+/** You run one account yourself; each hire runs one more. */
+export function accountCapacity(career: CareerState): number {
+  return 1 + (career.company?.staff ?? 0);
+}
+
 /** Derived rather than stored, so a career replays from its seed alone. */
 export function nextCampaignSeed(career: CareerState): number {
-  const roll = nextRandom(career.careerSeed + career.history.length * 7919);
+  const roll = nextRandom(career.careerSeed + career.accepted * 7919);
   return Math.floor(roll.value * 2 ** 31);
 }
 
 function unmetCareerRequirements(
-  stats: CareerStats,
+  stats: OperatingStats,
   requires: CareerRequirement[],
 ): CareerRequirement[] {
   return requires.filter(
@@ -200,16 +262,131 @@ function unmetCareerRequirements(
   );
 }
 
-export function completeCampaign(
+/** Sacked operators get the fallback; everyone else sees every contract, locked ones as goals. */
+export function careerOffers(
   career: CareerState,
   scenarios: Scenarios,
-  record: CampaignRecord,
+): Offer[] {
+  const running = new Set(career.active.map((c) => c.scenarioId));
+  const last = career.history.at(-1);
+  if (last?.election.sacked) {
+    const fallback = scenarioOrThrow(scenarios, last.scenarioId).contract
+      .fallback;
+    return [
+      { scenarioId: fallback, unmet: [], running: running.has(fallback) },
+    ];
+  }
+
+  const offers = Object.values(scenarios)
+    .map((content) => ({
+      scenarioId: content.contract.id,
+      tier: TIER_ORDER.indexOf(content.contract.tier),
+      unmet: unmetCareerRequirements(
+        operatingStats(career),
+        content.contract.requires,
+      ),
+      running: running.has(content.contract.id),
+    }))
+    .sort((a, b) => a.tier - b.tier)
+    .map(({ scenarioId, unmet, running }) => ({ scenarioId, unmet, running }));
+
+  if (last && !offers.some((o) => o.unmet.length === 0)) {
+    const fallback = scenarioOrThrow(scenarios, last.scenarioId).contract
+      .fallback;
+    return offers.map((o) =>
+      o.scenarioId === fallback ? { ...o, unmet: [] } : o,
+    );
+  }
+  return offers;
+}
+
+export function canAccept(
+  career: CareerState,
+  scenarios: Scenarios,
+  scenarioId: string,
+): boolean {
+  const offer = careerOffers(career, scenarios).find(
+    (o) => o.scenarioId === scenarioId,
+  );
+  return (
+    offer !== undefined &&
+    offer.unmet.length === 0 &&
+    !offer.running &&
+    career.active.length < accountCapacity(career)
+  );
+}
+
+function acceptOffer(
+  career: CareerState,
+  scenarios: Scenarios,
+  scenarioId: string,
 ): CareerState {
-  const content = scenarioOrThrow(scenarios, record.scenarioId);
-  const start = startingStats(career);
-  const state = replay(content, record.seed, record.moves, start);
-  if (!state.finished) throw new Error("Campaign is not finished");
-  const election = runElection(state, content);
+  if (!canAccept(career, scenarios, scenarioId))
+    throw new Error(`Cannot take on ${scenarioId}`);
+  const content = scenarioOrThrow(scenarios, scenarioId);
+  const state = createGame(
+    content,
+    nextCampaignSeed(career),
+    startingStats(career),
+  );
+  return {
+    ...career,
+    accepted: career.accepted + 1,
+    active: [...career.active, { id: career.accepted, scenarioId, state }],
+  };
+}
+
+function withPool(state: GameState, career: CareerState): GameState {
+  const pool = startingStats(career);
+  return { ...state, ...pool };
+}
+
+/** A campaign's state carrying the live operator pool, for display and forecasts. */
+export function campaignView(
+  career: CareerState,
+  campaignId: number,
+): GameState {
+  const campaign = career.active.find((c) => c.id === campaignId);
+  if (!campaign) throw new Error(`No active campaign ${campaignId}`);
+  return withPool(campaign.state, career);
+}
+
+/** Plays one move on one account, feeding its operator effects back into the shared pool. */
+export function playCampaignMove(
+  career: CareerState,
+  scenarios: Scenarios,
+  campaignId: number,
+  move: PlayerMove,
+): { career: CareerState; result: MoveResult } {
+  const campaign = career.active.find((c) => c.id === campaignId);
+  if (!campaign) throw new Error(`No active campaign ${campaignId}`);
+  const content = scenarioOrThrow(scenarios, campaign.scenarioId);
+  const result = playTurn(withPool(campaign.state, career), content, move);
+  const current = operatingStats(career);
+  const pooled = withOperatingStats(career, {
+    ...current,
+    credibility: result.state.credibility,
+    ruthlessness: result.state.ruthlessness,
+    cash: result.state.personalFunds,
+  });
+  return {
+    career: {
+      ...pooled,
+      active: pooled.active.map((c) =>
+        c.id === campaignId ? { ...c, state: result.state } : c,
+      ),
+    },
+    result,
+  };
+}
+
+function resolveCampaign(
+  career: CareerState,
+  scenarios: Scenarios,
+  campaign: ActiveCampaign,
+): CareerState {
+  const content = scenarioOrThrow(scenarios, campaign.scenarioId);
+  const election = runElection(campaign.state, content);
   const { contract } = content;
   const current = operatingStats(career);
 
@@ -224,115 +401,86 @@ export function completeCampaign(
     0,
     MAX_MARGIN_BONUS,
   );
-  const recognitionDelta = election.sacked
+  const rawDelta = election.sacked
     ? contract.recognition.sacked
     : contract.recognition.kept + marginBonus;
   const feeEarned = election.sacked ? 0 : contract.fee;
-  const recognition = clamp(current.recognition + recognitionDelta, 0, 100);
-
-  const updated = {
-    recognition,
-    credibility: state.credibility,
-    ruthlessness: state.ruthlessness,
-    cash: state.personalFunds + feeEarned,
-  };
+  const recognition = clamp(current.recognition + rawDelta, 0, 100);
 
   return {
-    ...career,
-    stats: career.company
-      ? career.stats
-      : {
-          recognition: updated.recognition,
-          credibility: updated.credibility,
-          ruthlessness: updated.ruthlessness,
-          personalFunds: updated.cash,
-        },
-    company: career.company
-      ? {
-          ...career.company,
-          recognition: updated.recognition,
-          credibility: updated.credibility,
-          ruthlessness: updated.ruthlessness,
-          cash: updated.cash,
-        }
-      : null,
+    ...withOperatingStats(career, {
+      ...current,
+      recognition,
+      cash: current.cash + feeEarned,
+    }),
+    active: career.active.filter((c) => c.id !== campaign.id),
     history: [
       ...career.history,
       {
-        record,
-        start,
+        campaignId: campaign.id,
+        scenarioId: campaign.scenarioId,
+        start: campaign.state.start,
         election,
         feeEarned,
         recognitionDelta: recognition - current.recognition,
+        decidedOnDay: career.day,
       },
     ],
   };
 }
 
-/** Sacked operators get the fallback; everyone else sees every contract, locked ones as goals. */
-export function careerOffers(
+/** Ends the day everywhere: idle accounts lose morale, staff are paid, finished races are called. */
+function tick(career: CareerState, scenarios: Scenarios): CareerState {
+  const advanced = career.active.map((c) => ({
+    ...c,
+    state: endDay(c.state, scenarioOrThrow(scenarios, c.scenarioId)),
+  }));
+  let next: CareerState = { ...career, active: advanced };
+  if (next.company && next.company.staff > 0) {
+    const wages = next.company.staff * DAILY_WAGE;
+    next = {
+      ...next,
+      company: {
+        ...next.company,
+        cash: Math.max(0, next.company.cash - wages),
+      },
+    };
+  }
+  for (const campaign of advanced) {
+    if (campaign.state.finished)
+      next = resolveCampaign(next, scenarios, campaign);
+  }
+  return { ...next, day: career.day + 1 };
+}
+
+export function applyCareerEntry(
   career: CareerState,
   scenarios: Scenarios,
-): Offer[] {
-  const last = career.history.at(-1);
-  if (last?.election.sacked) {
-    const fallback = scenarioOrThrow(scenarios, last.record.scenarioId).contract
-      .fallback;
-    return [{ scenarioId: fallback, unmet: [] }];
+  entry: CareerEntry,
+): CareerState {
+  switch (entry.kind) {
+    case "accept":
+      return acceptOffer(career, scenarios, entry.scenarioId);
+    case "move":
+      return playCampaignMove(career, scenarios, entry.campaignId, entry.move)
+        .career;
+    case "tick":
+      return tick(career, scenarios);
+    case "incorporate":
+      return incorporateCareer(career, entry.profile);
+    case "hire":
+      return hireStaff(career);
   }
-
-  const offers = Object.values(scenarios)
-    .map((content) => ({
-      scenarioId: content.contract.id,
-      tier: TIER_ORDER.indexOf(content.contract.tier),
-      unmet: unmetCareerRequirements(
-        operatingStats(career),
-        content.contract.requires,
-      ),
-    }))
-    .sort((a, b) => a.tier - b.tier)
-    .map(({ scenarioId, unmet }) => ({ scenarioId, unmet }));
-
-  if (last && !offers.some((o) => o.unmet.length === 0)) {
-    const fallback = scenarioOrThrow(scenarios, last.record.scenarioId).contract
-      .fallback;
-    return offers.map((o) =>
-      o.scenarioId === fallback ? { ...o, unmet: [] } : o,
-    );
-  }
-  return offers;
 }
 
 export function replayCareer(
   scenarios: Scenarios,
   firstScenarioId: string,
   careerSeed: number,
-  records: CampaignRecord[],
-  incorporation: IncorporationRecord | null = null,
+  log: CareerEntry[],
 ): CareerState {
-  if (incorporation) {
-    const max = records.length;
-    if (
-      incorporation.afterCampaigns < 0 ||
-      incorporation.afterCampaigns > max
-    ) {
-      throw new Error("Invalid incorporation index");
-    }
-  }
-  let career = startCareer(scenarios, firstScenarioId, careerSeed);
-  const maybeIncorporate = () => {
-    if (
-      incorporation &&
-      incorporation.afterCampaigns === career.history.length &&
-      !career.company
-    ) {
-      career = incorporateCareer(career, incorporation.profile);
-    }
-  };
-  for (const record of records) {
-    maybeIncorporate();
-    career = completeCampaign(career, scenarios, record);
-  }
-  maybeIncorporate();
-  return career;
+  return log.reduce(
+    (career, entry) => applyCareerEntry(career, scenarios, entry),
+    startCareer(scenarios, firstScenarioId, careerSeed),
+  );
 }

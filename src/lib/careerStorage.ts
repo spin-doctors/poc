@@ -1,8 +1,8 @@
 import { z } from "zod/v3";
-import type { CampaignRecord, IncorporationRecord } from "./sim/career";
+import type { CareerEntry } from "./sim/career";
 
-const KEY = "spin-doctors:career:v2";
-const LEGACY_KEY = "spin-doctors:career:v1";
+/** Earlier keys held sequential campaign records and are deliberately ignored. */
+const KEY = "spin-doctors:career:v3";
 
 const moveSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -17,60 +17,42 @@ const moveSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
-const recordSchema = z.object({
-  scenarioId: z.string(),
-  seed: z.number(),
-  moves: z.array(moveSchema),
-});
-
-const companyProfileSchema = z.object({
-  name: z.string(),
-  logo: z.string().nullable(),
-  values: z.array(z.string()),
-});
-
-const incorporationSchema = z.object({
-  afterCampaigns: z.number().int().min(0),
-  profile: companyProfileSchema,
-});
+const entrySchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("accept"), scenarioId: z.string() }),
+  z.object({
+    kind: z.literal("move"),
+    campaignId: z.number().int().min(0),
+    move: moveSchema,
+  }),
+  z.object({ kind: z.literal("tick") }),
+  z.object({
+    kind: z.literal("incorporate"),
+    profile: z.object({
+      name: z.string(),
+      logo: z.string().nullable(),
+      values: z.array(z.string()),
+    }),
+  }),
+  z.object({ kind: z.literal("hire") }),
+]);
 
 const savedCareerSchema = z.object({
   careerSeed: z.number(),
-  completed: z.array(recordSchema),
-  /** Null between campaigns, while offers are on the table. */
-  current: recordSchema.nullable(),
-  /** Null until the player incorporates. */
-  incorporation: incorporationSchema.nullable().default(null),
-});
-
-const legacySavedCareerSchema = z.object({
-  careerSeed: z.number(),
-  completed: z.array(recordSchema),
-  current: recordSchema.nullable(),
+  log: z.array(entrySchema),
 });
 
 export interface SavedCareer {
   careerSeed: number;
-  completed: CampaignRecord[];
-  current: CampaignRecord | null;
-  incorporation: IncorporationRecord | null;
+  log: CareerEntry[];
 }
 
 /** Null for no save or an unreadable one; the caller starts a fresh career. */
 export function loadCareer(): SavedCareer | null {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const parsed = savedCareerSchema.safeParse(JSON.parse(raw));
-      if (parsed.success) return parsed.data;
-    }
-    const legacyRaw = localStorage.getItem(LEGACY_KEY);
-    if (!legacyRaw) return null;
-    const legacy = legacySavedCareerSchema.safeParse(JSON.parse(legacyRaw));
-    if (!legacy.success) return null;
-    const migrated = { ...legacy.data, incorporation: null };
-    localStorage.setItem(KEY, JSON.stringify(migrated));
-    return migrated;
+    if (!raw) return null;
+    const parsed = savedCareerSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }
