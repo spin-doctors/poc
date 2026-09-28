@@ -174,13 +174,28 @@ Deployed to GitHub Pages by Actions on every push to `main`:
 - [ci.yml](.github/workflows/ci.yml) — typecheck, tests, a balance smoke run and a build, on every push and PR
 - [deploy.yml](.github/workflows/deploy.yml) — builds with `BASE_PATH=/poc` and publishes to Pages
 
-No secrets or third-party accounts are needed. The build is fully static, so
-there is nothing to run server-side.
+The build is fully static, so there is nothing to run server-side. GoatCounter
+analytics are optional and remain disabled until configured.
 
 ### One-time setup
 
 In **Settings → Pages**, set **Source** to **GitHub Actions**. Until that is
-done the deploy job will fail — it is the only manual step.
+done the deploy job will fail.
+
+### Optional analytics setup
+
+To enable privacy-focused pageview and basic campaign analytics:
+
+1. Create a hosted site at [GoatCounter](https://www.goatcounter.com/) and note
+   its count endpoint, such as `https://<site-code>.goatcounter.com/count`.
+2. In **Settings → Secrets and variables → Actions → Variables**, add
+   `PUBLIC_GOATCOUNTER_URL` with that endpoint. It is public configuration, not
+   a secret.
+3. Deploy the site and check the GoatCounter dashboard. Leave the variable
+   unset to disable analytics.
+
+Only campaign starts, kept/sacked outcomes, and successful share-link copies
+are recorded as named events. Replay codes and gameplay details are not sent.
 
 ### Base path
 

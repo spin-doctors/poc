@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { trackAnalyticsEvent } from '$lib/analytics';
 	import { content } from '$lib/content';
 	import { decodeRun, encodeRun } from '$lib/share';
 	import {
@@ -51,6 +52,9 @@
 			game = restored;
 			if (restored.finished) {
 				election = runElection(restored, content);
+				trackAnalyticsEvent(
+					election.sacked ? 'campaign-sacked' : 'campaign-kept'
+				);
 				phase = 'election';
 			} else {
 				phase = restored.pendingEventId ? 'event' : 'day';
@@ -85,8 +89,16 @@
 		if (game.pendingEventId) phase = 'event';
 		else if (game.finished) {
 			election = runElection(game, content);
+			trackAnalyticsEvent(
+				election.sacked ? 'campaign-sacked' : 'campaign-kept'
+			);
 			phase = 'election';
 		} else phase = 'day';
+	}
+
+	function startCampaign() {
+		trackAnalyticsEvent('campaign-started');
+		phase = 'day';
 	}
 
 	function restart() {
@@ -104,6 +116,7 @@
 		const code = encodeRun({ seed, moves: game.history });
 		const url = `${window.location.origin}${window.location.pathname}?r=${code}`;
 		await navigator.clipboard.writeText(url);
+		trackAnalyticsEvent('share-link-copied');
 		copied = true;
 	}
 
@@ -187,7 +200,7 @@
 				Some moves are locked. Your credibility and your reputation for ruthlessness
 				decide which ones open up — and they pull in opposite directions.
 			</p>
-			<button onclick={() => (phase = 'day')}>Take the job</button>
+			<button onclick={startCampaign}>Take the job</button>
 		</div>
 
 		<div class="card">
