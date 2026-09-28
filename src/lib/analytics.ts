@@ -1,5 +1,13 @@
 export type AnalyticsEvent =
-  "campaign-started" | "campaign-kept" | "campaign-sacked";
+  | "campaign-started"
+  | "campaign-move-played"
+  | "campaign-event-answered"
+  | "campaign-day-advanced"
+  | "company-incorporated"
+  | "staff-hired"
+  | "career-restarted"
+  | "campaign-kept"
+  | "campaign-sacked";
 
 interface GoatCounter {
   path?: () => string;

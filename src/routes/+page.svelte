@@ -21,7 +21,8 @@
 		replayCareer,
 		startCareer,
 		type CareerEntry,
-		type CareerState
+		type CareerState,
+		type CompanyProfile
 	} from '$lib/sim/career';
 	import type { PlayerMove } from '$lib/sim/types';
 
@@ -87,15 +88,29 @@
 	function move(campaignId: number, playerMove: PlayerMove) {
 		const played = playCampaignMove(career, scenarios, campaignId, playerMove);
 		record({ kind: 'move', campaignId, move: playerMove }, played.career);
+		trackAnalyticsEvent(
+			playerMove.kind === 'respond' ? 'campaign-event-answered' : 'campaign-move-played'
+		);
 		return played.result;
 	}
 
 	function tick() {
 		const decided = career.history.length;
 		apply({ kind: 'tick' });
+		trackAnalyticsEvent('campaign-day-advanced');
 		for (const outcome of career.history.slice(decided)) {
 			trackAnalyticsEvent(outcome.election.sacked ? 'campaign-sacked' : 'campaign-kept');
 		}
+	}
+
+	function incorporate(profile: CompanyProfile) {
+		apply({ kind: 'incorporate', profile });
+		trackAnalyticsEvent('company-incorporated');
+	}
+
+	function hire() {
+		apply({ kind: 'hire' });
+		trackAnalyticsEvent('staff-hired');
 	}
 
 	function newCareer() {
@@ -104,6 +119,7 @@
 		career = startCareer(scenarios, defaultScenarioId, saved.careerSeed);
 		saveCareer(saved);
 		view = { kind: 'dashboard' };
+		trackAnalyticsEvent('career-restarted');
 	}
 
 	const toDashboard = () => (view = { kind: 'dashboard' });
@@ -126,8 +142,8 @@
 	{:else if view.kind === 'career'}
 		<CareerView
 			{career}
-			onIncorporate={(profile) => apply({ kind: 'incorporate', profile })}
-			onHire={() => apply({ kind: 'hire' })}
+			onIncorporate={incorporate}
+			onHire={hire}
 			onNewCareer={newCareer}
 			onBack={toDashboard}
 		/>
