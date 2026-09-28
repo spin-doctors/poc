@@ -230,6 +230,7 @@
 	function incorporate() {
 		if (replaying || career.company) return;
 		if (!canIncorporate(career)) return;
+		const afterCampaigns = career.history.length;
 		const nextCareer = incorporateCareer(career, {
 			name: companyName.trim() || 'Untitled Strategy Group',
 			logo: companyLogo.trim() || null,
@@ -243,7 +244,7 @@
 			saved = {
 				...saved,
 				incorporation: {
-					afterCampaigns: nextCareer.history.length,
+					afterCampaigns,
 					profile: nextCareer.company.profile
 				}
 			};

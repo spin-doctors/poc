@@ -68,7 +68,9 @@ export function loadCareer(): SavedCareer | null {
     if (!legacyRaw) return null;
     const legacy = legacySavedCareerSchema.safeParse(JSON.parse(legacyRaw));
     if (!legacy.success) return null;
-    return { ...legacy.data, incorporation: null };
+    const migrated = { ...legacy.data, incorporation: null };
+    localStorage.setItem(KEY, JSON.stringify(migrated));
+    return migrated;
   } catch {
     return null;
   }
