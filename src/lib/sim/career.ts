@@ -104,13 +104,17 @@ function operatingStats(career: CareerState): OperatingStats {
   return { ...career.stats, cash: career.stats.personalFunds };
 }
 
-function isPreIncorporationState(career: CareerState): boolean {
-  return career.incorporatedOnCampaign === null && career.company === null;
+function incorporationStatus(career: CareerState): "pre" | "post" | "invalid" {
+  const hasCompany = career.company !== null;
+  const markedIncorporated = career.incorporatedOnCampaign !== null;
+  if (!hasCompany && !markedIncorporated) return "pre";
+  if (hasCompany && markedIncorporated) return "post";
+  return "invalid";
 }
 
 export function canIncorporate(career: CareerState): boolean {
   return (
-    isPreIncorporationState(career) &&
+    incorporationStatus(career) === "pre" &&
     career.stats.personalFunds >= INCORPORATION_FEE
   );
 }
@@ -119,7 +123,10 @@ export function incorporateCareer(
   career: CareerState,
   profile: CompanyProfile,
 ): CareerState {
-  if (!isPreIncorporationState(career)) throw new Error("Already incorporated");
+  const status = incorporationStatus(career);
+  if (status === "post") throw new Error("Already incorporated");
+  if (status === "invalid")
+    throw new Error("Corrupted career incorporation state");
   if (!canIncorporate(career)) throw new Error("Not enough personal funds");
   return {
     ...career,

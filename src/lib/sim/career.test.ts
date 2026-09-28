@@ -252,7 +252,7 @@ describe("career", () => {
     expect(after.history.at(-1)?.feeEarned).toBe(contract.fee);
   });
 
-  it("treats incorporation as one-way even if company data is tampered", () => {
+  it("rejects re-incorporation even when state is tampered", () => {
     const incorporated = incorporateCareer(
       {
         ...fresh(),
@@ -268,6 +268,34 @@ describe("career", () => {
         logo: null,
         values: [],
       }),
+    ).toThrow(/Corrupted career incorporation state/);
+    expect(() =>
+      incorporateCareer(incorporated, {
+        name: "Second Attempt",
+        logo: null,
+        values: [],
+      }),
     ).toThrow(/Already incorporated/);
+  });
+
+  it("throws a corruption error for inconsistent incorporation flags", () => {
+    const corrupt = {
+      ...fresh(),
+      company: {
+        profile: { name: "Mismatch LLP", logo: null, values: [] },
+        cash: 9999,
+        credibility: 50,
+        ruthlessness: 50,
+        recognition: 10,
+      },
+      incorporatedOnCampaign: null,
+    };
+    expect(() =>
+      incorporateCareer(corrupt, {
+        name: "Should Fail",
+        logo: null,
+        values: [],
+      }),
+    ).toThrow(/Corrupted career incorporation state/);
   });
 });
