@@ -4,8 +4,11 @@ import {
   applyMove,
   createGame,
   defaultStart,
+  endDay,
   forecastAction,
+  IDLE_MORALE_PENALTY,
   isUnlocked,
+  playTurn,
   pollEstimate,
   replay,
   runElection,
@@ -516,6 +519,58 @@ describe("commissioned polls", () => {
     expect(() =>
       applyMove(finalDay, content, { kind: "action", actionId: "quickPoll" }),
     ).toThrow(/no campaign day left/i);
+  });
+});
+
+describe("day boundaries", () => {
+  const doorstep: PlayerMove = {
+    kind: "action",
+    actionId: "doorstep",
+    target: "commuters",
+  };
+
+  it("plays a move without ending the day", () => {
+    const result = playTurn(createGame(content, seed), content, doorstep);
+    expect(result.state.day).toBe(1);
+    expect(result.state.turnTaken).toBe(true);
+    expect(() => playTurn(result.state, content, doorstep)).toThrow(
+      /already done/,
+    );
+  });
+
+  it("matches applyMove once the day is ended", () => {
+    const start = createGame(content, seed);
+    const split = endDay(playTurn(start, content, doorstep).state, content);
+    expect(split).toEqual(applyMove(start, content, doorstep).state);
+  });
+
+  it("costs morale when the day passes without a move", () => {
+    const start = createGame(content, seed);
+    const idle = endDay(start, content);
+    expect(idle.day).toBe(2);
+    expect(idle.morale).toBe(start.morale - IDLE_MORALE_PENALTY);
+    expect(idle.history).toEqual([]);
+  });
+
+  it("drops an unanswered story at the end of the day", () => {
+    const pending = playUntilEvent("podcast");
+    const ignored = endDay(pending, content);
+    expect(ignored.pendingEventId).toBe(null);
+    expect(ignored.morale).toBe(pending.morale - IDLE_MORALE_PENALTY);
+  });
+
+  it("holds a next-day follow-up until the day ends", () => {
+    const protest = playUntilEvent("data-centre-protest");
+    const played = playTurn(protest, content, {
+      kind: "respond",
+      eventId: "data-centre-protest",
+      responseIndex: 0,
+    }).state;
+    expect(played.pendingEventId).toBe(null);
+    expect(played.queuedEventId).not.toBe(null);
+    const next = endDay(played, content);
+    expect(next.pendingEventId).toBe(played.queuedEventId);
+    expect(next.queuedEventId).toBe(null);
   });
 });
 

@@ -19,8 +19,12 @@ If Football Manager is the model, the mapping is roughly:
 
 ## 🎮 The loop
 
-A career of campaigns. Each campaign is a week or so, one move per day, then an
-election; between campaigns, you pick your next client from whoever is calling.
+A career of campaigns, run from a dashboard. Each campaign is a week or so, one
+move per day on each account, then an election; the offers board shows whoever
+is calling. Days pass for every account at once — the prototype has a
+**Simulate next day** button standing in for the real calendar — and each
+election is called when its final day ends. An account left without a move for
+the day loses the day and some candidate morale.
 
 - 🗓️ **A contract up front.** Hit the objectives or you are out of a job.
 - 🎭 **One move a day.** Canvass, stage a photo op, buy media, run an attack ad, or prep the candidate.
@@ -35,9 +39,9 @@ election; between campaigns, you pick your next client from whoever is calling.
 
 ### The career
 
-Your credibility, ruthlessness and personal funds carry from one campaign to
-the next, so a clean week at Ashcombe can mean starting the next job with the
-Inside Track already open. Keeping an account pays the contract's **fee** into
+Your credibility, ruthlessness and funds are one shared pool across every
+account you run, so a clean day at Ashcombe can open the Inside Track in
+another campaign. Keeping an account pays the contract's **fee** into
 your personal funds and earns **recognition**: a base amount per contract, plus one for every point you
 beat the vote-share target by (up to ten). Being sacked pays
 nothing, costs recognition, and the only phone that rings is the contract's
@@ -49,12 +53,13 @@ nothing, costs recognition, and the only phone that rings is the contract's
 | Pendle Hurst West (Malcolm)       | council       | 7    | £4,000  | recognition 15 or below                   |
 | Harwell and Stoke Minster (Priya) | parliamentary | 10   | £30,000 | recognition 12+, ruthlessness 70 or below |
 
-Locked offers stay visible with their requirements, like locked moves. The
-career is saved in `localStorage` as the career seed plus each campaign's seed
-and moves, and rebuilt by replay on load. Share links still cover a single
-campaign, and carry its scenario and starting stats so it replays exactly;
-opening one never touches your own career. Links from before scenarios existed
-replay Ashcombe.
+Locked offers stay visible with their requirements, like locked moves. Alone
+you can run one account at a time; incorporate a company, then hire staff
+(a one-off fee plus a daily wage from company cash) to run one more account
+per staffer, never the same seat twice at once. The career is saved in
+`localStorage` as the career seed plus an ordered log of accepts, moves, day
+ticks, incorporation and hires, and rebuilt by replay on load. Saves from
+before the dashboard are discarded.
 
 ### Two ways to be good at this
 
@@ -87,11 +92,13 @@ OpenAPI, no PWA until the loop is proven fun.
 - **Validation**: Zod — schemas double as writer contract and future LLM output schema
 - **Tests**: Vitest
 - **Sim engine**: pure, deterministic, zero framework imports
-- **Saves**: seed + move list, URL-encodable
+- **Saves**: career seed + an ordered log of career entries
 
 ### Why the engine is pure
 
-`applyMove(state, content, move)` is a deterministic function with no I/O. That
+`applyMove(state, content, move)` is a deterministic function with no I/O; the
+career uses its two halves, `playTurn` and `endDay`, so moves and day ticks can
+interleave across accounts. That
 buys four things: replayable bug reports, a headless balance harness, a trivial
 save format, and a cheap path to server-authoritative multiplayer later.
 
@@ -101,7 +108,8 @@ save format, and a cheap path to server-authoritative multiplayer later.
 src/lib/sim/        # pure engine and career layer — may not import from svelte
 src/lib/schema/     # Zod schemas -> inferred TypeScript types
 src/lib/content/    # loads, merges and validates the JSON at startup
-src/routes/         # UI
+src/lib/components/ # dashboard, campaign, career and election-night views
+src/routes/         # UI shell
 content/            # shared actions and gaffes (writer-editable)
 content/scenarios/  # one folder per campaign: contract, voter groups, events
 scripts/balance.ts  # headless harness: runs thousands of campaigns per scenario
@@ -237,8 +245,8 @@ To enable privacy-focused pageview and basic campaign analytics:
 3. Deploy the site and check the GoatCounter dashboard. Leave the variable
    unset to disable analytics.
 
-Only campaign starts, kept/sacked outcomes, and successful share-link copies
-are recorded as named events. Replay codes and gameplay details are not sent.
+Only campaign starts and kept/sacked outcomes are recorded as named events.
+Gameplay details are not sent.
 
 ### Base path
 

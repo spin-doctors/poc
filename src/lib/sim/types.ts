@@ -21,6 +21,10 @@ export interface GameState {
   pollReport: PollReport | null;
   positions: Record<string, string>;
   pendingEventId: string | null;
+  /** A `nextDay` follow-up waiting for the day to end. */
+  queuedEventId: string | null;
+  /** Today's move is done; the campaign waits for the day to end. */
+  turnTaken: boolean;
   history: PlayerMove[];
   finished: boolean;
 }

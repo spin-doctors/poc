@@ -22,7 +22,7 @@ body {
 }
 
 main {
-  max-width: 46rem;
+  max-width: 52rem;
   margin: 0 auto;
   padding: 2rem 1.25rem 5rem;
 }
@@ -45,12 +45,47 @@ h1 {
   margin-bottom: 1.5rem;
 }
 
-.masthead p {
+.masthead p,
+.dateline {
   margin: 0;
   color: var(--muted);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.dateline {
+  margin-bottom: 0.75rem;
+}
+
+.nav {
+  margin-bottom: 1rem;
+}
+
+.accounts td {
+  vertical-align: top;
+}
+
+.accounts .sub {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.accounts .sub.new {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.accounts .attention {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.accounts button {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .status {
