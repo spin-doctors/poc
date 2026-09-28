@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["vite.balance.config.ts"],
+  "ignore": ["src/lib/schema/content.ts", "src/lib/sim/index.ts"],
+  "tags": ["-lintignore"]
+}

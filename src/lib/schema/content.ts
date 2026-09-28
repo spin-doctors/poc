@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 /**
  * These schemas are the writer-facing contract AND the future LLM output schema.

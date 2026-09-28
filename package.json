@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "engine": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
@@ -11,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "balance": "vite-node -c vite.balance.config.ts scripts/balance.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "knip": "knip"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown"
@@ -22,16 +26,15 @@
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "@types/node": "^26.6.3",
     "husky": "^9.1.7",
+    "knip": "^6.38.0",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
     "svelte": "^5.20.0",
     "svelte-check": "^4.1.4",
-    "typescript": "^5.7.3",
+    "typescript": "^6.0.3",
     "vite": "^6.0.11",
     "vite-node": "^3.0.5",
-    "vitest": "^3.0.5"
-  },
-  "dependencies": {
-    "zod": "^3.24.1"
+    "vitest": "^5.0.2",
+    "zod": "^4.6.5"
   }
 }
