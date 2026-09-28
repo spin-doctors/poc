@@ -29,6 +29,7 @@
     "knip": "^6.38.0",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
+    "prettier-plugin-organize-imports": "^4.3.0",
     "svelte": "^5.20.0",
     "svelte-check": "^4.1.4",
     "typescript": "^6.0.3",
