@@ -106,7 +106,9 @@ function operatingStats(career: CareerState): OperatingStats {
 
 function incorporationStatus(career: CareerState): "pre" | "post" | "invalid" {
   const hasCompany = career.company !== null;
-  const markedIncorporated = career.incorporatedOnCampaign !== null;
+  const markedIncorporated =
+    career.incorporatedOnCampaign !== null &&
+    career.incorporatedOnCampaign !== undefined;
   if (!hasCompany && !markedIncorporated) return "pre";
   if (hasCompany && markedIncorporated) return "post";
   return "invalid";
