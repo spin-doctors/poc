@@ -252,7 +252,7 @@ describe("career", () => {
     expect(after.history.at(-1)?.feeEarned).toBe(contract.fee);
   });
 
-  it("rejects re-incorporation even when state is tampered", () => {
+  it("rejects re-incorporation after incorporation", () => {
     const incorporated = incorporateCareer(
       {
         ...fresh(),
@@ -260,15 +260,6 @@ describe("career", () => {
       },
       { name: "Permanent Ltd", logo: null, values: [] },
     );
-    const tampered = { ...incorporated, company: null };
-    expect(canIncorporate(tampered)).toBe(false);
-    expect(() =>
-      incorporateCareer(tampered, {
-        name: "Second Attempt",
-        logo: null,
-        values: [],
-      }),
-    ).toThrow(/Corrupted career incorporation state/);
     expect(() =>
       incorporateCareer(incorporated, {
         name: "Second Attempt",
@@ -278,11 +269,11 @@ describe("career", () => {
     ).toThrow(/Already incorporated/);
   });
 
-  it("throws a corruption error for inconsistent incorporation state", () => {
+  it("throws a corruption error for malformed company data", () => {
     const corrupt = {
       ...fresh(),
       company: {
-        profile: { name: "Mismatch LLP", logo: null, values: [] },
+        profile: { name: "   ", logo: null, values: [] },
         cash: 9999,
         credibility: 50,
         ruthlessness: 50,

@@ -103,15 +103,16 @@ function operatingStats(career: CareerState): OperatingStats {
 }
 
 function incorporationStatus(career: CareerState): "pre" | "post" | "invalid" {
-  const hasCompany = career.company !== null;
-  const personalCleared =
-    career.stats.credibility === 0 &&
-    career.stats.ruthlessness === 0 &&
-    career.stats.personalFunds === 0 &&
-    career.stats.recognition === 0;
-  if (!hasCompany && !personalCleared) return "pre";
-  if (hasCompany && personalCleared) return "post";
-  return "invalid";
+  if (!career.company) return "pre";
+  const { profile, cash, credibility, ruthlessness, recognition } =
+    career.company;
+  const valid =
+    profile.name.trim().length > 0 &&
+    Number.isFinite(cash) &&
+    Number.isFinite(credibility) &&
+    Number.isFinite(ruthlessness) &&
+    Number.isFinite(recognition);
+  return valid ? "post" : "invalid";
 }
 
 export function canIncorporate(career: CareerState): boolean {

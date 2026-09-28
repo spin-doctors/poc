@@ -317,8 +317,14 @@
 						<input bind:value={companyValues} placeholder="Integrity, Service, Winning" />
 					</label>
 				</fieldset>
-				<button class="ghost" disabled={!canIncorporate(career)} onclick={incorporate}>
-					{canIncorporate(career) ? 'Incorporate now' : `Need £${incorporationFee} to incorporate`}
+				<button class="ghost" disabled={replaying || !canIncorporate(career)} onclick={incorporate}>
+					{#if replaying}
+						Unavailable in shared replays
+					{:else if canIncorporate(career)}
+						Incorporate now
+					{:else}
+						Need £{incorporationFee} to incorporate
+					{/if}
 				</button>
 			{/if}
 			<button class="ghost" onclick={newCareer}>Start a new career</button>
