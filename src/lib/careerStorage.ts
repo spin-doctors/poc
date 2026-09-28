@@ -1,3 +1,4 @@
+import { version } from "$app/environment";
 import { z } from "zod/v3";
 import type { CareerEntry } from "./sim/career";
 
@@ -40,11 +41,16 @@ const entrySchema = z.discriminatedUnion("kind", [
 const savedCareerSchema = z.object({
   careerSeed: z.number(),
   log: z.array(entrySchema),
+  startedVersion: z.string().optional(),
+  savedVersion: z.string().optional(),
 });
 
 export interface SavedCareer {
   careerSeed: number;
   log: CareerEntry[];
+  /** Builds that began and last wrote this career, for bug reports; absent on older saves. */
+  startedVersion?: string;
+  savedVersion?: string;
 }
 
 /** Null for no save or an unreadable one; the caller starts a fresh career. */
@@ -61,7 +67,10 @@ export function loadCareer(): SavedCareer | null {
 
 export function saveCareer(saved: SavedCareer): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(saved));
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({ ...saved, savedVersion: version }),
+    );
   } catch {
     // Private browsing or a full quota: the career just won't survive a reload.
   }

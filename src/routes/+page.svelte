@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { version } from '$app/environment';
 	import { trackAnalyticsEvent } from '$lib/analytics';
 	import {
 		dismissWelcome,
@@ -31,7 +32,11 @@
 		| { kind: 'result'; index: number };
 
 	function freshSave(): SavedCareer {
-		return { careerSeed: Math.floor(Math.random() * 2 ** 31), log: [] };
+		return {
+			careerSeed: Math.floor(Math.random() * 2 ** 31),
+			log: [],
+			startedVersion: version
+		};
 	}
 
 	const initial = freshSave();

@@ -33,6 +33,7 @@ jobs:
         env:
           BASE_PATH: /${{ github.event.repository.name }}
           PUBLIC_GOATCOUNTER_URL: ${{ vars.PUBLIC_GOATCOUNTER_URL }}
+          PUBLIC_COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
 
       - uses: actions/configure-pages@v5
 
