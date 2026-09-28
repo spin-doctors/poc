@@ -1,99 +1,188 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { replaceState } from '$app/navigation';
 	import { trackAnalyticsEvent } from '$lib/analytics';
-	import { content } from '$lib/content';
+	import { loadCareer, saveCareer, type SavedCareer } from '$lib/careerStorage';
+	import { defaultScenarioId, scenarios } from '$lib/content';
 	import { decodeRun, encodeRun } from '$lib/share';
+	import {
+		careerOffers,
+		completeCampaign,
+		nextCampaignSeed,
+		replayCareer,
+		startCareer,
+		startingStats,
+		type CampaignOutcome,
+		type CampaignRecord,
+		type CareerState
+	} from '$lib/sim/career';
 	import {
 		applyMove,
 		canAfford,
-		createGame,
+		defaultStart,
 		forecastAction,
 		isUnlocked,
 		pollEstimate,
+		replay,
 		runElection,
 		unmetRequirements
 	} from '$lib/sim/engine';
-	import type { ElectionResult, FeedbackLine, GameState, MoveResult } from '$lib/sim/types';
+	import type {
+		ElectionResult,
+		FeedbackLine,
+		GameState,
+		MoveResult,
+		StartingStats
+	} from '$lib/sim/types';
 
-	type Phase = 'briefing' | 'day' | 'feedback' | 'event' | 'election';
+	type Phase = 'offers' | 'briefing' | 'day' | 'feedback' | 'event' | 'election';
 
-	const { contract, groups, actions, events } = content;
-
-	function freshCampaign() {
-		const newSeed = Math.floor(Math.random() * 2 ** 31);
-		return { seed: newSeed, game: createGame(content, newSeed) };
+	function freshCareer(): { saved: SavedCareer; career: CareerState } {
+		const careerSeed = Math.floor(Math.random() * 2 ** 31);
+		const career = startCareer(scenarios, defaultScenarioId, careerSeed);
+		const current = { scenarioId: defaultScenarioId, seed: nextCampaignSeed(career), moves: [] };
+		return { saved: { careerSeed, completed: [], current }, career };
 	}
 
-	const initial = freshCampaign();
-	let seed = $state(initial.seed);
-	let game = $state<GameState>(initial.game);
+	const initial = freshCareer();
+	let saved = $state<SavedCareer>(initial.saved);
+	let career = $state<CareerState>(initial.career);
+	let scenarioId = $state(defaultScenarioId);
+	let game = $state<GameState>(
+		replay(scenarios[defaultScenarioId], initial.saved.current!.seed, [], startingStats(initial.career))
+	);
 	let phase = $state<Phase>('briefing');
 	let last = $state<MoveResult | null>(null);
 	let election = $state<ElectionResult | null>(null);
-	let target = $state(groups[0].id);
+	let outcome = $state<CampaignOutcome | null>(null);
+	let target = $state(scenarios[defaultScenarioId].groups[0].id);
 	let copied = $state(false);
+	/** Opened from a share link: playable, but never written into the saved career. */
+	let replaying = $state(false);
 
-	const poll = $derived(pollEstimate(game, content));
+	const active = $derived(scenarios[scenarioId]);
+	const contract = $derived(active.contract);
+	const groups = $derived(active.groups);
+	const actions = $derived(active.actions);
+	const poll = $derived(pollEstimate(game, active));
 	const commissionedPoll = $derived(
 		game.pollReport?.availableOnDay === game.day ? game.pollReport : null
 	);
-	const pendingEvent = $derived(events.find((e) => e.id === game.pendingEventId) ?? null);
+	const pendingEvent = $derived(active.events.find((e) => e.id === game.pendingEventId) ?? null);
 	const money = $derived(new Intl.NumberFormat('en-GB').format(game.money));
+	const offers = $derived(careerOffers(career, scenarios));
+	const kept = $derived(career.history.filter((h) => !h.election.sacked).length);
+
+	function beginCampaign(record: CampaignRecord, start: StartingStats) {
+		const next = scenarios[record.scenarioId];
+		if (!next) throw new Error(`Unknown scenario: ${record.scenarioId}`);
+		game = replay(next, record.seed, record.moves, start);
+		scenarioId = record.scenarioId;
+		target = next.groups[0].id;
+		last = null;
+		election = null;
+		outcome = null;
+		copied = false;
+		if (game.finished) showElection();
+		else if (game.pendingEventId) phase = 'event';
+		else phase = record.moves.length === 0 ? 'briefing' : 'day';
+	}
+
+	function loadSavedCareer() {
+		let loaded = loadCareer();
+		let rebuilt: CareerState | null = null;
+		if (loaded) {
+			try {
+				rebuilt = replayCareer(scenarios, defaultScenarioId, loaded.careerSeed, loaded.completed);
+			} catch {
+				loaded = null;
+			}
+		}
+		if (!loaded || !rebuilt) {
+			const fresh = freshCareer();
+			loaded = fresh.saved;
+			rebuilt = fresh.career;
+		}
+		saved = loaded;
+		career = rebuilt;
+		if (saved.current) {
+			try {
+				beginCampaign(saved.current, startingStats(career));
+				saveCareer(saved);
+				return;
+			} catch {
+				saved = { ...saved, current: null };
+			}
+		}
+		saveCareer(saved);
+		outcome = career.history.at(-1) ?? null;
+		phase = 'offers';
+	}
 
 	onMount(() => {
 		const code = new URLSearchParams(window.location.search).get('r');
-		if (!code) return;
-		const run = decodeRun(code);
-		if (!run) return;
-		try {
-			let restored = createGame(content, run.seed);
-			for (const move of run.moves) restored = applyMove(restored, content, move).state;
-			seed = run.seed;
-			game = restored;
-			if (restored.finished) {
-				election = runElection(restored, content);
-				trackAnalyticsEvent(
-					election.sacked ? 'campaign-sacked' : 'campaign-kept'
+		const run = code ? decodeRun(code) : null;
+		const shared = run ? scenarios[run.scenarioId ?? defaultScenarioId] : undefined;
+		if (run && shared) {
+			try {
+				replaying = true;
+				beginCampaign(
+					{ scenarioId: shared.contract.id, seed: run.seed, moves: run.moves },
+					run.start ?? defaultStart(shared)
 				);
-				phase = 'election';
-			} else {
-				phase = restored.pendingEventId ? 'event' : 'day';
+				return;
+			} catch {
+				// A corrupt link just falls through to your own career.
+				replaying = false;
 			}
-		} catch {
-			// A corrupt link just starts a fresh campaign.
 		}
+		loadSavedCareer();
 	});
 
+	function persistMoves() {
+		if (replaying || !saved.current) return;
+		saved = { ...saved, current: { ...saved.current, moves: game.history } };
+		saveCareer(saved);
+	}
+
 	function take(actionId: string, targeted: boolean) {
-		last = applyMove(game, content, {
+		last = applyMove(game, active, {
 			kind: 'action',
 			actionId,
 			target: targeted ? target : undefined
 		});
 		game = last.state;
+		persistMoves();
 		phase = 'feedback';
 	}
 
 	function respond(index: number) {
 		if (!pendingEvent) return;
-		last = applyMove(game, content, {
+		last = applyMove(game, active, {
 			kind: 'respond',
 			eventId: pendingEvent.id,
 			responseIndex: index
 		});
 		game = last.state;
+		persistMoves();
 		phase = 'feedback';
+	}
+
+	function showElection() {
+		election = runElection(game, active);
+		trackAnalyticsEvent(election.sacked ? 'campaign-sacked' : 'campaign-kept');
+		phase = 'election';
+		if (replaying || !saved.current) return;
+		career = completeCampaign(career, scenarios, saved.current);
+		outcome = career.history.at(-1) ?? null;
+		saved = { ...saved, completed: [...saved.completed, saved.current], current: null };
+		saveCareer(saved);
 	}
 
 	function advance() {
 		if (game.pendingEventId) phase = 'event';
-		else if (game.finished) {
-			election = runElection(game, content);
-			trackAnalyticsEvent(
-				election.sacked ? 'campaign-sacked' : 'campaign-kept'
-			);
-			phase = 'election';
-		} else phase = 'day';
+		else if (game.finished) showElection();
+		else phase = 'day';
 	}
 
 	function startCampaign() {
@@ -101,19 +190,30 @@
 		phase = 'day';
 	}
 
-	function restart() {
-		const next = freshCampaign();
-		seed = next.seed;
-		game = next.game;
-		last = null;
-		election = null;
-		copied = false;
-		phase = 'briefing';
-		history.replaceState(null, '', window.location.pathname);
+	function acceptOffer(id: string) {
+		const record = { scenarioId: id, seed: nextCampaignSeed(career), moves: [] };
+		saved = { ...saved, current: record };
+		saveCareer(saved);
+		beginCampaign(record, startingStats(career));
+	}
+
+	function newCareer() {
+		if (!confirm('Walk away from this career and start again from nothing?')) return;
+		const fresh = freshCareer();
+		saved = fresh.saved;
+		career = fresh.career;
+		saveCareer(saved);
+		beginCampaign(saved.current!, startingStats(career));
+	}
+
+	function leaveReplay() {
+		replaying = false;
+		replaceState(window.location.pathname, {});
+		loadSavedCareer();
 	}
 
 	async function copyLink() {
-		const code = encodeRun({ seed, moves: game.history });
+		const code = encodeRun({ seed: game.seed, moves: game.history, scenarioId, start: game.start });
 		const url = `${window.location.origin}${window.location.pathname}?r=${code}`;
 		await navigator.clipboard.writeText(url);
 		trackAnalyticsEvent('share-link-copied');
@@ -121,6 +221,7 @@
 	}
 
 	const sign = (n: number) => (n > 0 ? `+${n}` : `${n}`);
+	const pounds = (n: number) => `£${new Intl.NumberFormat('en-GB').format(n)}`;
 	const groupName = (id: string) => groups.find((g) => g.id === id)?.name ?? id;
 
 	function formatDelta(line: FeedbackLine) {
@@ -136,10 +237,60 @@
 <main>
 	<header class="masthead">
 		<h1>Spin Doctors</h1>
-		<p>{contract.seat} &middot; by-election</p>
+		{#if phase === 'offers'}
+			<p>Between campaigns</p>
+		{:else}
+			<p>{contract.seat} &middot; {contract.election}</p>
+		{/if}
 	</header>
 
-	{#if phase !== 'briefing'}
+	{#if replaying}
+		<p class="hint">
+			You are playing a shared run. Nothing here touches your own career.
+			<button class="ghost" onclick={leaveReplay}>Back to your career</button>
+		</p>
+	{/if}
+
+	{#snippet careerSummary()}
+		<div class="card">
+			<h3>Your career</h3>
+			<section class="status">
+				<div><span>Recognition</span><strong>{Math.round(career.stats.recognition)}</strong></div>
+				<div><span>Credibility</span><strong>{Math.round(career.stats.credibility)}</strong></div>
+				<div><span>Ruthlessness</span><strong>{Math.round(career.stats.ruthlessness)}</strong></div>
+				<div><span>Your funds</span><strong>{pounds(career.stats.personalFunds)}</strong></div>
+				<div><span>Accounts kept</span><strong>{kept} / {career.history.length}</strong></div>
+			</section>
+			<button class="ghost" onclick={newCareer}>Start a new career</button>
+		</div>
+	{/snippet}
+
+	{#snippet offerList()}
+		<h2>Who's calling</h2>
+		<div class="actions">
+			{#each offers as offer (offer.scenarioId)}
+				{@const job = scenarios[offer.scenarioId].contract}
+				<button
+					class="action"
+					class:locked={offer.unmet.length > 0}
+					disabled={offer.unmet.length > 0}
+					onclick={() => acceptOffer(offer.scenarioId)}
+				>
+					<span>
+						<strong>{job.candidateName} — {job.seat}, {job.election}</strong>
+						<em>{job.pitch}</em>
+						<em>{job.days} days, {pounds(job.budget)} campaign budget</em>
+						{#each offer.unmet as lock (lock.stat)}
+							<em class="lock">🔒 {lock.label}</em>
+						{/each}
+					</span>
+					<span class="cost">Fee {pounds(job.fee)}</span>
+				</button>
+			{/each}
+		</div>
+	{/snippet}
+
+	{#if phase !== 'briefing' && phase !== 'offers'}
 		<section class="status">
 			<div>
 				<span>Day</span>
@@ -172,7 +323,7 @@
 		</section>
 	{/if}
 
-	{#if Object.keys(game.positions).length > 0}
+	{#if phase !== 'offers' && Object.keys(game.positions).length > 0}
 		<section class="position-strip" aria-live="polite" aria-label="Candidate public positions">
 			<strong>Candidate's public position</strong>
 			{#each Object.entries(game.positions) as [issue, position] (issue)}
@@ -192,6 +343,7 @@
 					<li>{objective.label}</li>
 				{/each}
 				<li>Budget: &pound;{new Intl.NumberFormat('en-GB').format(contract.budget)} over {contract.days} days</li>
+				<li>Your fee if you keep the account: {pounds(contract.fee)}</li>
 			</ul>
 			<p class="hint">
 				Miss any objective and you are out of a job. You get one move a day.
@@ -209,6 +361,21 @@
 				<p><strong>{group.name}</strong> — {group.blurb}</p>
 			{/each}
 		</div>
+
+		{#if !replaying}
+			{@render careerSummary()}
+		{/if}
+	{/if}
+
+	{#if phase === 'offers'}
+		{#if outcome}
+			<p class="hint">
+				Last campaign: {scenarios[outcome.record.scenarioId].contract.seat}, {outcome.election.voteShare}% —
+				{outcome.election.sacked ? 'sacked' : 'account kept'}.
+			</p>
+		{/if}
+		{@render offerList()}
+		{@render careerSummary()}
 	{/if}
 
 	{#if phase === 'day'}
@@ -235,7 +402,7 @@
 			{/if}
 			{#each actions as action (action.id)}
 				{@const locks = unmetRequirements(game, action)}
-				{@const forecast = forecastAction(game, content, action, action.targeted ? target : undefined)}
+				{@const forecast = forecastAction(game, active, action, action.targeted ? target : undefined)}
 				<button
 					class="action"
 					class:locked={locks.length > 0}
@@ -373,18 +540,30 @@
 				{/each}
 			</ul>
 			<p>{election.sacked ? contract.sackMessage : contract.keepMessage}</p>
-			{#if election.sacked}
-				<h3>Next season: {contract.nextJob.candidateName}, {contract.nextJob.seat}</h3>
-				<p>{contract.nextJob.sting}</p>
+			{#if outcome}
+				<ul class="feedback">
+					<li>
+						<span>Fee</span>
+						<span class="delta {outcome.feeEarned > 0 ? 'up' : 'down'}">{pounds(outcome.feeEarned)}</span>
+					</li>
+					<li>
+						<span>Recognition</span>
+						<span class="delta {outcome.recognitionDelta >= 0 ? 'up' : 'down'}">{sign(outcome.recognitionDelta)}</span>
+					</li>
+				</ul>
 			{/if}
 		</div>
 
 		<div class="row">
-			<button onclick={restart}>New campaign</button>
 			<button class="ghost" onclick={copyLink}>
 				{copied ? 'Link copied' : 'Copy shareable run link'}
 			</button>
 		</div>
 		<p class="hint">The link replays this exact campaign, gaffes and all.</p>
+
+		{#if !replaying}
+			{@render offerList()}
+			{@render careerSummary()}
+		{/if}
 	{/if}
 </main>

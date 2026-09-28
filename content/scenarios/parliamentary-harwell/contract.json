@@ -1,0 +1,46 @@
+{
+  "id": "parliamentary-harwell",
+  "tier": "parliamentary",
+  "election": "parliamentary seat",
+  "pitch": "The party has parachuted a star into a marginal seat and needs someone to stop her landing on anything important.",
+  "candidateName": "Priya Castellane-Hughes",
+  "candidateBlurb": "Former management consultant, recently discovered a lifelong love of Harwell. Can say 'stakeholder' in six languages. Has visited the constituency twice, once by mistake.",
+  "seat": "Harwell and Stoke Minster",
+  "days": 10,
+  "budget": 90000,
+  "startingMorale": 65,
+  "startingCredibility": 50,
+  "startingRuthlessness": 10,
+  "personalFunds": 18000,
+  "objectives": [
+    {
+      "id": "share",
+      "label": "Reach 40% vote share (the seat was lost by 2,000 votes last time)",
+      "stat": "voteShare",
+      "target": 40
+    },
+    {
+      "id": "morale",
+      "label": "Don't let the party's rising star burn out (morale above 30 on election day)",
+      "stat": "morale",
+      "target": 30
+    }
+  ],
+  "keepMessage": "Castellane-Hughes takes the seat and thanks 'the whole team' in a speech that does not mention you by name. The party chair does, privately, twice.",
+  "sackMessage": "The party chair calls at 2am to say the review will be 'forward-looking'. By 3am your lanyard has stopped opening doors at headquarters.",
+  "fee": 30000,
+  "recognition": { "kept": 14, "sacked": -12 },
+  "requires": [
+    {
+      "stat": "recognition",
+      "min": 12,
+      "label": "Recognition 12 — the party only calls operators it has heard of"
+    },
+    {
+      "stat": "ruthlessness",
+      "max": 70,
+      "label": "Ruthlessness 70 or below — the party cannot be seen with you"
+    }
+  ],
+  "fallback": "council-ashcombe"
+}

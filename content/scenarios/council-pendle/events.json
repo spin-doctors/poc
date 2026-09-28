@@ -1,0 +1,121 @@
+[
+  {
+    "id": "momentum",
+    "day": 2,
+    "headline": "MALCOLM HAS BOOKED THE COMMUNITY CENTRE",
+    "body": "Without telling you, Malcolm has hired the Pendle Hurst community centre for Thursday night to present MOMENTUM in full. He has printed two hundred programmes. The projector belongs to the centre and has not worked since 2014.",
+    "responses": [
+      {
+        "label": "Let him present all forty slides",
+        "hint": "He has rehearsed. Nobody knows for how long.",
+        "flavour": "Eleven people attend. Four stay to the end. One of them films slide 23, which is just the word MOMENTUM in a font called Impact, and it does numbers.",
+        "effects": [
+          { "on": "estate", "stat": "support", "delta": 6, "spin": true },
+          { "on": "retirees", "stat": "support", "delta": -3 },
+          { "on": "all", "stat": "morale", "delta": 10 }
+        ],
+        "riskGaffe": true
+      },
+      {
+        "label": "Cut it to five slides and a cup of tea",
+        "hint": "He will take the edits personally.",
+        "flavour": "The five-slide version is brisk and almost coherent. Malcolm spends the tea break telling people about the thirty-five slides they are missing.",
+        "effects": [
+          { "on": "allotments", "stat": "support", "delta": 5 },
+          { "on": "retirees", "stat": "support", "delta": 3 },
+          { "on": "all", "stat": "morale", "delta": -8 },
+          { "on": "all", "stat": "credibility", "delta": 4 }
+        ]
+      },
+      {
+        "label": "Cancel and blame the projector",
+        "hint": "The projector cannot defend itself.",
+        "flavour": "You issue a statement citing technical difficulties. The centre manager issues a statement saying the projector was never booked. The programmes are recycled as bunting.",
+        "effects": [
+          { "on": "all", "stat": "morale", "delta": -5 },
+          { "on": "all", "stat": "credibility", "delta": -3 },
+          { "on": "all", "stat": "ruthlessness", "delta": 4 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lifts",
+    "day": 4,
+    "headline": "HURST ESTATE LIFTS BREAK DOWN AGAIN — ON CAMERA",
+    "body": "A local news crew is filming a pensioner being carried up nine flights in an office chair. The reporter wants a response from 'the candidates'. Malcolm is the only candidate who answered the phone.",
+    "responses": [
+      {
+        "label": "Send Malcolm up the stairs with a toolbox",
+        "hint": "He is not an engineer. He owns a toolbox.",
+        "flavour": "Malcolm climbs nine flights, opens a panel, and announces the fault is 'basically a fuse'. It is not a fuse. The footage of him trying, however, is genuinely moving.",
+        "effects": [
+          { "on": "estate", "stat": "support", "delta": 12, "spin": true },
+          { "on": "estate", "stat": "turnout", "delta": 6 },
+          { "on": "all", "stat": "morale", "delta": -6 },
+          { "on": "all", "stat": "credibility", "delta": 3 }
+        ]
+      },
+      {
+        "label": "Promise a fully costed lift plan",
+        "hint": "The costs will be approximate.",
+        "flavour": "The plan is costed on the back of slide 17. The estate has heard fully costed plans before and applauds politely, from the stairs.",
+        "effects": [
+          { "on": "estate", "stat": "support", "delta": 4 },
+          { "on": "allotments", "stat": "support", "delta": 3 },
+          { "on": "all", "stat": "money", "delta": -2000 },
+          { "on": "all", "stat": "credibility", "delta": 5 }
+        ]
+      },
+      {
+        "label": "Blame the sitting councillor",
+        "hint": "Fair, as it happens. Also cheap.",
+        "flavour": "Malcolm reads out the incumbent's voting record on lift maintenance. It is damning. It is also read in the voice of a man teaching a three-point turn.",
+        "effects": [
+          { "on": "estate", "stat": "support", "delta": 7, "spin": true },
+          { "on": "retirees", "stat": "support", "delta": -3 },
+          { "on": "all", "stat": "credibility", "delta": -4 },
+          { "on": "all", "stat": "ruthlessness", "delta": 8 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "marrow",
+    "day": 6,
+    "headline": "ALLOTMENT SOCIETY INVITES MALCOLM TO JUDGE THE MARROW SHOW",
+    "body": "It is an honour. It is also a trap: there are two front-running marrows, and their growers have not spoken since 1998. Whoever loses will campaign against you with the energy of the truly wronged.",
+    "responses": [
+      {
+        "label": "Judge it honestly",
+        "hint": "Someone will be furious. Possibly both of them.",
+        "flavour": "Malcolm measures both marrows twice, consults a rulebook, and awards first place with the solemnity of a coronation. The loser leaves before the raffle.",
+        "effects": [
+          { "on": "allotments", "stat": "support", "delta": 4 },
+          { "on": "all", "stat": "credibility", "delta": 5 },
+          { "on": "all", "stat": "morale", "delta": 4 }
+        ]
+      },
+      {
+        "label": "Declare a tie",
+        "hint": "Nobody has ever been happy with a tie.",
+        "flavour": "The tie is received in a silence so complete you can hear the marrows. Both growers put up posters for the other candidate by Sunday.",
+        "effects": [
+          { "on": "allotments", "stat": "support", "delta": -8 },
+          { "on": "all", "stat": "morale", "delta": -4 }
+        ]
+      },
+      {
+        "label": "Quietly find out who has more friends",
+        "hint": "Democracy, in a sense.",
+        "flavour": "You spend the morning counting allies behind the potting shed. The winning marrow is smaller, but its grower chairs the committee.",
+        "effects": [
+          { "on": "allotments", "stat": "support", "delta": 10 },
+          { "on": "allotments", "stat": "turnout", "delta": 5 },
+          { "on": "all", "stat": "credibility", "delta": -6 },
+          { "on": "all", "stat": "ruthlessness", "delta": 9 }
+        ]
+      }
+    ]
+  }
+]

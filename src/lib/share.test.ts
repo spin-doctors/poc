@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { content } from "./content";
+import { content, scenarios } from "./content";
 import { decodeRun, encodeRun } from "./share";
-import { applyMove, createGame, runElection } from "./sim/engine";
+import { applyMove, createGame, replay, runElection } from "./sim/engine";
 import type { PlayerMove } from "./sim/types";
 
 const moves: PlayerMove[] = [
@@ -61,5 +61,34 @@ describe("run codes", () => {
     expect(decodeRun("not-a-valid-code")).toBe(null);
     expect(decodeRun("")).toBe(null);
     expect(decodeRun(btoa('{"nonsense":true}'))).toBe(null);
+    expect(decodeRun(btoa(JSON.stringify([1, [], 7])))).toBe(null);
+    expect(decodeRun(btoa(JSON.stringify([1, [], "x", [1, 2]])))).toBe(null);
+  });
+
+  it("still opens links made before scenarios existed", () => {
+    const legacy = btoa(JSON.stringify([5, [["a", "mediaBuy", ""]]]));
+    expect(decodeRun(legacy)).toEqual({
+      seed: 5,
+      moves: [{ kind: "action", actionId: "mediaBuy", target: undefined }],
+    });
+  });
+
+  it("carries the scenario and career stats a campaign started with", () => {
+    const run = {
+      seed: 77,
+      moves: [{ kind: "action" as const, actionId: "mediaBuy" }],
+      scenarioId: "parliamentary-harwell",
+      start: { credibility: 63, ruthlessness: 21.5, personalFunds: 31000 },
+    };
+    const decoded = decodeRun(encodeRun(run))!;
+    expect(decoded).toEqual(run);
+
+    const harwell = scenarios[decoded.scenarioId!];
+    expect(replay(harwell, decoded.seed, decoded.moves, decoded.start)).toEqual(
+      replay(harwell, run.seed, run.moves, run.start),
+    );
+    expect(
+      replay(harwell, decoded.seed, decoded.moves, decoded.start).credibility,
+    ).toBe(63);
   });
 });
