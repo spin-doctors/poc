@@ -446,3 +446,19 @@ th {
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+@media (max-width: 42rem) {
+  .accounts-active th,
+  .accounts-active td {
+    padding-inline: 0.25rem;
+  }
+
+  .accounts-active .sub,
+  .accounts-active .uncertain,
+  .accounts-active th:nth-child(5),
+  .accounts-active td:nth-child(5),
+  .accounts-active th:nth-child(6),
+  .accounts-active td:nth-child(6) {
+    display: none;
+  }
+}
