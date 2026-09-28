@@ -3,6 +3,8 @@ import type { Content, Effect } from "../schema/content";
 export interface GameState {
   seed: number;
   rngState: number;
+  /** Your own stats on day one; carried in from a career, so replays need them too. */
+  start: StartingStats;
   day: number;
   money: number;
   morale: number;
@@ -21,6 +23,12 @@ export interface GameState {
   pendingEventId: string | null;
   history: PlayerMove[];
   finished: boolean;
+}
+
+export interface StartingStats {
+  credibility: number;
+  ruthlessness: number;
+  personalFunds: number;
 }
 
 export type PlayerMove =

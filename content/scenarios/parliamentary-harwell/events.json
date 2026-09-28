@@ -1,0 +1,220 @@
+[
+  {
+    "id": "leaflet",
+    "day": 2,
+    "headline": "40,000 LEAFLETS PRINTED WITH THE WRONG CONSTITUENCY",
+    "body": "The printers have delivered forty thousand glossy leaflets inviting the good people of 'Harwich and Stoke Minster' to vote for a candidate who 'knows this area like the back of her hand'. Harwich is 140 miles away.",
+    "responses": [
+      {
+        "label": "Reprint everything overnight",
+        "hint": "Expensive, invisible, correct.",
+        "flavour": "The new leaflets arrive at dawn, still warm. Nobody ever knows. The treasurer knows.",
+        "effects": [
+          { "on": "all", "stat": "money", "delta": -12000 },
+          { "on": "all", "stat": "credibility", "delta": 3 }
+        ]
+      },
+      {
+        "label": "Deliver them and lean into the joke",
+        "hint": "Self-deprecation is a strategy, allegedly.",
+        "flavour": "Priya records a video with a map and a sheepish grin. The graduates love it. The retirees write to the paper, on the back of the leaflet.",
+        "effects": [
+          { "on": "graduates", "stat": "support", "delta": 8, "spin": true },
+          { "on": "retirees", "stat": "support", "delta": -6 },
+          { "on": "all", "stat": "morale", "delta": 5 }
+        ],
+        "riskGaffe": true
+      },
+      {
+        "label": "Blame the printers in a press release",
+        "hint": "The printers also print the local paper.",
+        "flavour": "The printers respond with a scan of the order form, signed by your office, with 'Harwich' underlined twice.",
+        "effects": [
+          { "on": "all", "stat": "support", "delta": -2 },
+          { "on": "all", "stat": "credibility", "delta": -8 },
+          { "on": "all", "stat": "ruthlessness", "delta": 8 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tv-debate",
+    "day": 3,
+    "headline": "REGIONAL TV WANTS A HEAD-TO-HEAD DEBATE",
+    "body": "Forty minutes, live, against an incumbent who has done this nine times and once made a presenter cry. The audience is 'balanced', which in Harwell means furious from several directions at once.",
+    "responses": [
+      {
+        "label": "Accept the debate",
+        "hint": "Live television. No edits.",
+        "flavour": "You accept. The producers send over the format: four themes, one closing statement, and a studio audience member who has asked for 'a microphone, specifically'.",
+        "effects": [],
+        "next": "tv-debate-line"
+      },
+      {
+        "label": "Send a statement and an empty chair",
+        "hint": "The chair will be photographed. A lot.",
+        "flavour": "The empty chair trends by nine o'clock. By ten, someone has given it a name, a campaign slogan, and a higher approval rating than your candidate.",
+        "effects": [
+          { "on": "all", "stat": "support", "delta": -3 },
+          { "on": "graduates", "stat": "support", "delta": -4, "spin": true },
+          { "on": "all", "stat": "morale", "delta": 6 },
+          { "on": "all", "stat": "credibility", "delta": -6 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tv-debate-line",
+    "headline": "ONE LINE THEY'LL REMEMBER. WHICH ONE?",
+    "body": "Debates are won on clips. You have time to drill exactly one moment into her. Choose it well: whatever you pick, she will say it whether or not it fits.",
+    "responses": [
+      {
+        "label": "The bypass, costed to the penny",
+        "hint": "Substantial. Possibly sedative.",
+        "flavour": "She recites the bypass costings with total command. The incumbent looks rattled for the first time in a decade. The clip is two minutes long and nobody shares it.",
+        "effects": [
+          { "on": "families", "stat": "support", "delta": 10 },
+          { "on": "farmers", "stat": "support", "delta": 6 },
+          { "on": "all", "stat": "morale", "delta": -5 },
+          { "on": "all", "stat": "credibility", "delta": 8 }
+        ]
+      },
+      {
+        "label": "A zinger about the incumbent's second home",
+        "hint": "Cheap. Effective. Cheap.",
+        "flavour": "'He knows the M4 better than he knows Harwell.' It lands. It lands so hard that the incumbent's reply is drowned out by a man in the audience shouting 'the M4!' for the rest of the hour.",
+        "effects": [
+          { "on": "graduates", "stat": "support", "delta": 12, "spin": true },
+          { "on": "retirees", "stat": "support", "delta": -3 },
+          { "on": "all", "stat": "morale", "delta": 8 },
+          { "on": "all", "stat": "credibility", "delta": -4 },
+          { "on": "all", "stat": "ruthlessness", "delta": 7 }
+        ],
+        "riskGaffe": true
+      },
+      {
+        "label": "A heartfelt story about her grandmother",
+        "hint": "It has to be true. Please let it be true.",
+        "flavour": "It is true, broadly. The grandmother, reached by a tabloid in Surrey, confirms 'most of it' and asks why nobody has visited.",
+        "effects": [
+          { "on": "retirees", "stat": "support", "delta": 11 },
+          { "on": "graduates", "stat": "support", "delta": -3, "spin": true },
+          { "on": "all", "stat": "morale", "delta": 6 },
+          { "on": "all", "stat": "credibility", "delta": 3 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "leader-visit",
+    "day": 5,
+    "headline": "THE PARTY LEADER WANTS TO VISIT. TOMORROW.",
+    "body": "Headquarters has pencilled in a leader's visit to a marginal seat, and yours is the marginal seat. The leader polls terribly locally, brilliantly nationally, and has asked to be photographed 'with a cow, ideally'.",
+    "responses": [
+      {
+        "label": "Roll out the red carpet (and the cow)",
+        "hint": "The cow has not been briefed.",
+        "flavour": "The visit is confirmed. A farm is found. A cow is found. The cow's owner asks, reasonably, who is paying for the cow.",
+        "effects": [
+          { "on": "all", "stat": "money", "delta": -6000 },
+          { "on": "all", "stat": "morale", "delta": 6 }
+        ],
+        "nextDay": "leader-visit-cow"
+      },
+      {
+        "label": "Politely suggest the leader is needed elsewhere",
+        "hint": "Headquarters keeps notes.",
+        "flavour": "Headquarters agrees, coolly. The leader visits the neighbouring seat instead and says something unflattering about bypasses that is quoted on every doorstep in Harwell.",
+        "effects": [
+          { "on": "families", "stat": "support", "delta": -3 },
+          { "on": "farmers", "stat": "support", "delta": 5 },
+          { "on": "all", "stat": "morale", "delta": -4 },
+          { "on": "all", "stat": "credibility", "delta": 4 }
+        ]
+      },
+      {
+        "label": "Leak that the leader is 'nervous about Harwell'",
+        "hint": "Underdog stories sell. So do knives.",
+        "flavour": "The leak runs as a front page: LEADER SWERVES MARGINAL. Priya becomes, overnight, the plucky local rebel. Headquarters becomes, overnight, very interested in who leaked it.",
+        "effects": [
+          { "on": "all", "stat": "support", "delta": 4, "spin": true },
+          { "on": "all", "stat": "morale", "delta": -6 },
+          { "on": "all", "stat": "credibility", "delta": -10 },
+          { "on": "all", "stat": "ruthlessness", "delta": 14 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "leader-visit-cow",
+    "headline": "LEADER MEETS COW",
+    "body": "Six cameras. One cow. The leader approaches it with the confidence of someone who has seen a cow in a book. Priya is standing between them. Nobody has told her where to stand.",
+    "responses": [
+      {
+        "label": "Tell Priya to step back and let the leader own it",
+        "hint": "The leader's moment. The leader's risk.",
+        "flavour": "The leader pats the cow. The cow tolerates it. The photograph runs nationally with Priya's elbow just in shot, which the local paper crops to make it look deliberate.",
+        "effects": [
+          { "on": "families", "stat": "support", "delta": 6, "spin": true },
+          { "on": "farmers", "stat": "support", "delta": 3 },
+          { "on": "all", "stat": "morale", "delta": -3 }
+        ]
+      },
+      {
+        "label": "Tell Priya to take the cow's head",
+        "hint": "She has never touched a cow. It cannot be that hard.",
+        "flavour": "Priya takes hold of the cow with total, consultant-grade confidence. The cow, a veteran of three county shows, respects it. The photo becomes her campaign poster by lunchtime.",
+        "effects": [
+          { "on": "farmers", "stat": "support", "delta": 12 },
+          { "on": "retirees", "stat": "support", "delta": 6 },
+          { "on": "all", "stat": "morale", "delta": 10 }
+        ],
+        "riskGaffe": true
+      }
+    ]
+  },
+  {
+    "id": "expenses",
+    "day": 8,
+    "headline": "EXCLUSIVE: CANDIDATE CLAIMED FOR 'FLOATING COFFEE STATION'",
+    "body": "A national paper has Priya's old consultancy expenses. Among them: £4,300 for a 'floating coffee station' for an office pond. The pond, it turns out, was also expensed. So was the duck.",
+    "responses": [
+      {
+        "label": "Full apology and a donation to charity",
+        "hint": "Costs money. Costs dignity. Buys something.",
+        "flavour": "Priya apologises on the steps of the town hall and writes a cheque to the local wildfowl sanctuary. The sanctuary names a duck after her. It is a very unflattering duck.",
+        "effects": [
+          { "on": "retirees", "stat": "support", "delta": 3 },
+          { "on": "all", "stat": "support", "delta": -3 },
+          { "on": "all", "stat": "money", "delta": -8000 },
+          { "on": "all", "stat": "morale", "delta": -10 },
+          { "on": "all", "stat": "credibility", "delta": 10 }
+        ]
+      },
+      {
+        "label": "It was private-sector money. Next question.",
+        "hint": "Technically true. Technically is doing a lot of work.",
+        "flavour": "The line holds with the graduates, who assume everyone expenses a duck. The retirees do not assume that. The retirees have never expensed anything.",
+        "effects": [
+          { "on": "retirees", "stat": "support", "delta": -10 },
+          { "on": "graduates", "stat": "support", "delta": 3, "spin": true },
+          { "on": "all", "stat": "morale", "delta": 3 },
+          { "on": "all", "stat": "credibility", "delta": -6 },
+          { "on": "all", "stat": "ruthlessness", "delta": 6 }
+        ]
+      },
+      {
+        "label": "Find something worse in the incumbent's past",
+        "hint": "Everyone has a duck.",
+        "flavour": "The incumbent, it emerges, once expensed a moat. Nobody talks about the coffee station again. Nobody talks about policy again either. Turnout forecasts dip across the board.",
+        "effects": [
+          { "on": "all", "stat": "support", "delta": 3 },
+          { "on": "all", "stat": "turnout", "delta": -6 },
+          { "on": "all", "stat": "money", "delta": -10000 },
+          { "on": "all", "stat": "credibility", "delta": -14 },
+          { "on": "all", "stat": "ruthlessness", "delta": 18 }
+        ]
+      }
+    ]
+  }
+]

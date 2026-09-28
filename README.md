@@ -19,7 +19,8 @@ If Football Manager is the model, the mapping is roughly:
 
 ## 🎮 The loop
 
-Seven days, one move per day, then an election.
+A career of campaigns. Each campaign is a week or so, one move per day, then an
+election; between campaigns, you pick your next client from whoever is calling.
 
 - 🗓️ **A contract up front.** Hit the objectives or you are out of a job.
 - 🎭 **One move a day.** Canvass, stage a photo op, buy media, run an attack ad, or prep the candidate.
@@ -31,6 +32,29 @@ Seven days, one move per day, then an election.
 - 🔓 **Unlockable moves.** Your own credibility and ruthlessness decide what you get offered.
 - 🧠 **Candidate morale.** Grind them down and they go off-script in public, without you.
 - 📊 **Polls that lie.** Published with a margin of error, and it is not decorative.
+
+### The career
+
+Your credibility, ruthlessness and personal funds carry from one campaign to
+the next, so a clean week at Ashcombe can mean starting the next job with the
+Inside Track already open. Keeping an account pays the contract's **fee** into
+your personal funds and earns **recognition**: a base amount per contract, plus one for every point you
+beat the vote-share target by (up to ten). Being sacked pays
+nothing, costs recognition, and the only phone that rings is the contract's
+`fallback` — a worse candidate.
+
+| Scenario                          | Tier          | Days | Fee     | Who will hire you                         |
+| --------------------------------- | ------------- | ---- | ------- | ----------------------------------------- |
+| Ashcombe South (Bramley)          | council       | 7    | £12,000 | anyone; where every career starts         |
+| Pendle Hurst West (Malcolm)       | council       | 7    | £4,000  | recognition 15 or below                   |
+| Harwell and Stoke Minster (Priya) | parliamentary | 10   | £30,000 | recognition 12+, ruthlessness 70 or below |
+
+Locked offers stay visible with their requirements, like locked moves. The
+career is saved in `localStorage` as the career seed plus each campaign's seed
+and moves, and rebuilt by replay on load. Share links still cover a single
+campaign, and carry its scenario and starting stats so it replays exactly;
+opening one never touches your own career. Links from before scenarios existed
+replay Ashcombe.
 
 ### Two ways to be good at this
 
@@ -74,16 +98,18 @@ save format, and a cheap path to server-authoritative multiplayer later.
 ## 📁 Structure
 
 ```text
-src/lib/sim/        # pure engine — may not import from svelte
+src/lib/sim/        # pure engine and career layer — may not import from svelte
 src/lib/schema/     # Zod schemas -> inferred TypeScript types
-src/lib/content/    # loads and validates the JSON at startup
+src/lib/content/    # loads, merges and validates the JSON at startup
 src/routes/         # UI
-content/            # voter groups, actions, events, gaffes, contract (writer-editable)
-scripts/balance.ts  # headless harness: runs thousands of campaigns
+content/            # shared actions and gaffes (writer-editable)
+content/scenarios/  # one folder per campaign: contract, voter groups, events
+scripts/balance.ts  # headless harness: runs thousands of campaigns per scenario
 ```
 
 All game content is JSON. Adding a scandal requires no code changes and no
-TypeScript knowledge.
+TypeScript knowledge. Adding a scenario means a new folder and one import in
+`src/lib/content/index.ts`.
 
 ## 🚀 Running it
 
@@ -98,11 +124,14 @@ npm run balance    # balance report
 
 ## ⚖️ Balance
 
-`npm run balance` plays thousands of campaigns under naive strategies and reports
-the sack rate. The target for random play is **20–30%** — frequent enough to feel
-real, rare enough that taking stupid risks is still worth it.
+`npm run balance` plays thousands of campaigns per scenario under naive
+strategies and reports the sack rate; `npm run balance -- 1000 <scenario-id>`
+runs one. The target for random play is **20–30%** in every scenario — frequent
+enough to feel real, rare enough that taking stupid risks is still worth it.
+The harness plays each scenario from its contract's default stats, not with
+carried-over career stats.
 
-Current numbers (4,000 campaigns each):
+Current numbers for Ashcombe (4,000 campaigns each):
 
 | Strategy             | Sacked | Mean share | Notes                                             |
 | -------------------- | ------ | ---------- | ------------------------------------------------- |
@@ -121,6 +150,17 @@ These figures now include the low-probability data-centre branch: backing the
 blockade produces the guaranteed 100% support result, but does not waive the
 separate candidate-morale contract objective.
 
+The other scenarios, random / pollWise / balanced / cleanHands / bareKnuckle sacked:
+
+| Scenario              | random | pollWise | balanced | cleanHands | bareKnuckle |
+| --------------------- | ------ | -------- | -------- | ---------- | ----------- |
+| council-pendle        | 29.1%  | 0.1%     | 4.9%     | 4.3%       | 36.6%       |
+| parliamentary-harwell | 28.9%  | 10.7%    | 22.8%    | 3.6%       | 33.1%       |
+
+Harwell is ten days with four groups, and the photo-op-spamming `balanced`
+strategy stops being safe there. `allDoorstep` is sacked 77.5% of the time
+because the morale objective is stricter.
+
 ### Commissioning polls
 
 There are three tiers: a £2,500 quick poll (±5 points), a £6,000 constituency
@@ -138,9 +178,12 @@ deliberately costly in both time and money.
 ### Known tuning issue
 
 `balanced` — spamming staged photo ops — currently has both the lowest sack rate
-and a high mean share, making the safe middle a little too strong. Its real cost
-(drifting to low credibility with nothing to show for it) only bites once the
-career layer exists. Worth revisiting after playtesting.
+and a high mean share in the council scenarios, making the safe middle a little
+too strong there. The career layer now gives it a cost: it drifts credibility
+down and unlocks nothing to carry forward, and it is far riskier at Harwell.
+Carried-over credibility also means a clean career can open the Inside Track
+from day one, which the harness does not yet measure. Worth revisiting after
+playtesting.
 
 ### Events are data, including branching ones
 

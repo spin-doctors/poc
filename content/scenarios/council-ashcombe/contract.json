@@ -1,5 +1,8 @@
 {
-  "id": "bramley-ashcombe",
+  "id": "council-ashcombe",
+  "tier": "council",
+  "election": "by-election",
+  "pitch": "A safe pair of hands in a seat that keeps nearly slipping. The roundabout is non-negotiable.",
   "candidateName": "Councillor Derek Bramley",
   "candidateBlurb": "Twenty-one years in local government. Owns four identical blue ties. Has strong opinions about a roundabout and will share them unprompted.",
   "seat": "Ashcombe South",
@@ -25,9 +28,7 @@
   ],
   "keepMessage": "Bramley keeps the seat warm and you keep the retainer. His agent sends a bottle of something regrettable and a note reading 'onwards'.",
   "sackMessage": "You are informed by text message, at 11:40pm, while the returning officer is still talking. Bramley's people have already changed the office locks.",
-  "nextJob": {
-    "candidateName": "Malcolm Feather",
-    "seat": "Pendle Hurst West",
-    "sting": "Your new client ran unsuccessfully for the same council seat in 2009, 2013 and 2017. He has a PowerPoint. It is forty slides long and it is called MOMENTUM."
-  }
+  "fee": 12000,
+  "recognition": { "kept": 8, "sacked": -6 },
+  "fallback": "council-pendle"
 }

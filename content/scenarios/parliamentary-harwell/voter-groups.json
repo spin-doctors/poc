@@ -1,0 +1,38 @@
+[
+  {
+    "id": "families",
+    "name": "Commuter-Belt Families",
+    "blurb": "Two cars, one mortgage, zero free evenings. Will vote for whoever makes the school run shorter.",
+    "size": 26000,
+    "baseSupport": 38,
+    "baseTurnout": 62,
+    "gullibility": 45
+  },
+  {
+    "id": "retirees",
+    "name": "Market Town Retirees",
+    "blurb": "Have voted in every election since 1966 and written to the paper about most of them.",
+    "size": 21000,
+    "baseSupport": 34,
+    "baseTurnout": 82,
+    "gullibility": 30
+  },
+  {
+    "id": "farmers",
+    "name": "Hill Farmers",
+    "blurb": "Few in number, enormous in grievance. Can shut a bypass with two tractors and a Tuesday.",
+    "size": 7000,
+    "baseSupport": 29,
+    "baseTurnout": 76,
+    "gullibility": 25
+  },
+  {
+    "id": "graduates",
+    "name": "Science Park Graduates",
+    "blurb": "Young, renting, extremely online. Will retweet you for free and forget to vote for the same price.",
+    "size": 18000,
+    "baseSupport": 41,
+    "baseTurnout": 34,
+    "gullibility": 65
+  }
+]

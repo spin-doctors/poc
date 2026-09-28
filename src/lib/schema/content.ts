@@ -100,8 +100,26 @@ export const objectiveSchema = z.object({
   target: z.number(),
 });
 
+/** Who will hire you between campaigns. Read against career stats, not campaign state. */
+export const careerRequirementSchema = z
+  .object({
+    stat: z.enum(["recognition", "credibility", "ruthlessness"]),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    label: z.string().min(1),
+  })
+  .refine((r) => r.min !== undefined || r.max !== undefined, {
+    message: "A career requirement needs a min or a max",
+  });
+
 export const contractSchema = z.object({
+  /** Doubles as the scenario id. */
   id: z.string().min(1),
+  tier: z.enum(["council", "parliamentary"]),
+  /** Shown under the seat name, e.g. "by-election". */
+  election: z.string().min(1),
+  /** One line on the offer card between campaigns. */
+  pitch: z.string().min(1),
   candidateName: z.string().min(1),
   candidateBlurb: z.string().min(1),
   seat: z.string().min(1),
@@ -116,12 +134,21 @@ export const contractSchema = z.object({
   objectives: z.array(objectiveSchema).min(1),
   sackMessage: z.string().min(1),
   keepMessage: z.string().min(1),
+  /** Paid into your personal funds if you keep the account. */
+  fee: z.number().min(0),
+  /** Base recognition change; keeping the account also earns the margin over target. */
+  recognition: z.object({ kept: z.number(), sacked: z.number() }),
+  requires: z.array(careerRequirementSchema).default([]),
   /** The sadder job waiting for you if you're sacked. */
-  nextJob: z.object({
-    candidateName: z.string().min(1),
-    seat: z.string().min(1),
-    sting: z.string().min(1),
-  }),
+  fallback: z.string().min(1),
+});
+
+/** A writer's per-campaign bundle; shared actions and gaffes are merged in at load. */
+export const scenarioSchema = z.object({
+  contract: contractSchema,
+  groups: z.array(voterGroupSchema).min(1),
+  events: z.array(gameEventSchema),
+  actions: z.array(actionSchema).default([]),
 });
 
 export const contentSchema = z.object({
@@ -141,4 +168,5 @@ export type EventResponse = z.infer<typeof responseSchema>;
 export type GameEvent = z.infer<typeof gameEventSchema>;
 export type Objective = z.infer<typeof objectiveSchema>;
 export type Contract = z.infer<typeof contractSchema>;
+export type CareerRequirement = z.infer<typeof careerRequirementSchema>;
 export type Content = z.infer<typeof contentSchema>;

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { content } from "../content";
+import { content, scenarios } from "../content";
 import {
   applyMove,
   createGame,
+  defaultStart,
   forecastAction,
   isUnlocked,
   pollEstimate,
@@ -54,6 +55,30 @@ describe("content", () => {
     expect(content.contract.days).toBe(7);
   });
 
+  it("schedules the data-centre protest mid-week", () => {
+    const state = playUntilEvent("data-centre-protest");
+    expect(state.day).toBe(5);
+  });
+
+  it("ships unlockables for both play styles", () => {
+    const gated = content.actions.filter((a) => a.requires.length > 0);
+    const stats = new Set(gated.flatMap((a) => a.requires.map((r) => r.stat)));
+    expect(stats.has("credibility")).toBe(true);
+    expect(stats.has("ruthlessness")).toBe(true);
+  });
+});
+
+describe.each(Object.values(scenarios))("scenario $contract.id", (content) => {
+  it("is keyed by its contract id and falls back to a real scenario", () => {
+    expect(scenarios[content.contract.id]).toBe(content);
+    expect(scenarios[content.contract.fallback]).toBeDefined();
+  });
+
+  it("has unique action ids", () => {
+    const ids = content.actions.map((a) => a.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("only references group ids that exist", () => {
     const ids = new Set(content.groups.map((g) => g.id));
     const targets = [
@@ -103,11 +128,6 @@ describe("content", () => {
     expect(new Set(days).size).toBe(days.length);
   });
 
-  it("schedules the data-centre protest mid-week", () => {
-    const state = playUntilEvent("data-centre-protest");
-    expect(state.day).toBe(5);
-  });
-
   it("always leaves a legal move for a broke player", () => {
     const free = content.actions.filter(
       (a) => a.cost === 0 && a.requires.length === 0,
@@ -124,11 +144,46 @@ describe("content", () => {
     }
   });
 
-  it("ships unlockables for both play styles", () => {
-    const gated = content.actions.filter((a) => a.requires.length > 0);
-    const stats = new Set(gated.flatMap((a) => a.requires.map((r) => r.stat)));
-    expect(stats.has("credibility")).toBe(true);
-    expect(stats.has("ruthlessness")).toBe(true);
+  it("plays to an election on free canvassing alone", () => {
+    let state = createGame(content, seed);
+    while (!state.finished) {
+      state = state.pendingEventId
+        ? applyMove(state, content, {
+            kind: "respond",
+            eventId: state.pendingEventId,
+            responseIndex: 0,
+          }).state
+        : applyMove(state, content, {
+            kind: "action",
+            actionId: "doorstep",
+            target: content.groups[0].id,
+          }).state;
+    }
+    expect(runElection(state, content).objectives.length).toBeGreaterThan(0);
+  });
+});
+
+describe("carried-over stats", () => {
+  it("defaults to the contract's starting stats", () => {
+    const state = createGame(content, seed);
+    expect(state.start).toEqual(defaultStart(content));
+    expect(state.credibility).toBe(content.contract.startingCredibility);
+  });
+
+  it("starts from a career's stats when given them, and replays with them", () => {
+    const start = { credibility: 71, ruthlessness: 3, personalFunds: 42000 };
+    const state = createGame(content, seed, start);
+    expect(state.credibility).toBe(71);
+    expect(state.ruthlessness).toBe(3);
+    expect(state.personalFunds).toBe(42000);
+    const insideTrack = content.actions.find((a) => a.id === "insideTrack")!;
+    expect(isUnlocked(state, insideTrack)).toBe(true);
+
+    const moves: PlayerMove[] = [
+      { kind: "action", actionId: "insideTrack", target: "retirees" },
+    ];
+    const played = applyMove(state, content, moves[0]).state;
+    expect(replay(content, seed, moves, start)).toEqual(played);
   });
 });
 

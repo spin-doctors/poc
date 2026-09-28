@@ -1,9 +1,13 @@
-import type { PlayerMove } from "./sim/types";
+import type { PlayerMove, StartingStats } from "./sim/types";
 
 /** Seed + moves is the whole save. Small enough to live in a URL. */
 export interface RunCode {
   seed: number;
   moves: PlayerMove[];
+  /** Absent in links made before scenarios existed. */
+  scenarioId?: string;
+  /** Career stats carried into the campaign; absent means the contract defaults. */
+  start?: StartingStats;
 }
 
 function toBase64Url(text: string): string {
@@ -16,23 +20,48 @@ function fromBase64Url(text: string): string {
 }
 
 export function encodeRun(run: RunCode): string {
-  const compact = [
+  const compact: unknown[] = [
     run.seed,
     run.moves.map((m) =>
       m.kind === "action"
         ? ["a", m.actionId, m.target ?? ""]
         : ["r", m.eventId, m.responseIndex],
     ),
+    run.scenarioId ?? "",
   ];
+  if (run.start)
+    compact.push([
+      run.start.credibility,
+      run.start.ruthlessness,
+      run.start.personalFunds,
+    ]);
   return toBase64Url(JSON.stringify(compact));
 }
 
 export function decodeRun(code: string): RunCode | null {
   try {
-    const [seed, moves] = JSON.parse(fromBase64Url(code));
+    const [seed, moves, scenarioId, start] = JSON.parse(fromBase64Url(code));
     if (typeof seed !== "number" || !Array.isArray(moves)) return null;
+    if (scenarioId !== undefined && typeof scenarioId !== "string") return null;
+    if (
+      start !== undefined &&
+      !(
+        Array.isArray(start) &&
+        start.length === 3 &&
+        start.every((n) => typeof n === "number")
+      )
+    )
+      return null;
     return {
       seed,
+      scenarioId: scenarioId || undefined,
+      start: start
+        ? {
+            credibility: start[0],
+            ruthlessness: start[1],
+            personalFunds: start[2],
+          }
+        : undefined,
       moves: moves.map((m: [string, string, string | number]) =>
         m[0] === "a"
           ? {

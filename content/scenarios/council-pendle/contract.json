@@ -1,0 +1,41 @@
+{
+  "id": "council-pendle",
+  "tier": "council",
+  "election": "council election",
+  "pitch": "Your new client ran unsuccessfully for the same council seat in 2009, 2013 and 2017. He has a PowerPoint. It is forty slides long and it is called MOMENTUM.",
+  "candidateName": "Malcolm Feather",
+  "candidateBlurb": "Retired driving instructor, fourth attempt at the seat. Believes the electorate has been 'warming to him' since 2009. Travels everywhere with a laser pointer.",
+  "seat": "Pendle Hurst West",
+  "days": 7,
+  "budget": 30000,
+  "startingMorale": 70,
+  "startingCredibility": 40,
+  "startingRuthlessness": 10,
+  "personalFunds": 6000,
+  "objectives": [
+    {
+      "id": "share",
+      "label": "Reach 38% vote share (he has never cleared 27%)",
+      "stat": "voteShare",
+      "target": 38
+    },
+    {
+      "id": "morale",
+      "label": "Keep Malcolm upright (morale above 25 on election day)",
+      "stat": "morale",
+      "target": 25
+    }
+  ],
+  "keepMessage": "Malcolm is ecstatic. He adds a forty-first slide, titled YOU, and emails it to you at 3am. The cheque clears on the second attempt.",
+  "sackMessage": "Malcolm thanks you for your service in a reply-all to the entire allotment society. He is already drafting 2027.",
+  "fee": 4000,
+  "recognition": { "kept": 6, "sacked": -3 },
+  "requires": [
+    {
+      "stat": "recognition",
+      "max": 15,
+      "label": "Recognition 15 or below — only operators nobody has heard of return Malcolm's calls"
+    }
+  ],
+  "fallback": "council-pendle"
+}

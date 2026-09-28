@@ -17,6 +17,7 @@ import type {
   ObjectiveResult,
   PlayerMove,
   PollForecast,
+  StartingStats,
 } from "./types";
 
 const MORALE_GAFFE_THRESHOLD = 30;
@@ -25,7 +26,19 @@ const clamp = (n: number, min: number, max: number) =>
   Math.min(max, Math.max(min, n));
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
-export function createGame(content: Content, seed: number): GameState {
+export function defaultStart(content: Content): StartingStats {
+  return {
+    credibility: content.contract.startingCredibility,
+    ruthlessness: content.contract.startingRuthlessness,
+    personalFunds: content.contract.personalFunds,
+  };
+}
+
+export function createGame(
+  content: Content,
+  seed: number,
+  start: StartingStats = defaultStart(content),
+): GameState {
   const support: Record<string, number> = {};
   const turnout: Record<string, number> = {};
   for (const group of content.groups) {
@@ -35,12 +48,13 @@ export function createGame(content: Content, seed: number): GameState {
   return {
     seed,
     rngState: seed,
+    start,
     day: 1,
     money: content.contract.budget,
     morale: content.contract.startingMorale,
-    credibility: content.contract.startingCredibility,
-    ruthlessness: content.contract.startingRuthlessness,
-    personalFunds: content.contract.personalFunds,
+    credibility: start.credibility,
+    ruthlessness: start.ruthlessness,
+    personalFunds: start.personalFunds,
     pollAccuracy: 0,
     support,
     turnout,
@@ -468,8 +482,9 @@ export function replay(
   content: Content,
   seed: number,
   moves: PlayerMove[],
+  start?: StartingStats,
 ): GameState {
-  let state = createGame(content, seed);
+  let state = createGame(content, seed, start);
   for (const move of moves) state = applyMove(state, content, move).state;
   return state;
 }

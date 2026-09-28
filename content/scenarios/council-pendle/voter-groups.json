@@ -1,0 +1,29 @@
+[
+  {
+    "id": "allotments",
+    "name": "Allotment Society",
+    "blurb": "Two hundred members, one shed, and a waiting list older than some of the councillors. They vote as a bloc and hold grudges as a bloc.",
+    "size": 6000,
+    "baseSupport": 30,
+    "baseTurnout": 74,
+    "gullibility": 35
+  },
+  {
+    "id": "estate",
+    "name": "Hurst Estate Tenants",
+    "blurb": "The lifts have been broken since the last election. Nobody on the estate has forgotten who promised to fix them.",
+    "size": 12000,
+    "baseSupport": 22,
+    "baseTurnout": 38,
+    "gullibility": 55
+  },
+  {
+    "id": "retirees",
+    "name": "Chapel Street Retirees",
+    "blurb": "Remember Malcolm from his driving-instructor days. Some of them fondly. Several of them failed.",
+    "size": 8000,
+    "baseSupport": 27,
+    "baseTurnout": 80,
+    "gullibility": 30
+  }
+]
