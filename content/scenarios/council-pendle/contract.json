@@ -9,8 +9,8 @@
   "days": 7,
   "budget": 30000,
   "startingMorale": 70,
-  "startingCredibility": 40,
-  "startingRuthlessness": 10,
+  "startingCredibility": 0,
+  "startingRuthlessness": 0,
   "personalFunds": 6000,
   "objectives": [
     {

@@ -9,9 +9,9 @@
   "days": 10,
   "budget": 90000,
   "startingMorale": 65,
-  "startingCredibility": 50,
-  "startingRuthlessness": 10,
-  "personalFunds": 18000,
+  "startingCredibility": 0,
+  "startingRuthlessness": 0,
+  "personalFunds": 6000,
   "objectives": [
     {
       "id": "share",

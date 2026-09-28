@@ -1,5 +1,13 @@
 export type AnalyticsEvent =
-  "campaign-started" | "campaign-kept" | "campaign-sacked";
+  | "campaign-started"
+  | "campaign-move-played"
+  | "campaign-event-answered"
+  | "campaign-day-advanced"
+  | "company-incorporated"
+  | "staff-hired"
+  | "career-restarted"
+  | "campaign-kept"
+  | "campaign-sacked";
 
 interface GoatCounter {
   path?: () => string;
@@ -12,16 +20,23 @@ declare global {
   }
 }
 
+import { version } from "$app/environment";
+
 const pendingEvents: AnalyticsEvent[] = [];
 const countUrl = import.meta.env.PUBLIC_GOATCOUNTER_URL ?? "";
 let initialized = false;
+
+function send(counter: GoatCounter, event: AnalyticsEvent) {
+  // The path stays stable so counts aggregate across builds.
+  counter.count?.({ path: event, title: `${event} (${version})`, event: true });
+}
 
 export function trackAnalyticsEvent(event: AnalyticsEvent) {
   if (typeof window === "undefined" || !countUrl) return;
 
   const counter = window.goatcounter;
   if (initialized && counter?.count) {
-    counter.count({ path: event, title: event, event: true });
+    send(counter, event);
     return;
   }
 
@@ -45,7 +60,7 @@ export function initAnalytics() {
     if (!counter?.count) return;
 
     for (const event of pendingEvents.splice(0)) {
-      counter.count({ path: event, title: event, event: true });
+      send(counter, event);
     }
   });
   document.head.append(script);

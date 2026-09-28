@@ -1,8 +1,10 @@
+import { version } from "$app/environment";
 import { z } from "zod/v3";
 import type { CareerEntry } from "./sim/career";
 
 /** Earlier keys held sequential campaign records and are deliberately ignored. */
 const KEY = "spin-doctors:career:v3";
+const WELCOME_KEY = "spin-doctors:welcome-dismissed:v1";
 
 const moveSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -39,11 +41,16 @@ const entrySchema = z.discriminatedUnion("kind", [
 const savedCareerSchema = z.object({
   careerSeed: z.number(),
   log: z.array(entrySchema),
+  startedVersion: z.string().optional(),
+  savedVersion: z.string().optional(),
 });
 
 export interface SavedCareer {
   careerSeed: number;
   log: CareerEntry[];
+  /** Builds that began and last wrote this career, for bug reports; absent on older saves. */
+  startedVersion?: string;
+  savedVersion?: string;
 }
 
 /** Null for no save or an unreadable one; the caller starts a fresh career. */
@@ -60,8 +67,27 @@ export function loadCareer(): SavedCareer | null {
 
 export function saveCareer(saved: SavedCareer): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(saved));
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({ ...saved, savedVersion: version }),
+    );
   } catch {
     // Private browsing or a full quota: the career just won't survive a reload.
+  }
+}
+
+export function hasDismissedWelcome(): boolean {
+  try {
+    return localStorage.getItem(WELCOME_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function dismissWelcome(): void {
+  try {
+    localStorage.setItem(WELCOME_KEY, "true");
+  } catch {
+    // The welcome will return on the next visit if storage is unavailable.
   }
 }

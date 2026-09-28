@@ -27,6 +27,17 @@ main {
   padding: 2rem 1.25rem 5rem;
 }
 
+.build-version {
+  padding: 0 1.25rem 1.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.build-version a {
+  color: inherit;
+}
+
 h1,
 h2,
 h3 {

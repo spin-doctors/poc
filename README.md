@@ -245,8 +245,10 @@ To enable privacy-focused pageview and basic campaign analytics:
 3. Deploy the site and check the GoatCounter dashboard. Leave the variable
    unset to disable analytics.
 
-Only campaign starts and kept/sacked outcomes are recorded as named events.
-Gameplay details are not sent.
+Named events record campaign starts, moves, event responses, day advances,
+incorporation, hiring, career restarts, and kept/sacked outcomes. Events contain
+only fixed action-category names. Campaigns, selected actions, targets, event
+choices, and company profile text are not sent.
 
 ### Base path
 
