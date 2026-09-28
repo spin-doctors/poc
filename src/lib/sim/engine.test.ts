@@ -3,6 +3,7 @@ import { content } from "../content";
 import {
   applyMove,
   createGame,
+  forecastAction,
   isUnlocked,
   pollEstimate,
   replay,
@@ -42,9 +43,14 @@ function playUntilEvent(eventId: string, decline = 1): GameState {
 describe("content", () => {
   it("validates against the schema", () => {
     expect(content.groups.length).toBeGreaterThan(0);
-    expect(content.actions.filter((a) => a.requires.length === 0)).toHaveLength(
-      5,
-    );
+    expect(
+      content.actions.filter(
+        (a) => a.requires.length === 0 && a.pollMargin === undefined,
+      ),
+    ).toHaveLength(5);
+    expect(
+      content.actions.filter((a) => a.pollMargin !== undefined),
+    ).toHaveLength(3);
     expect(content.contract.days).toBe(7);
   });
 
@@ -325,6 +331,120 @@ describe("applyMove", () => {
     });
     expect(result.state.pendingEventId).toBe(null);
     expect(result.state.day).toBe(dayBefore + 1);
+  });
+});
+
+describe("commissioned polls", () => {
+  const pollActions = content.actions.filter(
+    (action) => action.pollMargin !== undefined,
+  );
+  const quickPoll = content.actions.find(
+    (action) => action.id === "quickPoll",
+  )!;
+  const fullPoll = content.actions.find((action) => action.id === "fullPoll")!;
+
+  it("costs money and a day without changing voter support or turnout", () => {
+    const initial = createGame(content, seed);
+    const result = applyMove(initial, content, {
+      kind: "action",
+      actionId: "quickPoll",
+    });
+
+    expect(result.state.money).toBe(initial.money - quickPoll.cost);
+    expect(result.state.day).toBe(initial.day + 1);
+    expect(result.state.support).toEqual(initial.support);
+    expect(result.state.turnout).toEqual(initial.turnout);
+    expect(result.state.pollReport).toEqual({ availableOnDay: 2, margin: 5 });
+    expect(result.pollCommissioned).toBe(true);
+  });
+
+  it("does not create a candidate gaffe while commissioning", () => {
+    const fragile = { ...createGame(content, seed), morale: 0 };
+    const result = applyMove(fragile, content, {
+      kind: "action",
+      actionId: "quickPoll",
+    });
+    expect(result.gaffe).toBeNull();
+    expect(result.state.support).toEqual(fragile.support);
+  });
+
+  it("gives higher-priced polls a narrower forecast margin", () => {
+    const tiers = [...pollActions].sort((a, b) => a.cost - b.cost);
+    for (let index = 1; index < tiers.length; index++) {
+      expect(tiers[index].cost).toBeGreaterThan(tiers[index - 1].cost);
+      expect(tiers[index].pollMargin).toBeLessThan(
+        tiers[index - 1].pollMargin!,
+      );
+    }
+    expect(quickPoll.cost).toBeLessThan(fullPoll.cost);
+  });
+
+  it("projects action effects for the currently selected target", () => {
+    const commissioned = applyMove(createGame(content, seed), content, {
+      kind: "action",
+      actionId: "fullPoll",
+    }).state;
+    const attack = content.actions.find((action) => action.id === "attackAd")!;
+    const studentForecast = forecastAction(
+      commissioned,
+      content,
+      attack,
+      "students",
+    );
+    const retireeForecast = forecastAction(
+      commissioned,
+      content,
+      attack,
+      "retirees",
+    );
+
+    expect(studentForecast).not.toBeNull();
+    expect(studentForecast!.margin).toBe(1.5);
+    expect(studentForecast!.share).not.toBe(retireeForecast!.share);
+  });
+
+  it("does not show a report on the commissioning day or after its use day", () => {
+    const initial = createGame(content, seed);
+    expect(
+      forecastAction(initial, content, content.actions[0], "commuters"),
+    ).toBeNull();
+
+    const commissioned = applyMove(initial, content, {
+      kind: "action",
+      actionId: "quickPoll",
+    }).state;
+    const afterDayTwoAction = applyMove(commissioned, content, {
+      kind: "action",
+      actionId: "doorstep",
+      target: "commuters",
+    }).state;
+    expect(afterDayTwoAction.pendingEventId).toBe("podcast");
+    const dayThree = applyMove(afterDayTwoAction, content, {
+      kind: "respond",
+      eventId: "podcast",
+      responseIndex: 1,
+    }).state;
+    expect(dayThree.pollReport).toBeNull();
+    expect(
+      forecastAction(dayThree, content, content.actions[0], "commuters"),
+    ).toBeNull();
+  });
+
+  it("rejects commissioning when the campaign cannot afford the tier", () => {
+    const broke = { ...createGame(content, seed), money: quickPoll.cost - 1 };
+    expect(() =>
+      applyMove(broke, content, { kind: "action", actionId: "quickPoll" }),
+    ).toThrow(/Not enough money/);
+  });
+
+  it("rejects commissioning on the final day", () => {
+    const finalDay = {
+      ...createGame(content, seed),
+      day: content.contract.days,
+    };
+    expect(() =>
+      applyMove(finalDay, content, { kind: "action", actionId: "quickPoll" }),
+    ).toThrow(/no campaign day left/i);
   });
 });
 

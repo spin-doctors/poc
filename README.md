@@ -23,6 +23,7 @@ Seven days, one move per day, then an election.
 
 - 🗓️ **A contract up front.** Hit the objectives or you are out of a job.
 - 🎭 **One move a day.** Canvass, stage a photo op, buy media, run an attack ad, or prep the candidate.
+- 🗳️ **Commission a poll.** Spend a day and campaign money to see the projected vote share for each move tomorrow; better samples cost more and come with a tighter margin.
 - 🎯 **Pick your target.** Most moves are aimed at a single voter group.
 - 🎙️ **An opportunity lands early.** Take the podcast or turn it down — and if you take it, decide what to drill him on.
 - 🔥 **A scandal lands mid-week.** Three ways to handle it, all of them bad.
@@ -102,17 +103,33 @@ real, rare enough that taking stupid risks is still worth it.
 
 Current numbers (4,000 campaigns each):
 
-| Strategy    | Sacked | Mean share | Notes                          |
-| ----------- | ------ | ---------- | ------------------------------ |
-| random      | 26.9%  | 41.9       | naive play, the target band    |
-| allAttack   | 100.0% | 25.3       | degenerate control             |
-| allDoorstep | 34.3%  | 48.8       | great share, wrecked candidate |
-| balanced    | 5.9%   | 44.5       | safe, unlocks nothing          |
-| cleanHands  | 13.4%  | 43.3       | credibility path               |
-| bareKnuckle | 22.9%  | 42.3       | ruthless path, higher variance |
+| Strategy             | Sacked | Mean share | Notes                                   |
+| -------------------- | ------ | ---------- | --------------------------------------- |
+| random               | 26.9%  | 41.9       | random campaign moves, target band      |
+| randomIncludingPolls | 48.0%  | 38.4       | commissions polls without using reports |
+| pollWise             | 3.5%   | 44.8       | buys a full poll, chooses by forecast   |
+| allAttack            | 100.0% | 25.3       | degenerate control                      |
+| allDoorstep          | 34.3%  | 48.8       | great share, wrecked candidate          |
+| balanced             | 5.9%   | 44.5       | safe, unlocks nothing                   |
+| cleanHands           | 13.4%  | 43.3       | credibility path                        |
+| bareKnuckle          | 22.9%  | 42.3       | ruthless path, higher variance          |
 
 The two identity paths land close on mean share but differ on risk, which is the
 intended shape: going dirty should be a gamble, not a strictly worse choice.
+
+### Commissioning polls
+
+There are three tiers: a £2,500 quick poll (±5 points), a £6,000 constituency
+poll (±3), and a £12,000 full-sample poll (±1.5). Commissioning spends that day's
+move but does not change support or turnout. On the following day, each
+available campaign move shows its projected vote share and the poll's margin;
+the report expires after that day's move. A poll cannot be commissioned on the
+final day because there would be no time to act on it.
+
+The projection shows a central estimate from the expected-turnout model, not a
+promise about election night. Poll-informed play performs better in the balance
+harness; commissioning polls randomly without consulting their reports is
+deliberately costly in both time and money.
 
 ### Known tuning issue
 
@@ -133,7 +150,9 @@ choice. Arbitrary branching event trees need no engine changes.
 
 An action may carry `requires`, a list of `{ stat, min, label }`. The label is
 shown to the player while the action is locked, so requirements read as goals.
-Adding a new unlockable is a content change, not a code change.
+Adding a new unlockable is a content change, not a code change. Poll actions use
+`pollMargin` and an empty `effects` array; the engine stores a next-day report
+instead of changing voter stats.
 
 ## � Deployment
 

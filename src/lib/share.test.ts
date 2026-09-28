@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { content } from "./content";
+import { decodeRun, encodeRun } from "./share";
 import { applyMove, createGame, runElection } from "./sim/engine";
 import type { PlayerMove } from "./sim/types";
-import { decodeRun, encodeRun } from "./share";
 
 const moves: PlayerMove[] = [
-  { kind: "action", actionId: "doorstep", target: "commuters" },
+  { kind: "action", actionId: "quickPoll" },
   { kind: "action", actionId: "doorstep", target: "retirees" },
   { kind: "respond", eventId: "podcast", responseIndex: 0 },
   { kind: "respond", eventId: "podcast-prep", responseIndex: 1 },

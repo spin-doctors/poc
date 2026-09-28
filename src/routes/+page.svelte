@@ -6,6 +6,7 @@
 		applyMove,
 		canAfford,
 		createGame,
+		forecastAction,
 		isUnlocked,
 		pollEstimate,
 		runElection,
@@ -32,6 +33,9 @@
 	let copied = $state(false);
 
 	const poll = $derived(pollEstimate(game, content));
+	const commissionedPoll = $derived(
+		game.pollReport?.availableOnDay === game.day ? game.pollReport : null
+	);
 	const pendingEvent = $derived(events.find((e) => e.id === game.pendingEventId) ?? null);
 	const money = $derived(new Intl.NumberFormat('en-GB').format(game.money));
 
@@ -201,17 +205,34 @@
 		</fieldset>
 
 		<div class="actions">
+			{#if commissionedPoll}
+				<p class="poll-note">
+					Commissioned poll: projected vote share if you take each move. The reported margin is
+					&plusmn;{commissionedPoll.margin} points.
+				</p>
+			{/if}
 			{#each actions as action (action.id)}
 				{@const locks = unmetRequirements(game, action)}
+				{@const forecast = forecastAction(game, content, action, action.targeted ? target : undefined)}
 				<button
 					class="action"
 					class:locked={locks.length > 0}
-					disabled={!canAfford(game, action) || locks.length > 0}
+					disabled={
+						!canAfford(game, action) ||
+						locks.length > 0 ||
+						(Boolean(action.pollMargin) && game.day >= contract.days)
+					}
 					onclick={() => take(action.id, action.targeted)}
 				>
 					<span>
 						<strong>{action.name}{action.targeted ? ` → ${groupName(target)}` : ''}</strong>
 						<em>{action.description}</em>
+						{#if forecast}
+							<em class="forecast">Projected vote share: {forecast.share}% &plusmn;{forecast.margin}</em>
+						{/if}
+						{#if action.pollMargin && game.day >= contract.days}
+							<em class="lock">No campaign day remains to use the results</em>
+						{/if}
 						{#each locks as lock (lock.stat)}
 							<em class="lock">🔒 {lock.label}</em>
 						{/each}
@@ -241,6 +262,8 @@
 					</li>
 				{/each}
 			</ul>
+		{:else if last.pollCommissioned}
+			<p class="hint">No voter movement today. The poll results arrive tomorrow.</p>
 		{:else if !last.triggeredEventId}
 			<p class="hint">No measurable effect. It happens.</p>
 		{/if}

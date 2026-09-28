@@ -16,6 +16,7 @@ import type {
   MoveResult,
   ObjectiveResult,
   PlayerMove,
+  PollForecast,
 } from "./types";
 
 const MORALE_GAFFE_THRESHOLD = 30;
@@ -43,6 +44,7 @@ export function createGame(content: Content, seed: number): GameState {
     pollAccuracy: 0,
     support,
     turnout,
+    pollReport: null,
     pendingEventId: null,
     history: [],
     finished: false,
@@ -190,7 +192,11 @@ function eventForDay(content: Content, day: number): GameEvent | undefined {
 
 function advance(state: GameState, content: Content): GameState {
   const day = state.day + 1;
-  return { ...state, day, finished: day > content.contract.days };
+  const pollReport =
+    state.pollReport && state.day >= state.pollReport.availableOnDay
+      ? null
+      : state.pollReport;
+  return { ...state, day, pollReport, finished: day > content.contract.days };
 }
 
 export function canAfford(state: GameState, action: GameAction): boolean {
@@ -247,6 +253,7 @@ export function applyMove(
       feedback: condense(applied.feedback),
       gaffe: gaffed.gaffe,
       triggeredEventId: response.next ?? null,
+      pollCommissioned: false,
     };
   }
 
@@ -254,6 +261,8 @@ export function applyMove(
 
   const action = content.actions.find((a) => a.id === move.actionId);
   if (!action) throw new Error(`Unknown action: ${move.actionId}`);
+  if (action.pollMargin && state.day >= content.contract.days)
+    throw new Error("There is no campaign day left to use this poll");
   if (action.targeted && !move.target)
     throw new Error(`${action.name} needs a target group`);
   if (action.targeted && !findGroup(content, move.target!))
@@ -264,12 +273,23 @@ export function applyMove(
 
   const paid = { ...state, money: state.money - action.cost };
   const applied = applyEffects(paid, content, action.effects, move.target);
-  const gaffed = rollGaffe(applied.state, content);
+  const gaffed = action.pollMargin
+    ? { state: applied.state, gaffe: null }
+    : rollGaffe(applied.state, content);
+  const commissioned = action.pollMargin
+    ? {
+        ...gaffed.state,
+        pollReport: {
+          availableOnDay: state.day + 1,
+          margin: action.pollMargin,
+        },
+      }
+    : gaffed.state;
 
   const event = eventForDay(content, state.day);
   const afterEvent = event
-    ? { ...gaffed.state, pendingEventId: event.id }
-    : advance(gaffed.state, content);
+    ? { ...commissioned, pendingEventId: event.id }
+    : advance(commissioned, content);
 
   return {
     state: { ...afterEvent, history: [...state.history, move] },
@@ -277,6 +297,7 @@ export function applyMove(
     feedback: condense(applied.feedback),
     gaffe: gaffed.gaffe,
     triggeredEventId: event?.id ?? null,
+    pollCommissioned: Boolean(action.pollMargin),
   };
 }
 
@@ -308,6 +329,50 @@ export function pollEstimate(
     margin,
   ).value;
   return { share: round1(clamp(truth + noise, 0, 100)), margin };
+}
+
+function expectedVoteShare(state: GameState, content: Content): number {
+  let votes = 0;
+  let ours = 0;
+  for (const group of content.groups) {
+    const enthusiasm = (state.support[group.id] - group.baseSupport) * 0.15;
+    const turnoutPct = clamp(
+      group.baseTurnout + state.turnout[group.id] + enthusiasm,
+      0,
+      100,
+    );
+    const cast = group.size * (turnoutPct / 100);
+    votes += cast;
+    ours += cast * (state.support[group.id] / 100);
+  }
+  return round1(votes === 0 ? 0 : (ours / votes) * 100);
+}
+
+/** Projects the central estimate for an action without spending or mutating the state. */
+export function forecastAction(
+  state: GameState,
+  content: Content,
+  action: GameAction,
+  targetId?: string,
+): PollForecast | null {
+  if (
+    !state.pollReport ||
+    state.pollReport.availableOnDay !== state.day ||
+    action.pollMargin ||
+    !isAvailable(state, action)
+  ) {
+    return null;
+  }
+  const projected = applyEffects(
+    state,
+    content,
+    action.effects,
+    targetId,
+  ).state;
+  return {
+    share: expectedVoteShare(projected, content),
+    margin: state.pollReport.margin,
+  };
 }
 
 export function runElection(

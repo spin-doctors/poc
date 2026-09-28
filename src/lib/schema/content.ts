@@ -55,7 +55,9 @@ export const actionSchema = z.object({
   /** Targeted actions make the player choose which group to court that day. */
   targeted: z.boolean().default(false),
   requires: z.array(requirementSchema).default([]),
-  effects: z.array(effectSchema).min(1),
+  /** A commissioned poll's confidence margin; commissioning does not move voters. */
+  pollMargin: z.number().positive().max(10).optional(),
+  effects: z.array(effectSchema),
 });
 
 export const responseSchema = z.object({
