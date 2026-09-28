@@ -3,6 +3,7 @@ import type { CareerEntry } from "./sim/career";
 
 /** Earlier keys held sequential campaign records and are deliberately ignored. */
 const KEY = "spin-doctors:career:v3";
+const WELCOME_KEY = "spin-doctors:welcome-dismissed:v1";
 
 const moveSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -63,5 +64,21 @@ export function saveCareer(saved: SavedCareer): void {
     localStorage.setItem(KEY, JSON.stringify(saved));
   } catch {
     // Private browsing or a full quota: the career just won't survive a reload.
+  }
+}
+
+export function hasDismissedWelcome(): boolean {
+  try {
+    return localStorage.getItem(WELCOME_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function dismissWelcome(): void {
+  try {
+    localStorage.setItem(WELCOME_KEY, "true");
+  } catch {
+    // The welcome will return on the next visit if storage is unavailable.
   }
 }
