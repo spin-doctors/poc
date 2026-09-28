@@ -19,7 +19,7 @@
 
 - When adding an effect stat, update the schema and the engine's global-stat handling together; add tests for its bounds and feedback formatting.
 - Keep action requirements tied to numeric stats in `GameState`, and ensure the UI can explain unmet requirements using the content label.
-- Event `day` values schedule top-level events; response `next` values chain to existing event IDs without advancing the day. Update content-integrity and replay tests when changing event flows.
+- Event `day` values schedule top-level events; response `next` values chain immediately, while `nextDay` queues an event after advancing the day. Keep presentation effects such as `corrupted-feed` readable and interactive. Update content-integrity and replay tests when changing event flows.
 - Preserve at least one free, unlocked action so a player with no campaign budget can still take a turn.
 - Use `src/lib/sim/engine.test.ts` and `src/lib/share.test.ts` as the local examples for simulation and replay coverage.
 

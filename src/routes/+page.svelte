@@ -159,6 +159,15 @@
 		</section>
 	{/if}
 
+	{#if Object.keys(game.positions).length > 0}
+		<section class="position-strip" aria-live="polite" aria-label="Candidate public positions">
+			<strong>Candidate's public position</strong>
+			{#each Object.entries(game.positions) as [issue, position] (issue)}
+				<p><span>{issue}</span><span>{position}</span></p>
+			{/each}
+		</section>
+	{/if}
+
 	{#if phase === 'briefing'}
 		<div class="card">
 			<h2>Your new client</h2>
@@ -287,18 +296,30 @@
 	{/if}
 
 	{#if phase === 'event' && pendingEvent}
-		<div class="headline">{pendingEvent.headline}</div>
-		<p>{pendingEvent.body}</p>
-		<div class="actions">
-			{#each pendingEvent.responses as response, i (response.label)}
-				<button class="action" onclick={() => respond(i)}>
-					<span>
-						<strong>{response.label}</strong>
-						{#if response.hint}<em>{response.hint}</em>{/if}
-					</span>
-				</button>
-			{/each}
-		</div>
+		<section
+			class="story-event"
+			class:corrupted-feed={pendingEvent.presentation === 'corrupted-feed'}
+			aria-live="polite"
+		>
+			{#if pendingEvent.presentation === 'corrupted-feed'}
+				<div class="feed-glitch" aria-label="Simulated service interruption">
+					<span>FEED ERROR 0x00C10UD</span>
+					<span>RETRYING LOCAL COPY // SOURCE DATA INCONSISTENT</span>
+				</div>
+			{/if}
+			<div class="headline">{pendingEvent.headline}</div>
+			<p>{pendingEvent.body}</p>
+			<div class="actions">
+				{#each pendingEvent.responses as response, i (response.label)}
+					<button class="action" onclick={() => respond(i)}>
+						<span>
+							<strong>{response.label}</strong>
+							{#if response.hint}<em>{response.hint}</em>{/if}
+						</span>
+					</button>
+				{/each}
+			</div>
+		</section>
 	{/if}
 
 	{#if phase === 'election' && election}

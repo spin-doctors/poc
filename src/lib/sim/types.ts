@@ -17,6 +17,7 @@ export interface GameState {
   /** Additive turnout modifier per group id. */
   turnout: Record<string, number>;
   pollReport: PollReport | null;
+  positions: Record<string, string>;
   pendingEventId: string | null;
   history: PlayerMove[];
   finished: boolean;

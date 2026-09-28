@@ -45,6 +45,7 @@ export function createGame(content: Content, seed: number): GameState {
     support,
     turnout,
     pollReport: null,
+    positions: {},
     pendingEventId: null,
     history: [],
     finished: false,
@@ -233,8 +234,14 @@ export function applyMove(
     if (!event) throw new Error(`Unknown event: ${move.eventId}`);
     const response = event.responses[move.responseIndex];
     if (!response) throw new Error("Invalid response index");
-    if (response.next && !content.events.some((e) => e.id === response.next)) {
-      throw new Error(`Unknown chained event: ${response.next}`);
+    if (
+      (response.next && !content.events.some((e) => e.id === response.next)) ||
+      (response.nextDay &&
+        !content.events.some((e) => e.id === response.nextDay))
+    ) {
+      throw new Error(
+        `Unknown chained event: ${response.next ?? response.nextDay}`,
+      );
     }
 
     const applied = applyEffects(state, content, response.effects);
@@ -242,17 +249,30 @@ export function applyMove(
       ? rollGaffe(applied.state, content)
       : { state: applied.state, gaffe: null };
 
-    // A chained response keeps the day open so the follow-up can resolve.
+    const positions = response.positionChange
+      ? {
+          ...gaffed.state.positions,
+          [response.positionChange.issue]: response.positionChange.position,
+        }
+      : gaffed.state.positions;
+    const responseState = { ...gaffed.state, positions };
+
+    // Same-day chains keep the turn; next-day chains advance before queuing.
     const next = response.next
-      ? { ...gaffed.state, pendingEventId: response.next }
-      : advance({ ...gaffed.state, pendingEventId: null }, content);
+      ? { ...responseState, pendingEventId: response.next }
+      : response.nextDay
+        ? {
+            ...advance({ ...responseState, pendingEventId: null }, content),
+            pendingEventId: response.nextDay,
+          }
+        : advance({ ...responseState, pendingEventId: null }, content);
 
     return {
       state: { ...next, history: [...state.history, move] },
       flavour: response.flavour,
       feedback: condense(applied.feedback),
       gaffe: gaffed.gaffe,
-      triggeredEventId: response.next ?? null,
+      triggeredEventId: response.next ?? response.nextDay ?? null,
       pollCommissioned: false,
     };
   }
@@ -328,7 +348,13 @@ export function pollEstimate(
     -margin,
     margin,
   ).value;
-  return { share: round1(clamp(truth + noise, 0, 100)), margin };
+  const unanimous = content.groups.every(
+    (group) => state.support[group.id] >= 100,
+  );
+  return {
+    share: unanimous ? 100 : round1(clamp(truth + noise, 0, 100)),
+    margin,
+  };
 }
 
 function expectedVoteShare(state: GameState, content: Content): number {

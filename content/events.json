@@ -1,5 +1,83 @@
 [
   {
+    "id": "data-centre-protest",
+    "day": 5,
+    "headline": "BREAKING: LOCALS PROTEST THE NEW MERIDIAN DATA CENTRE",
+    "body": "Residents from the Polytechnic quarter have blockaded the service entrance. The organisers call it a peaceful occupation. The police call it a developing situation. A man in a hi-vis vest is trying to plug a kettle into the perimeter fence.",
+    "responses": [
+      {
+        "label": "Get Bramley behind the blockade",
+        "hint": "The protesters will love it. The candidate may not understand the word 'blockade'.",
+        "flavour": "Bramley appears on camera beside the protesters and says the data centre should be shut down immediately. Someone behind him is holding a sign that says NO MORE CLOUDS.",
+        "effects": [
+          { "on": "students", "stat": "support", "delta": 8 },
+          { "on": "all", "stat": "morale", "delta": -4 },
+          { "on": "all", "stat": "credibility", "delta": -3 }
+        ],
+        "positionChange": {
+          "issue": "Meridian data centre",
+          "position": "Opposes the data centre and backs the blockade"
+        },
+        "nextDay": "data-centre-outage"
+      },
+      {
+        "label": "Condemn the violence and back the investment",
+        "hint": "A firm statement. Several people will agree with you.",
+        "flavour": "Bramley condemns the kettle incident and welcomes the jobs. The protesters boo the statement, then ask whether the jobs include catering.",
+        "effects": [
+          { "on": "students", "stat": "support", "delta": -7 },
+          { "on": "retirees", "stat": "support", "delta": 4 },
+          { "on": "all", "stat": "credibility", "delta": 3 }
+        ],
+        "positionChange": {
+          "issue": "Meridian data centre",
+          "position": "Supports the data centre and condemns the blockade"
+        }
+      },
+      {
+        "label": "Say nothing until the kettle situation is resolved",
+        "hint": "A holding statement is still technically a statement.",
+        "flavour": "Your office issues a statement saying you are monitoring the situation. The situation issues a statement saying it has not noticed.",
+        "effects": [
+          { "on": "all", "stat": "morale", "delta": 2 },
+          { "on": "all", "stat": "credibility", "delta": -2 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "data-centre-outage",
+    "headline": "SERVICE INTERRUPTION: CAMPAIGN FEED PARTIALLY AVAILABLE",
+    "body": "The local news site is returning incomplete pages. Polling data is missing. Your inbox shows three copies of the same message, each with a different timestamp. The campaign office phone rings once, displays a weather symbol, then stops.",
+    "presentation": "corrupted-feed",
+    "responses": [
+      {
+        "label": "Wait for the systems to come back",
+        "hint": "The outage is affecting the whole district. Probably.",
+        "flavour": "You wait. The page reloads itself. For a moment the candidate's biography says he was born in 1842. Then it says 1971 again.",
+        "effects": [],
+        "nextDay": "data-centre-restored"
+      }
+    ]
+  },
+  {
+    "id": "data-centre-restored",
+    "headline": "SYSTEMS RESTORED; THREE RESIDENTS UNACCOUNTED FOR",
+    "body": "The feeds return. The data centre is operating normally. The protest has dispersed, though nobody can locate the kettle, its owner, or the candidate's original statement. Bramley says he has always supported the centre and is surprised anyone remembers otherwise.",
+    "responses": [
+      {
+        "label": "Accept the clarification and move on",
+        "hint": "The clarification is 86 pages long and arrives in a leather folder.",
+        "flavour": "The campaign feed refreshes. Every poll now says 100%. Bramley insists this is what he meant all along.",
+        "effects": [{ "on": "all", "stat": "support", "delta": 100 }],
+        "positionChange": {
+          "issue": "Meridian data centre",
+          "position": "Enthusiastically supports the centre; denies ever opposing it"
+        }
+      }
+    ]
+  },
+  {
     "id": "podcast",
     "day": 2,
     "headline": "THE ASHCOMBE HOUR WANTS YOUR CANDIDATE FOR A FULL HOUR",
