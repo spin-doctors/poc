@@ -1,7 +1,8 @@
 import { z } from "zod/v3";
 import type { CampaignRecord, IncorporationRecord } from "./sim/career";
 
-const KEY = "spin-doctors:career:v1";
+const KEY = "spin-doctors:career:v2";
+const LEGACY_KEY = "spin-doctors:career:v1";
 
 const moveSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -42,6 +43,12 @@ const savedCareerSchema = z.object({
   incorporation: incorporationSchema.nullable().default(null),
 });
 
+const legacySavedCareerSchema = z.object({
+  careerSeed: z.number(),
+  completed: z.array(recordSchema),
+  current: recordSchema.nullable(),
+});
+
 export interface SavedCareer {
   careerSeed: number;
   completed: CampaignRecord[];
@@ -53,9 +60,15 @@ export interface SavedCareer {
 export function loadCareer(): SavedCareer | null {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    const parsed = savedCareerSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : null;
+    if (raw) {
+      const parsed = savedCareerSchema.safeParse(JSON.parse(raw));
+      if (parsed.success) return parsed.data;
+    }
+    const legacyRaw = localStorage.getItem(LEGACY_KEY);
+    if (!legacyRaw) return null;
+    const legacy = legacySavedCareerSchema.safeParse(JSON.parse(legacyRaw));
+    if (!legacy.success) return null;
+    return { ...legacy.data, incorporation: null };
   } catch {
     return null;
   }
