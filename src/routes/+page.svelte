@@ -3,13 +3,7 @@
 	import { version } from '$app/environment';
 	import { trackAnalyticsEvent } from '$lib/analytics';
 	import { setGameBackHandler } from '$lib/androidNavigation';
-	import {
-		dismissWelcome,
-		hasDismissedWelcome,
-		loadCareer,
-		saveCareer,
-		type SavedCareer
-	} from '$lib/careerStorage';
+	import { loadCareer, saveCareer, type SavedCareer } from '$lib/careerStorage';
 	import CampaignView from '$lib/components/CampaignView.svelte';
 	import CareerView from '$lib/components/CareerView.svelte';
 	import Dashboard from '$lib/components/Dashboard.svelte';
@@ -17,10 +11,11 @@
 	import HelpView from '$lib/components/HelpView.svelte';
 	import Menu, { type MenuDestination } from '$lib/components/Menu.svelte';
 	import SettingsView from '$lib/components/SettingsView.svelte';
-	import Welcome from '$lib/components/Welcome.svelte';
 	import { defaultScenarioId, scenarios } from '$lib/content';
 	import {
 		applyCareerEntry,
+		isSoloCareer,
+		nextAssignment,
 		playCampaignMove,
 		replayCareer,
 		startCareer,
@@ -52,9 +47,18 @@
 	let career = $state<CareerState>(startCareer(scenarios, defaultScenarioId, initial.careerSeed));
 	let view = $state<View>({ kind: 'dashboard' });
 	let appReady = $state(false);
-	let welcomeVisible = $state(false);
 	let settings = $state<GameSettings>(defaultSettings);
 	let menuOpen = $state(false);
+
+	/** The core single-campaign game; the multi-account dashboard is an experimental feature. */
+	const simple = $derived(!settings.experimental && isSoloCareer(career));
+	const solo = $derived(career.active[0]);
+	const lastOutcome = $derived(career.history.at(-1));
+
+	// A new player is dropped straight into their first race.
+	$effect(() => {
+		if (appReady && simple && !solo && !lastOutcome) takeNextClient();
+	});
 
 	onMount(() => {
 		const loaded = loadCareer();
@@ -69,7 +73,6 @@
 			}
 		}
 		if (!restored) saveCareer(saved);
-		welcomeVisible = !hasDismissedWelcome();
 		settings = loadSettings();
 		appReady = true;
 		return setGameBackHandler(() => {
@@ -82,11 +85,6 @@
 			return true;
 		});
 	});
-
-	function continueFromWelcome() {
-		dismissWelcome();
-		welcomeVisible = false;
-	}
 
 	function record(entry: CareerEntry, next: CareerState) {
 		career = next;
@@ -101,7 +99,18 @@
 	function accept(scenarioId: string) {
 		apply({ kind: 'accept', scenarioId });
 		trackAnalyticsEvent('campaign-started');
-		view = { kind: 'campaign', id: career.active.at(-1)!.id };
+		if (!simple) view = { kind: 'campaign', id: career.active.at(-1)!.id };
+	}
+
+	function takeNextClient() {
+		const scenarioId = nextAssignment(career, scenarios, defaultScenarioId);
+		if (scenarioId) accept(scenarioId);
+	}
+
+	/** Closes the day for the solo campaign; false once its election has been called. */
+	function endSoloDay(campaignId: number) {
+		tick();
+		return career.active.some((c) => c.id === campaignId);
 	}
 
 	function move(campaignId: number, playerMove: PlayerMove) {
@@ -147,8 +156,6 @@
 	}
 
 	function openFromMenu(destination: MenuDestination) {
-		welcomeVisible = false;
-		dismissWelcome();
 		view = { kind: destination };
 	}
 
@@ -159,30 +166,47 @@
 	<header class="masthead masthead-bar">
 		<h1>Spin Doctors</h1>
 		{#if appReady}
-			<Menu bind:open={menuOpen} experimental={settings.experimental} onSelect={openFromMenu} />
+			<Menu bind:open={menuOpen} showCareer={!simple} onSelect={openFromMenu} />
 		{/if}
 	</header>
 
 	{#if !appReady}
 		<p role="status">Loading your campaign...</p>
-	{:else if welcomeVisible}
-		<Welcome onContinue={continueFromWelcome} />
-	{:else if view.kind === 'campaign'}
-		{@const id = view.id}
-		{#key id}
-			<CampaignView {career} campaignId={id} onMove={(m) => move(id, m)} onBack={toDashboard} />
-		{/key}
-	{:else if view.kind === 'career' && settings.experimental}
-		<CareerView {career} onIncorporate={incorporate} onHire={hire} onBack={toDashboard} />
 	{:else if view.kind === 'help'}
 		<HelpView onBack={toDashboard} />
 	{:else if view.kind === 'settings'}
 		<SettingsView
 			{settings}
+			soloCareer={isSoloCareer(career)}
 			onChange={changeSettings}
 			onNewCareer={newCareer}
 			onBack={toDashboard}
 		/>
+	{:else if simple}
+		{#if solo}
+			{@const id = solo.id}
+			{#key id}
+				<CampaignView
+					{career}
+					campaignId={id}
+					simple
+					onMove={(m) => move(id, m)}
+					onEndDay={() => endSoloDay(id)}
+					onBack={toDashboard}
+				/>
+			{/key}
+		{:else if lastOutcome}
+			<ElectionNight outcome={lastOutcome} simple onNext={takeNextClient} onBack={toDashboard} />
+		{:else}
+			<p role="status">Your phone is ringing...</p>
+		{/if}
+	{:else if view.kind === 'campaign'}
+		{@const id = view.id}
+		{#key id}
+			<CampaignView {career} campaignId={id} onMove={(m) => move(id, m)} onBack={toDashboard} />
+		{/key}
+	{:else if view.kind === 'career'}
+		<CareerView {career} onIncorporate={incorporate} onHire={hire} onBack={toDashboard} />
 	{:else if view.kind === 'result'}
 		<ElectionNight outcome={career.history[view.index]} onBack={toDashboard} />
 	{:else}

@@ -12,6 +12,8 @@ import {
   HIRE_FEE,
   incorporateCareer,
   INCORPORATION_FEE,
+  isSoloCareer,
+  nextAssignment,
   nextCampaignSeed,
   replayCareer,
   startCareer,
@@ -246,6 +248,76 @@ describe("career", () => {
     expect(
       replayCareer(scenarios, defaultScenarioId, careerSeed, run.log),
     ).toEqual(run.career);
+  });
+});
+
+describe("next assignment", () => {
+  const next = (career: CareerState) =>
+    nextAssignment(career, scenarios, defaultScenarioId);
+
+  it("treats a company-free, single-account career as solo", () => {
+    const run = driver();
+    expect(isSoloCareer(run.career)).toBe(true);
+    run.apply({ kind: "accept", scenarioId: defaultScenarioId });
+    expect(isSoloCareer(run.career)).toBe(true);
+    expect(isSoloCareer(incorporateCareer(funded(20_000), company))).toBe(
+      false,
+    );
+  });
+
+  it("hands a fresh career the first contract", () => {
+    expect(next(fresh())).toBe(defaultScenarioId);
+  });
+
+  it("offers nothing while the only account is busy", () => {
+    const run = driver();
+    run.apply({ kind: "accept", scenarioId: defaultScenarioId });
+    expect(next(run.career)).toBeNull();
+  });
+
+  it("promotes a strong win to the parliamentary seat", () => {
+    const run = driver();
+    run.apply({ kind: "accept", scenarioId: defaultScenarioId });
+    run.playOut(0, winAshcombe);
+    expect(next(run.career)).toBe("parliamentary-harwell");
+  });
+
+  it("hands a sacked operator the fallback", () => {
+    const run = driver();
+    run.apply({ kind: "accept", scenarioId: defaultScenarioId });
+    run.playOut(0, loseAshcombe);
+    expect(next(run.career)).toBe(
+      scenarios[defaultScenarioId].contract.fallback,
+    );
+  });
+
+  it("prefers a new seat when only council work is open", () => {
+    const career = fresh();
+    const kept: CareerState = {
+      ...career,
+      stats: { ...career.stats, recognition: 5 },
+      history: [
+        {
+          campaignId: 0,
+          scenarioId: defaultScenarioId,
+          start: career.stats,
+          election: {
+            voteShare: 40,
+            totalVotes: 0,
+            ourVotes: 0,
+            morale: 50,
+            sacked: false,
+            groups: [],
+            objectives: [],
+          },
+          feeEarned: 0,
+          recognitionDelta: 5,
+          decidedOnDay: 7,
+        },
+      ],
+    };
+    expect(next(kept)).toBe(pendle);
+    expect(canAccept(kept, scenarios, next(kept)!)).toBe(true);
   });
 });
 

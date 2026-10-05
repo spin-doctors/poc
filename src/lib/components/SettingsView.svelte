@@ -3,12 +3,13 @@
 
 	interface Props {
 		settings: GameSettings;
+		soloCareer: boolean;
 		onChange: (settings: GameSettings) => void;
 		onNewCareer: () => void;
 		onBack: () => void;
 	}
 
-	let { settings, onChange, onNewCareer, onBack }: Props = $props();
+	let { settings, soloCareer, onChange, onNewCareer, onBack }: Props = $props();
 </script>
 
 <p class="dateline">Settings</p>
@@ -28,9 +29,16 @@
 		Enable experimental features
 	</label>
 	<p class="hint">
-		Adds work in progress that is not part of the core game yet: incorporating a company and hiring
-		staff, from <em>Career &amp; company</em> in the menu. Your save is unaffected either way.
+		Adds work in progress that is not part of the core game yet: the multi-account dashboard, where
+		you pick your own clients, incorporate a company and hire staff from <em>Career &amp; company</em>
+		in the menu.
 	</p>
+	{#if !soloCareer}
+		<p class="hint">
+			This career already runs a company or several accounts, so it stays on the dashboard until you
+			start a new career.
+		</p>
+	{/if}
 </div>
 
 <div class="card">

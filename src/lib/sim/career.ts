@@ -245,6 +245,11 @@ export function accountCapacity(career: CareerState): number {
   return 1 + (career.company?.staff ?? 0);
 }
 
+/** A career the single-campaign game can show: no company and at most one account. */
+export function isSoloCareer(career: CareerState): boolean {
+  return career.company === null && career.active.length <= 1;
+}
+
 /** Derived rather than stored, so a career replays from its seed alone. */
 export function nextCampaignSeed(career: CareerState): number {
   const roll = nextRandom(career.careerSeed + career.accepted * 7919);
@@ -314,6 +319,29 @@ export function canAccept(
     !offer.running &&
     career.active.length < accountCapacity(career)
   );
+}
+
+/**
+ * The client a solo operator is handed next, without choosing: the first contract on a
+ * fresh career, otherwise the highest-tier open offer, preferring a new seat over a repeat.
+ */
+export function nextAssignment(
+  career: CareerState,
+  scenarios: Scenarios,
+  firstScenarioId: string,
+): string | null {
+  if (career.active.length >= accountCapacity(career)) return null;
+  const open = careerOffers(career, scenarios).filter(
+    (o) => o.unmet.length === 0 && !o.running,
+  );
+  const last = career.history.at(-1);
+  if (!last) {
+    return open.some((o) => o.scenarioId === firstScenarioId)
+      ? firstScenarioId
+      : null;
+  }
+  const fresh = open.find((o) => o.scenarioId !== last.scenarioId);
+  return (fresh ?? open[0])?.scenarioId ?? null;
 }
 
 function acceptOffer(

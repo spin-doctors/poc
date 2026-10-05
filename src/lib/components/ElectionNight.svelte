@@ -5,10 +5,13 @@
 
 	interface Props {
 		outcome: CampaignOutcome;
+		/** The single-campaign game: no dashboard or fees, just the next client. */
+		simple?: boolean;
+		onNext?: () => void;
 		onBack: () => void;
 	}
 
-	let { outcome, onBack }: Props = $props();
+	let { outcome, simple = false, onNext, onBack }: Props = $props();
 
 	const contract = $derived(scenarios[outcome.scenarioId].contract);
 	const election = $derived(outcome.election);
@@ -16,9 +19,11 @@
 
 <p class="dateline">{contract.candidateName} &middot; {contract.seat} &middot; {contract.election}</p>
 
-<div class="row nav">
-	<button class="ghost" onclick={onBack}>&larr; Dashboard</button>
-</div>
+{#if !simple}
+	<div class="row nav">
+		<button class="ghost" onclick={onBack}>&larr; Dashboard</button>
+	</div>
+{/if}
 
 <h2>Election night</h2>
 <table>
@@ -58,10 +63,12 @@
 	</ul>
 	<p>{election.sacked ? contract.sackMessage : contract.keepMessage}</p>
 	<ul class="feedback">
-		<li>
-			<span>Fee</span>
-			<span class="delta {outcome.feeEarned > 0 ? 'up' : 'down'}">{pounds(outcome.feeEarned)}</span>
-		</li>
+		{#if !simple}
+			<li>
+				<span>Fee</span>
+				<span class="delta {outcome.feeEarned > 0 ? 'up' : 'down'}">{pounds(outcome.feeEarned)}</span>
+			</li>
+		{/if}
 		<li>
 			<span>Recognition</span>
 			<span class="delta {outcome.recognitionDelta >= 0 ? 'up' : 'down'}"
@@ -71,4 +78,8 @@
 	</ul>
 </div>
 
-<button onclick={onBack}>Back to dashboard</button>
+{#if simple && onNext}
+	<button onclick={onNext}>{election.sacked ? 'Take whatever work you can get' : 'Meet your next client'}</button>
+{:else}
+	<button onclick={onBack}>Back to dashboard</button>
+{/if}

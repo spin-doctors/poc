@@ -5,11 +5,12 @@
 <script lang="ts">
 	interface Props {
 		open: boolean;
-		experimental: boolean;
+		/** The career screen belongs to the multi-account game only. */
+		showCareer: boolean;
 		onSelect: (destination: MenuDestination) => void;
 	}
 
-	let { open = $bindable(), experimental, onSelect }: Props = $props();
+	let { open = $bindable(), showCareer, onSelect }: Props = $props();
 
 	const feedbackUrl = 'https://github.com/spin-doctors/poc/issues/new';
 
@@ -44,7 +45,7 @@
 	{#if open}
 		<nav id="game-menu" aria-label="Game menu">
 			<ul>
-				{#if experimental}
+				{#if showCareer}
 					<li><button class="ghost" onclick={() => choose('career')}>Career &amp; company</button></li>
 				{/if}
 				<li><button class="ghost" onclick={() => choose('help')}>How to play</button></li>

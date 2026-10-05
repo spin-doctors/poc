@@ -15,11 +15,15 @@
 	interface Props {
 		career: CareerState;
 		campaignId: number;
+		/** The single-campaign game: no dashboard, and each move is followed by ending the day. */
+		simple?: boolean;
 		onMove: (move: PlayerMove) => MoveResult;
+		/** Ends the day; returns false once the election has been called. */
+		onEndDay?: () => boolean;
 		onBack: () => void;
 	}
 
-	let { career, campaignId, onMove, onBack }: Props = $props();
+	let { career, campaignId, simple = false, onMove, onEndDay, onBack }: Props = $props();
 
 	const campaign = $derived(career.active.find((c) => c.id === campaignId)!);
 	const game = $derived(campaignView(career, campaignId));
@@ -50,17 +54,28 @@
 
 	const groupName = (id: string) => groups.find((g) => g.id === id)?.name ?? id;
 
+	const firstJob = $derived(career.history.length === 0);
+	const finalDay = $derived(game.day >= contract.days);
+
 	function play(move: PlayerMove) {
 		last = onMove(move);
 		stage = 'feedback';
+	}
+
+	function nextDay() {
+		if (!onEndDay?.()) return;
+		last = null;
+		stage = game.pendingEventId ? 'event' : 'day';
 	}
 </script>
 
 <p class="dateline">{contract.candidateName} &middot; {contract.seat} &middot; {contract.election}</p>
 
-<div class="row nav">
-	<button class="ghost" onclick={onBack}>&larr; Dashboard</button>
-</div>
+{#if !simple}
+	<div class="row nav">
+		<button class="ghost" onclick={onBack}>&larr; Dashboard</button>
+	</div>
+{/if}
 
 <section class="status">
 	<div>
@@ -68,7 +83,9 @@
 		<strong>{Math.min(game.day, contract.days)} / {contract.days}</strong>
 	</div>
 	<div><span>Budget</span><strong>{pounds(game.money)}</strong></div>
-	<div><span>{fundsLabel}</span><strong>{pounds(game.personalFunds)}</strong></div>
+	{#if !simple}
+		<div><span>{fundsLabel}</span><strong>{pounds(game.personalFunds)}</strong></div>
+	{/if}
 	<div><span>Candidate morale</span><strong>{Math.round(game.morale)}</strong></div>
 	<div><span>Credibility</span><strong>{Math.round(game.credibility)}</strong></div>
 	<div><span>Ruthlessness</span><strong>{Math.round(game.ruthlessness)}</strong></div>
@@ -89,6 +106,13 @@
 
 {#if stage === 'briefing'}
 	<div class="card">
+		{#if simple && firstJob}
+			<p>
+				You are a freelance spin doctor, and your phone has just rung. You are not the candidate; you
+				are the one who makes the candidate look good. Hit the objectives on election night or you
+				are out of a job.
+			</p>
+		{/if}
 		<h2>Your new client</h2>
 		<h3>{contract.candidateName}</h3>
 		<p>{contract.candidateBlurb}</p>
@@ -98,16 +122,26 @@
 				<li>{objective.label}</li>
 			{/each}
 			<li>Budget: {pounds(contract.budget)} over {contract.days} days</li>
-			<li>Your fee if you keep the account: {pounds(contract.fee)}</li>
+			{#if !simple}
+				<li>Your fee if you keep the account: {pounds(contract.fee)}</li>
+			{/if}
 		</ul>
-		<p class="hint">
-			Miss any objective and you are out of a job. You get one move a day on each account; a day
-			you leave idle costs the candidate {IDLE_MORALE_PENALTY} morale.
-		</p>
-		<p class="hint">
-			Some moves are locked. Your credibility and your reputation for ruthlessness decide which
-			ones open up — and they are shared across every account you run.
-		</p>
+		{#if simple}
+			<p class="hint">Miss any objective and you are out of a job. You get one move a day.</p>
+			<p class="hint">
+				Some moves are locked. Your credibility and your reputation for ruthlessness decide which
+				ones open up — and they follow you from client to client.
+			</p>
+		{:else}
+			<p class="hint">
+				Miss any objective and you are out of a job. You get one move a day on each account; a day
+				you leave idle costs the candidate {IDLE_MORALE_PENALTY} morale.
+			</p>
+			<p class="hint">
+				Some moves are locked. Your credibility and your reputation for ruthlessness decide which
+				ones open up — and they are shared across every account you run.
+			</p>
+		{/if}
 		<button onclick={() => (stage = 'day')}>Plan today's move</button>
 	</div>
 
@@ -213,6 +247,8 @@
 
 	{#if pendingEvent}
 		<button onclick={() => (stage = 'event')}>Continue</button>
+	{:else if simple}
+		{@render endDayButton()}
 	{:else}
 		<button onclick={onBack}>Back to dashboard</button>
 	{/if}
@@ -251,7 +287,18 @@
 {#if stage === 'done'}
 	<div class="card">
 		<h3>Done for today</h3>
-		<p>Today's move on this account is in. Come back once the day has passed.</p>
-		<button onclick={onBack}>Back to dashboard</button>
+		{#if simple}
+			<p>Today's move is in.</p>
+			{@render endDayButton()}
+		{:else}
+			<p>Today's move on this account is in. Come back once the day has passed.</p>
+			<button onclick={onBack}>Back to dashboard</button>
+		{/if}
 	</div>
 {/if}
+
+{#snippet endDayButton()}
+	<button onclick={nextDay}>
+		{finalDay ? 'Polls close — go to the count' : `On to day ${game.day + 1}`}
+	</button>
+{/snippet}

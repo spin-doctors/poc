@@ -19,12 +19,19 @@ If Football Manager is the model, the mapping is roughly:
 
 ## 🎮 The loop
 
-A career of campaigns, run from a dashboard. Each campaign is a week or so, one
-move per day on each account, then an election; the offers board shows whoever
-is calling. Days pass for every account at once — the prototype has a
-**Simulate next day** button standing in for the real calendar — and each
-election is called when its final day ends. An account left without a move for
-the day loses the day and some candidate morale.
+One campaign at a time. A new player is dropped straight into the Ashcombe
+South council by-election: a week or so of one move per day, then an election.
+After each move you move on to the next day; the election is called when the
+final day ends, and then the next client calls. Who that is depends on how
+you did — a strong win gets you promoted, a sacking gets you a worse
+candidate. There is no dashboard and no candidate picker; funds and fees stay
+out of sight.
+
+The full career — a dashboard with an offers board, several accounts at once,
+and a **Simulate next day** button standing in for the real calendar — sits
+behind the experimental flag in **Settings** (☰ menu). There, days pass for
+every account at once, and an account left without a move for the day loses
+the day and some candidate morale.
 
 - 🗓️ **A contract up front.** Hit the objectives or you are out of a job.
 - 🎭 **One move a day.** Canvass, stage a photo op, buy media, run an attack ad, or prep the candidate.
@@ -53,8 +60,10 @@ nothing, costs recognition, and the only phone that rings is the contract's
 | Pendle Hurst West (Malcolm)       | council       | 7    | £4,000  | recognition 15 or below                   |
 | Harwell and Stoke Minster (Priya) | parliamentary | 10   | £30,000 | recognition 12+, ruthlessness 70 or below |
 
-Locked offers stay visible with their requirements, like locked moves. Alone
-you can run one account at a time; incorporate a company (an experimental
+In the simple game the next client is chosen for you: the highest-tier
+contract you qualify for, avoiding an immediate repeat. With experimental
+features on, locked offers stay visible with their requirements, like locked
+moves. Alone you can run one account at a time; incorporate a company (an experimental
 feature: turn it on in **Settings** from the ☰ menu), then hire staff
 (a one-off fee plus a daily wage from company cash) to run one more account
 per staffer, never the same seat twice at once. The career is saved in
