@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultScenarioId, scenarios } from "../content";
+import { defaultScenarioId, epilogues, scenarios } from "../content";
 import {
   accountCapacity,
   applyCareerEntry,
@@ -7,11 +7,13 @@ import {
   canAccept,
   canHire,
   canIncorporate,
+  careerEpilogue,
   careerOffers,
   DAILY_WAGE,
   HIRE_FEE,
   incorporateCareer,
   INCORPORATION_FEE,
+  isCareerOver,
   isSoloCareer,
   nextAssignment,
   nextCampaignSeed,
@@ -102,6 +104,38 @@ const doorstep: Picker = (state) =>
       };
 
 const fresh = () => startCareer(scenarios, defaultScenarioId, careerSeed);
+
+/** A solo career just after one election, with operator stats overridden. */
+function after(
+  scenarioId: string,
+  stats: Partial<CareerState["stats"]>,
+  sacked = false,
+): CareerState {
+  const career = fresh();
+  return {
+    ...career,
+    stats: { ...career.stats, ...stats },
+    history: [
+      {
+        campaignId: 0,
+        scenarioId,
+        start: career.stats,
+        election: {
+          voteShare: sacked ? 20 : 40,
+          totalVotes: 0,
+          ourVotes: 0,
+          morale: 50,
+          sacked,
+          groups: [],
+          objectives: [],
+        },
+        feeEarned: 0,
+        recognitionDelta: 0,
+        decidedOnDay: 7,
+      },
+    ],
+  };
+}
 
 const funded = (personalFunds: number) => ({
   ...fresh(),
@@ -292,32 +326,76 @@ describe("next assignment", () => {
   });
 
   it("prefers a new seat when only council work is open", () => {
-    const career = fresh();
-    const kept: CareerState = {
-      ...career,
-      stats: { ...career.stats, recognition: 5 },
-      history: [
-        {
-          campaignId: 0,
-          scenarioId: defaultScenarioId,
-          start: career.stats,
-          election: {
-            voteShare: 40,
-            totalVotes: 0,
-            ourVotes: 0,
-            morale: 50,
-            sacked: false,
-            groups: [],
-            objectives: [],
-          },
-          feeEarned: 0,
-          recognitionDelta: 5,
-          decidedOnDay: 7,
-        },
-      ],
-    };
+    const kept = after(defaultScenarioId, { recognition: 5 });
     expect(next(kept)).toBe(pendle);
     expect(canAccept(kept, scenarios, next(kept)!)).toBe(true);
+  });
+
+  it("ends the career when the bottom rung sacks you", () => {
+    const sacked = after(pendle, { recognition: 0 }, true);
+    expect(scenarios[pendle].contract.fallback).toBeUndefined();
+    expect(isCareerOver(sacked, scenarios)).toBe(true);
+    expect(careerOffers(sacked, scenarios)).toEqual([]);
+    expect(next(sacked)).toBeNull();
+  });
+
+  it("keeps the career going after a sacking with a fallback", () => {
+    const sacked = after(defaultScenarioId, { recognition: 0 }, true);
+    expect(isCareerOver(sacked, scenarios)).toBe(false);
+    expect(isCareerOver(fresh(), scenarios)).toBe(false);
+  });
+
+  it("tells the same epilogue for the same career", () => {
+    const sacked = after(pendle, { recognition: 0 }, true);
+    const lines = ["socks", "fortune cookies", "hamsters"];
+    const told = careerEpilogue(sacked, lines);
+    expect(lines).toContain(told);
+    expect(careerEpilogue(sacked, lines)).toBe(told);
+    expect(epilogues.length).toBeGreaterThan(0);
+  });
+
+  describe("by reputation", () => {
+    const withClient = (id: string, stat: "credibility" | "ruthlessness") => {
+      const base = scenarios[pendle];
+      return {
+        ...base,
+        contract: {
+          ...base.contract,
+          id,
+          requires: [],
+          appeal: [{ stat, weight: 1 }],
+        },
+      };
+    };
+    const field = {
+      ...scenarios,
+      "council-shady": withClient("council-shady", "ruthlessness"),
+      "council-clean": withClient("council-clean", "credibility"),
+    };
+    const pick = (stats: { credibility: number; ruthlessness: number }) =>
+      nextAssignment(
+        after(defaultScenarioId, { recognition: 5, ...stats }),
+        field,
+        defaultScenarioId,
+      );
+
+    it("sends a ruthless operator to the client who wants one", () => {
+      expect(pick({ credibility: 10, ruthlessness: 60 })).toBe("council-shady");
+    });
+
+    it("sends a clean operator to the client who wants one", () => {
+      expect(pick({ credibility: 60, ruthlessness: 10 })).toBe("council-clean");
+    });
+
+    it("still ranks tier above reputation", () => {
+      const career = after(defaultScenarioId, {
+        recognition: 30,
+        ruthlessness: 60,
+      });
+      expect(nextAssignment(career, field, defaultScenarioId)).toBe(
+        "parliamentary-harwell",
+      );
+    });
   });
 });
 

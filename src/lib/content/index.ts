@@ -1,4 +1,5 @@
 import actions from "../../../content/actions.json";
+import epilogueLines from "../../../content/epilogues.json";
 import gaffes from "../../../content/gaffes.json";
 import ashcombeContract from "../../../content/scenarios/council-ashcombe/contract.json";
 import ashcombeEvents from "../../../content/scenarios/council-ashcombe/events.json";
@@ -12,6 +13,7 @@ import harwellGroups from "../../../content/scenarios/parliamentary-harwell/vote
 import {
   actionSchema,
   contentSchema,
+  epiloguesSchema,
   scenarioSchema,
   type Content,
 } from "../schema/content";
@@ -54,12 +56,14 @@ export const scenarios: Record<string, Content> = Object.fromEntries(
   }),
 );
 
-for (const scenario of Object.values(scenarios)) {
-  if (!scenarios[scenario.contract.fallback])
+for (const { contract } of Object.values(scenarios)) {
+  if (contract.fallback !== undefined && !scenarios[contract.fallback])
     throw new Error(
-      `${scenario.contract.id} falls back to unknown scenario ${scenario.contract.fallback}`,
+      `${contract.id} falls back to unknown scenario ${contract.fallback}`,
     );
 }
+
+export const epilogues: string[] = epiloguesSchema.parse(epilogueLines);
 
 /** Where every career starts, and what old share links replay. */
 export const defaultScenarioId = "council-ashcombe";

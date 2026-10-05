@@ -8,14 +8,15 @@ and told you what happens if you miss them. Everything else is optics.
 
 If Football Manager is the model, the mapping is roughly:
 
-| Football Manager   | Spin Doctors           |
-| ------------------ | ---------------------- |
-| Club               | Candidate              |
-| Board              | Candidate and backers  |
-| Board expectations | Contract objectives    |
-| Match              | Election               |
-| Player morale      | Candidate morale       |
-| Getting sacked     | A worse candidate next |
+| Football Manager     | Spin Doctors           |
+| -------------------- | ---------------------- |
+| Club                 | Candidate              |
+| Board                | Candidate and backers  |
+| Board expectations   | Contract objectives    |
+| Match                | Election               |
+| Player morale        | Candidate morale       |
+| Getting sacked       | A worse candidate next |
+| Nobody will hire you | Game over              |
 
 ## 🎮 The loop
 
@@ -52,12 +53,17 @@ another campaign. Keeping an account pays the contract's **fee** into
 your personal funds and earns **recognition**: a base amount per contract, plus one for every point you
 beat the vote-share target by (up to ten). Being sacked pays
 nothing, costs recognition, and the only phone that rings is the contract's
-`fallback` — a worse candidate.
+`fallback` — a worse candidate. A contract with no fallback is the bottom
+rung: be sacked there and the career is over, with an epilogue from
+`content/epilogues.json` about where you end up instead. Contracts can also
+declare an `appeal` (credibility or ruthlessness weights); when several clients
+at the same tier would hire you, the one whose appeal best matches your record
+calls first, so a ruthless operator draws shadier clients.
 
 | Scenario                          | Tier          | Days | Fee     | Who will hire you                         |
 | --------------------------------- | ------------- | ---- | ------- | ----------------------------------------- |
 | Ashcombe South (Bramley)          | council       | 7    | £12,000 | anyone; where every career starts         |
-| Pendle Hurst West (Malcolm)       | council       | 7    | £4,000  | recognition 15 or below                   |
+| Pendle Hurst West (Malcolm)       | council       | 7    | £4,000  | recognition 15 or below; the bottom rung  |
 | Harwell and Stoke Minster (Priya) | parliamentary | 10   | £30,000 | recognition 12+, ruthlessness 70 or below |
 
 In the simple game the next client is chosen for you: the highest-tier
@@ -120,7 +126,7 @@ src/lib/schema/     # Zod schemas -> inferred TypeScript types
 src/lib/content/    # loads, merges and validates the JSON at startup
 src/lib/components/ # dashboard, campaign, career and election-night views
 src/routes/         # UI shell
-content/            # shared actions and gaffes (writer-editable)
+content/            # shared actions, gaffes and game-over epilogues (writer-editable)
 content/scenarios/  # one folder per campaign: contract, voter groups, events
 scripts/balance.ts  # headless harness: runs thousands of campaigns per scenario
 ```

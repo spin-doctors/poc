@@ -11,9 +11,11 @@
 	import HelpView from '$lib/components/HelpView.svelte';
 	import Menu, { type MenuDestination } from '$lib/components/Menu.svelte';
 	import SettingsView from '$lib/components/SettingsView.svelte';
-	import { defaultScenarioId, scenarios } from '$lib/content';
+	import { defaultScenarioId, epilogues, scenarios } from '$lib/content';
 	import {
 		applyCareerEntry,
+		careerEpilogue,
+		isCareerOver,
 		isSoloCareer,
 		nextAssignment,
 		playCampaignMove,
@@ -54,6 +56,7 @@
 	const simple = $derived(!settings.experimental && isSoloCareer(career));
 	const solo = $derived(career.active[0]);
 	const lastOutcome = $derived(career.history.at(-1));
+	const careerOver = $derived(isCareerOver(career, scenarios));
 
 	// A new player is dropped straight into their first race.
 	$effect(() => {
@@ -143,6 +146,10 @@
 
 	function newCareer() {
 		if (!confirm('Walk away from this career and start again from nothing?')) return;
+		restart();
+	}
+
+	function restart() {
 		saved = freshSave();
 		career = startCareer(scenarios, defaultScenarioId, saved.careerSeed);
 		saveCareer(saved);
@@ -180,6 +187,14 @@
 			soloCareer={isSoloCareer(career)}
 			onChange={changeSettings}
 			onNewCareer={newCareer}
+			onBack={toDashboard}
+		/>
+	{:else if careerOver && lastOutcome}
+		<ElectionNight
+			outcome={lastOutcome}
+			{simple}
+			epilogue={careerEpilogue(career, epilogues)}
+			onRestart={restart}
 			onBack={toDashboard}
 		/>
 	{:else if simple}

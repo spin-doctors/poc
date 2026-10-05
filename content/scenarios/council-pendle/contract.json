@@ -29,13 +29,15 @@
   "keepMessage": "Malcolm is ecstatic. He adds a forty-first slide, titled YOU, and emails it to you at 3am. The cheque clears on the second attempt.",
   "sackMessage": "Malcolm thanks you for your service in a reply-all to the entire allotment society. He is already drafting 2027.",
   "fee": 4000,
-  "recognition": { "kept": 6, "sacked": -3 },
+  "recognition": {
+    "kept": 6,
+    "sacked": -3
+  },
   "requires": [
     {
       "stat": "recognition",
       "max": 15,
       "label": "Recognition 15 or below — only operators nobody has heard of return Malcolm's calls"
     }
-  ],
-  "fallback": "council-pendle"
+  ]
 }

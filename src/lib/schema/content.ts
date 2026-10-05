@@ -112,6 +112,11 @@ export const careerRequirementSchema = z
     message: "A career requirement needs a min or a max",
   });
 
+export const contractAppealSchema = z.object({
+  stat: z.enum(["credibility", "ruthlessness"]),
+  weight: z.number(),
+});
+
 export const contractSchema = z.object({
   /** Doubles as the scenario id. */
   id: z.string().min(1),
@@ -139,9 +144,18 @@ export const contractSchema = z.object({
   /** Base recognition change; keeping the account also earns the margin over target. */
   recognition: z.object({ kept: z.number(), sacked: z.number() }),
   requires: z.array(careerRequirementSchema).default([]),
-  /** The sadder job waiting for you if you're sacked. */
-  fallback: z.string().min(1),
+  /**
+   * The kind of operator this client is drawn to. When several clients at the same tier would
+   * hire you, your stats times these weights decide who calls: a ruthless record attracts clients
+   * weighting ruthlessness, a clean one those weighting credibility.
+   */
+  appeal: z.array(contractAppealSchema).default([]),
+  /** The sadder job waiting for you if you're sacked. Without one, the sack ends your career. */
+  fallback: z.string().min(1).optional(),
 });
+
+/** Where washed-up spin doctors end up; one is picked when a career ends. */
+export const epiloguesSchema = z.array(z.string().min(1)).min(1);
 
 /** A writer's per-campaign bundle; shared actions and gaffes are merged in at load. */
 export const scenarioSchema = z.object({

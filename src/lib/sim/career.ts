@@ -277,6 +277,7 @@ export function careerOffers(
   if (last?.election.sacked) {
     const fallback = scenarioOrThrow(scenarios, last.scenarioId).contract
       .fallback;
+    if (fallback === undefined) return [];
     return [
       { scenarioId: fallback, unmet: [], running: running.has(fallback) },
     ];
@@ -298,6 +299,7 @@ export function careerOffers(
   if (last && !offers.some((o) => o.unmet.length === 0)) {
     const fallback = scenarioOrThrow(scenarios, last.scenarioId).contract
       .fallback;
+    if (fallback === undefined) return offers;
     return offers.map((o) =>
       o.scenarioId === fallback ? { ...o, unmet: [] } : o,
     );
@@ -321,9 +323,40 @@ export function canAccept(
   );
 }
 
+/** Sacked from a bottom-rung contract with nothing left running: nobody is calling. */
+export function isCareerOver(
+  career: CareerState,
+  scenarios: Scenarios,
+): boolean {
+  const last = career.history.at(-1);
+  return (
+    career.active.length === 0 &&
+    last !== undefined &&
+    last.election.sacked &&
+    scenarioOrThrow(scenarios, last.scenarioId).contract.fallback === undefined
+  );
+}
+
+/** Where this spin doctor ends up; fixed by the career seed so a reload tells the same story. */
+export function careerEpilogue(
+  career: CareerState,
+  epilogues: string[],
+): string {
+  const roll = nextRandom(career.careerSeed + career.history.length * 104_729);
+  return epilogues[Math.floor(roll.value * epilogues.length)];
+}
+
+function appealScore(stats: OperatingStats, content: Content): number {
+  return content.contract.appeal.reduce(
+    (score, { stat, weight }) => score + stats[stat] * weight,
+    0,
+  );
+}
+
 /**
  * The client a solo operator is handed next, without choosing: the first contract on a
  * fresh career, otherwise the highest-tier open offer, preferring a new seat over a repeat.
+ * Within a tier, the client whose appeal best matches the operator's reputation calls first.
  */
 export function nextAssignment(
   career: CareerState,
@@ -340,8 +373,21 @@ export function nextAssignment(
       ? firstScenarioId
       : null;
   }
-  const fresh = open.find((o) => o.scenarioId !== last.scenarioId);
-  return (fresh ?? open[0])?.scenarioId ?? null;
+  const fresh = open.filter((o) => o.scenarioId !== last.scenarioId);
+  const pool = fresh.length > 0 ? fresh : open;
+  if (pool.length === 0) return null;
+  const tierOf = (id: string) =>
+    TIER_ORDER.indexOf(scenarioOrThrow(scenarios, id).contract.tier);
+  const bestTier = tierOf(pool[0].scenarioId);
+  const stats = operatingStats(career);
+  const ranked = pool
+    .filter((o) => tierOf(o.scenarioId) === bestTier)
+    .map((o) => ({
+      scenarioId: o.scenarioId,
+      score: appealScore(stats, scenarioOrThrow(scenarios, o.scenarioId)),
+    }));
+  return ranked.reduce((best, o) => (o.score > best.score ? o : best))
+    .scenarioId;
 }
 
 function acceptOffer(
