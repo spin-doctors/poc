@@ -17,6 +17,9 @@
     "ios:sync": "cap sync ios",
     "ios:open": "cap open ios",
     "ios:run": "cap run ios",
+    "android:sync": "BASE_PATH= npm run build && cap sync android",
+    "android:open": "cap open android",
+    "android:run": "npm run android:sync && cap run android",
     "prepare": "husky",
     "knip": "knip --max-issues=3"
   },
@@ -43,7 +46,10 @@
     "zod": "^4.6.5"
   },
   "dependencies": {
+    "@capacitor/app": "8.1.2",
     "@capacitor/core": "^8.5.2",
-    "@capacitor/ios": "^8.5.2"
+    "@capacitor/android": "8.5.2",
+    "@capacitor/ios": "^8.5.2",
+    "core-js": "3.50.0"
   }
 }

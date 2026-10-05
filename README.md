@@ -325,6 +325,131 @@ BASE_PATH=/poc npm run build
 
 Moving to a custom domain later means dropping `BASE_PATH` from the workflow.
 
+### Android / Google Play
+
+The Android app uses Capacitor 8 to bundle the same static game in a WebView.
+It does not load the GitHub Pages site, and gameplay works offline. Its package
+name is `io.github.spindoctors.poc`; this becomes permanent once published on
+Play. Web, iOS and Android installations have separate saves.
+
+#### Local development
+
+Use Node **24.21.0** from `.nvmrc`, Android Studio **Otter 2025.2.1 or newer**,
+Android SDK **36**, and **JDK 21** for Gradle. The generated project targets API
+36 and supports Android 7 / API 24 or newer. A current Android System WebView
+is recommended. In Android Studio, select JDK 21 as the Gradle JDK.
+The client entry includes an `Array.at` polyfill for older Android WebViews.
+
+```bash
+nvm use
+npm ci
+export JAVA_HOME=$(/usr/libexec/java_home -v 21) # macOS terminal builds
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+npm run android:sync
+npm run android:open
+```
+
+`android:sync` always builds with an empty `BASE_PATH` before syncing web assets
+and plugins into `android/`. Do not copy a `/poc` Pages build into the app.
+Use `npm run android:run` to rebuild, sync and run on a connected device or
+emulator. Native source and the Gradle wrapper are committed; copied web assets,
+SDK paths, caches, build outputs and signing credentials are ignored.
+
+For local artifact checks after syncing:
+
+```bash
+cd android
+./gradlew :app:assembleDebug :app:bundleRelease :app:lintDebug
+```
+
+The debug APK is at `android/app/build/outputs/apk/debug/app-debug.apk`.
+The release bundle is at
+`android/app/build/outputs/bundle/release/app-release.aab`. **The command above
+does not configure release signing; an unsigned AAB is not upload-ready.**
+
+With an emulator/device connected, `./gradlew :app:connectedDebugAndroidTest`
+checks the installed package identity, target API and disabled backup setting.
+Use the `:app:` prefix to avoid running Capacitor dependencies' own example tests.
+
+Android Back returns from game subviews to the dashboard, uses WebView history
+for routes such as the privacy policy, and exits at the root. External URLs
+use Capacitor's default external-browser handling; do not add remote sites to
+`server.allowNavigation`. The layout uses Capacitor's safe-area inset variables
+for edge-to-edge system bars. Android cloud backup and device transfer of app
+data are disabled: clearing app storage or uninstalling loses the save.
+Keep the WebView origin and storage keys unchanged to retain saves on updates.
+
+#### Optional analytics and privacy
+
+Android uses the same build-time GoatCounter configuration as the web app:
+
+```bash
+PUBLIC_GOATCOUNTER_URL=https://YOUR-SITE.goatcounter.com/count npm run android:sync
+```
+
+Unset the variable (including any local environment-file value) to disable
+analytics. This is optional **for the build**, not a player opt-in. Verify the
+actual release configuration before filling in Play's Data safety form.
+Analytics-script failures are reported in the console, discard queued events,
+and leave gameplay usable; they are not retried until a new app session.
+
+The bundled privacy policy covers Android as well as web/iOS. Publish the
+updated web policy before submission and use this public URL in Play Console:
+**https://spin-doctors.github.io/poc/privacy-policy/**.
+Review GoatCounter's actual data processing and any regional disclosure/consent
+requirements. Cookieless analytics does not automatically mean "no data
+collected". Data safety must reflect every version currently distributed under
+this package, including third-party analytics. Provide a suitable developer
+support email/privacy contact in the listing.
+
+#### Manual signing and publishing
+
+1. In `android/app/build.gradle`, set `versionName` for the release and increment
+   `versionCode` for **every upload**. These native versions are separate from the
+   footer's web-build version.
+2. In Android Studio, use **Build → Generate Signed Bundle / APK → Android App
+   Bundle**. Create/use an upload keystore outside the repository and back it
+   up securely. Never commit the key or passwords.
+3. Enable **Play App Signing** in Play Console and upload the release-signed AAB
+   to **internal testing**. Check the target API, package, permissions, bundled
+   assets and absence of a development-server URL. Recheck 64-bit/16 KB
+   compatibility if future plugins introduce native `.so` libraries.
+4. Create the listing as a **free game without ads or purchases**. Supply the
+   title, descriptions, support email, privacy URL, **512 × 512** store icon,
+   **1024 × 500** feature graphic and representative device screenshots. The
+   native icon adapts the existing iOS hat/ballot branding; store graphics and
+   screenshots must be prepared separately.
+5. Complete app access (no login), ads (none), Data safety, target audience,
+   IARC content rating and any additional Console declarations. Describe the
+   political satire clearly without implying a government affiliation.
+6. For personal accounts created after **November 13, 2023**, run a closed test
+   with **at least 12 testers continuously opted in for at least 14 days**.
+   Collect meaningful feedback and apply for production access. Completing
+   that threshold does not automatically guarantee approval.
+7. Resolve pre-launch report issues, select countries/device support, submit
+   for review and roll out only after approval. Complete any outstanding account,
+   identity/contact and physical Android-device verification.
+
+Before upload, test the **release** on an emulator and physical Android device:
+airplane-mode startup and full careers, Android Back, external links, system
+bars/cutouts, gesture and three-button navigation, small screens, keyboard,
+backgrounding/process termination, and save retention across a signed in-place
+update. Check analytics both enabled and disabled, online and offline.
+Web build success alone is not evidence of Android release readiness.
+
+The current save store is WebView `localStorage`. Emulator testing preserved
+progress after backgrounding and relaunch, but an immediate force-stop directly
+after a move can lose its newest storage write before WebView flushes it to disk.
+Do not treat this as crash-durable storage; evaluate native durable save storage
+before a production release if that guarantee is required.
+
+Current [Play target API rules](https://support.google.com/googleplay/android-developer/answer/11926878)
+require Android 16 / API 36 for new phone apps and updates from August 31, 2026.
+Recheck these and the
+[personal-account testing rules](https://support.google.com/googleplay/android-developer/answer/14151465)
+at submission. See also [Play App Signing](https://developer.android.com/studio/publish/app-signing)
+and [Data safety guidance](https://support.google.com/googleplay/android-developer/answer/10787469).
+
 ## �🚧 Status
 
 **Pre-alpha proof of concept.** The single-player weekly loop is playable end to

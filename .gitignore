@@ -146,3 +146,20 @@ vite.config.ts.timestamp-*
 .vite/
 
 **/.DS_Store
+
+# Native signing credentials stay outside source control.
+*.jks
+*.keystore
+*.p12
+*.p8
+*.mobileprovision
+/android/**/key.properties
+/android/**/keystore.properties
+/android/**/signing.properties
+
+# Native release artifacts
+*.apk
+*.aab
+*.ipa
+*.xcarchive/
+*.dSYM/
