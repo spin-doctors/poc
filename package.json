@@ -14,6 +14,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "balance": "vite-node -c vite.balance.config.ts scripts/balance.ts",
+    "ios:sync": "cap sync ios",
+    "ios:open": "cap open ios",
+    "ios:run": "cap run ios",
     "prepare": "husky",
     "knip": "knip --max-issues=3"
   },
@@ -21,6 +24,7 @@
     "*": "prettier --write --ignore-unknown"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "@sveltejs/adapter-static": "^3.0.8",
     "@sveltejs/kit": "^2.20.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
@@ -37,5 +41,9 @@
     "vite-node": "^3.0.5",
     "vitest": "^5.0.2",
     "zod": "^4.6.5"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2"
   }
 }
