@@ -130,6 +130,32 @@ npm run check      # typecheck
 npm run balance    # balance report
 ```
 
+## 📱 iOS shell
+
+The Capacitor iOS shell bundles the static SvelteKit build in a native WebView.
+The app can launch without a network connection, though online services such as
+analytics will be unavailable. Saves stay in the iOS app's WebView storage and
+are separate from Safari and other app installations. Web changes reach the
+iOS app with a new app build, rather than immediately through the hosted site.
+
+On macOS with Xcode installed:
+
+```bash
+nvm use
+npm ci
+npm run build
+npm run ios:sync
+npm run ios:open
+```
+
+In Xcode, select the **App** scheme and an iPhone simulator or connected device.
+For a physical device or TestFlight, configure signing with an Apple Developer
+account. `npm run ios:run` builds and launches on a selected simulator/device.
+
+The bundle identifier in `capacitor.config.ts` is provisional and must be
+changed to an identifier you control before signing or distributing the app.
+Review App Store requirements before public submission.
+
 ## ⚖️ Balance
 
 `npm run balance` plays thousands of campaigns per scenario under naive

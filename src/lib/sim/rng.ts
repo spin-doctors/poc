@@ -16,7 +16,7 @@ export function randomRange(state: number, min: number, max: number): Roll {
   return { value: min + roll.value * (max - min), state: roll.state };
 }
 
-export function seedFromString(text: string): number {
+function seedFromString(text: string): number {
   let h = 2166136261;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
