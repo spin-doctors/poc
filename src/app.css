@@ -38,6 +38,10 @@ main {
   color: inherit;
 }
 
+.build-version .privacy-link {
+  margin-right: 0.75rem;
+}
+
 h1,
 h2,
 h3 {
