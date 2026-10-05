@@ -15,11 +15,10 @@
 		career: CareerState;
 		onIncorporate: (profile: CompanyProfile) => void;
 		onHire: () => void;
-		onNewCareer: () => void;
 		onBack: () => void;
 	}
 
-	let { career, onIncorporate, onHire, onNewCareer, onBack }: Props = $props();
+	let { career, onIncorporate, onHire, onBack }: Props = $props();
 
 	let companyName = $state('');
 	let companyLogo = $state('');
@@ -116,5 +115,3 @@
 		</button>
 	</div>
 {/if}
-
-<button class="ghost" onclick={onNewCareer}>Start a new career</button>

@@ -1,11 +1,6 @@
 import { version } from "$app/environment";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  dismissWelcome,
-  hasDismissedWelcome,
-  loadCareer,
-  saveCareer,
-} from "./careerStorage";
+import { loadCareer, saveCareer } from "./careerStorage";
 
 function useMemoryStorage() {
   const values = new Map<string, string>();
@@ -44,39 +39,5 @@ describe("career versions", () => {
     );
 
     expect(loadCareer()).toEqual({ careerSeed: 7, log: [{ kind: "tick" }] });
-  });
-});
-
-describe("welcome dismissal", () => {
-  it("shows as unseen until dismissed", () => {
-    useMemoryStorage();
-
-    expect(hasDismissedWelcome()).toBe(false);
-    dismissWelcome();
-    expect(hasDismissedWelcome()).toBe(true);
-  });
-
-  it("stores dismissal separately from career progress", () => {
-    const { values } = useMemoryStorage();
-
-    saveCareer({ careerSeed: 42, log: [] });
-    dismissWelcome();
-
-    expect(values.size).toBe(2);
-    expect(hasDismissedWelcome()).toBe(true);
-  });
-
-  it("fails open when browser storage is unavailable", () => {
-    vi.stubGlobal("localStorage", {
-      getItem: () => {
-        throw new Error("Storage is unavailable");
-      },
-      setItem: () => {
-        throw new Error("Storage is unavailable");
-      },
-    });
-
-    expect(hasDismissedWelcome()).toBe(false);
-    expect(() => dismissWelcome()).not.toThrow();
   });
 });

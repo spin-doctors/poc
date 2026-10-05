@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { content, scenarios } from "../content";
+import { actionCategorySchema } from "../schema/content";
 import {
   applyMove,
   createGame,
@@ -74,12 +75,37 @@ describe("content", () => {
 describe.each(Object.values(scenarios))("scenario $contract.id", (content) => {
   it("is keyed by its contract id and falls back to a real scenario", () => {
     expect(scenarios[content.contract.id]).toBe(content);
-    expect(scenarios[content.contract.fallback]).toBeDefined();
+    if (content.contract.fallback !== undefined)
+      expect(scenarios[content.contract.fallback]).toBeDefined();
+  });
+
+  it("falls back down a ladder that ends, so a career can be lost", () => {
+    const seen = new Set<string>();
+    let id: string | undefined = content.contract.id;
+    while (id !== undefined) {
+      expect(seen.has(id)).toBe(false);
+      seen.add(id);
+      id = scenarios[id].contract.fallback;
+    }
   });
 
   it("has unique action ids", () => {
     const ids = content.actions.map((a) => a.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("files every action under a menu category, with a free move up front", () => {
+    for (const action of content.actions) {
+      expect(actionCategorySchema.options).toContain(action.category);
+    }
+    expect(
+      content.actions.some(
+        (a) =>
+          a.category === "constituents" &&
+          a.cost === 0 &&
+          a.requires.length === 0,
+      ),
+    ).toBe(true);
   });
 
   it("only references group ids that exist", () => {

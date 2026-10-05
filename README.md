@@ -8,28 +8,36 @@ and told you what happens if you miss them. Everything else is optics.
 
 If Football Manager is the model, the mapping is roughly:
 
-| Football Manager   | Spin Doctors           |
-| ------------------ | ---------------------- |
-| Club               | Candidate              |
-| Board              | Candidate and backers  |
-| Board expectations | Contract objectives    |
-| Match              | Election               |
-| Player morale      | Candidate morale       |
-| Getting sacked     | A worse candidate next |
+| Football Manager     | Spin Doctors           |
+| -------------------- | ---------------------- |
+| Club                 | Candidate              |
+| Board                | Candidate and backers  |
+| Board expectations   | Contract objectives    |
+| Match                | Election               |
+| Player morale        | Candidate morale       |
+| Getting sacked       | A worse candidate next |
+| Nobody will hire you | Game over              |
 
 ## 🎮 The loop
 
-A career of campaigns, run from a dashboard. Each campaign is a week or so, one
-move per day on each account, then an election; the offers board shows whoever
-is calling. Days pass for every account at once — the prototype has a
-**Simulate next day** button standing in for the real calendar — and each
-election is called when its final day ends. An account left without a move for
-the day loses the day and some candidate morale.
+One campaign at a time. A new player is dropped straight into the Ashcombe
+South council by-election: a week or so of one move per day, then an election.
+After each move you move on to the next day; the election is called when the
+final day ends, and then the next client calls. Who that is depends on how
+you did — a strong win gets you promoted, a sacking gets you a worse
+candidate. There is no dashboard and no candidate picker; funds and fees stay
+out of sight.
+
+The full career — a dashboard with an offers board, several accounts at once,
+and a **Simulate next day** button standing in for the real calendar — sits
+behind the experimental flag in **Settings** (☰ menu). There, days pass for
+every account at once, and an account left without a move for the day loses
+the day and some candidate morale.
 
 - 🗓️ **A contract up front.** Hit the objectives or you are out of a job.
 - 🎭 **One move a day.** Canvass, stage a photo op, buy media, run an attack ad, or prep the candidate.
 - 🗳️ **Commission a poll.** Spend a day and campaign money to see the projected vote share for each move tomorrow; better samples cost more and come with a tighter margin.
-- 🎯 **Pick your target.** Most moves are aimed at a single voter group.
+- 🎯 **Pick your target.** Moves are grouped by category, and most are listed once per voter group — choosing the move chooses who you court.
 - 🎙️ **An opportunity lands early.** Take the podcast or turn it down — and if you take it, decide what to drill him on.
 - 🔥 **A scandal lands mid-week.** Three ways to handle it, all of them bad.
 - 🏢 **Reality occasionally glitches.** Back a data-centre blockade and watch the campaign feed develop an entirely temporary problem.
@@ -45,16 +53,24 @@ another campaign. Keeping an account pays the contract's **fee** into
 your personal funds and earns **recognition**: a base amount per contract, plus one for every point you
 beat the vote-share target by (up to ten). Being sacked pays
 nothing, costs recognition, and the only phone that rings is the contract's
-`fallback` — a worse candidate.
+`fallback` — a worse candidate. A contract with no fallback is the bottom
+rung: be sacked there and the career is over, with an epilogue from
+`content/epilogues.json` about where you end up instead. Contracts can also
+declare an `appeal` (credibility or ruthlessness weights); when several clients
+at the same tier would hire you, the one whose appeal best matches your record
+calls first, so a ruthless operator draws shadier clients.
 
 | Scenario                          | Tier          | Days | Fee     | Who will hire you                         |
 | --------------------------------- | ------------- | ---- | ------- | ----------------------------------------- |
 | Ashcombe South (Bramley)          | council       | 7    | £12,000 | anyone; where every career starts         |
-| Pendle Hurst West (Malcolm)       | council       | 7    | £4,000  | recognition 15 or below                   |
+| Pendle Hurst West (Malcolm)       | council       | 7    | £4,000  | recognition 15 or below; the bottom rung  |
 | Harwell and Stoke Minster (Priya) | parliamentary | 10   | £30,000 | recognition 12+, ruthlessness 70 or below |
 
-Locked offers stay visible with their requirements, like locked moves. Alone
-you can run one account at a time; incorporate a company, then hire staff
+In the simple game the next client is chosen for you: the highest-tier
+contract you qualify for, avoiding an immediate repeat. With experimental
+features on, locked offers stay visible with their requirements, like locked
+moves. Alone you can run one account at a time; incorporate a company (an experimental
+feature: turn it on in **Settings** from the ☰ menu), then hire staff
 (a one-off fee plus a daily wage from company cash) to run one more account
 per staffer, never the same seat twice at once. The career is saved in
 `localStorage` as the career seed plus an ordered log of accepts, moves, day
@@ -110,7 +126,7 @@ src/lib/schema/     # Zod schemas -> inferred TypeScript types
 src/lib/content/    # loads, merges and validates the JSON at startup
 src/lib/components/ # dashboard, campaign, career and election-night views
 src/routes/         # UI shell
-content/            # shared actions and gaffes (writer-editable)
+content/            # shared actions, gaffes and game-over epilogues (writer-editable)
 content/scenarios/  # one folder per campaign: contract, voter groups, events
 scripts/balance.ts  # headless harness: runs thousands of campaigns per scenario
 ```
@@ -279,6 +295,11 @@ shown to the player while the action is locked, so requirements read as goals.
 Adding a new unlockable is a content change, not a code change. Poll actions use
 `pollMargin` and an empty `effects` array; the engine stores a next-day report
 instead of changing voter stats.
+
+Each action has a `category` — `constituents`, `pr`, `candidate`, `polling` or
+`special` — which decides the collapsible section it appears under on the day's
+menu. Scenario actions that omit it are filed under `special`. A `targeted`
+action is listed once per voter group.
 
 ## � Deployment
 
