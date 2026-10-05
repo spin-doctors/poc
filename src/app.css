@@ -67,6 +67,17 @@ h1 {
   margin-bottom: 1.5rem;
 }
 
+.masthead-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.masthead-bar h1 {
+  margin: 0;
+}
+
 .masthead p,
 .dateline {
   margin: 0;

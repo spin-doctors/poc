@@ -14,6 +14,9 @@
 	import CareerView from '$lib/components/CareerView.svelte';
 	import Dashboard from '$lib/components/Dashboard.svelte';
 	import ElectionNight from '$lib/components/ElectionNight.svelte';
+	import HelpView from '$lib/components/HelpView.svelte';
+	import Menu, { type MenuDestination } from '$lib/components/Menu.svelte';
+	import SettingsView from '$lib/components/SettingsView.svelte';
 	import Welcome from '$lib/components/Welcome.svelte';
 	import { defaultScenarioId, scenarios } from '$lib/content';
 	import {
@@ -25,12 +28,15 @@
 		type CareerState,
 		type CompanyProfile
 	} from '$lib/sim/career';
+	import { defaultSettings, loadSettings, saveSettings, type GameSettings } from '$lib/settings';
 	import type { PlayerMove } from '$lib/sim/types';
 
 	type View =
 		| { kind: 'dashboard' }
 		| { kind: 'campaign'; id: number }
 		| { kind: 'career' }
+		| { kind: 'help' }
+		| { kind: 'settings' }
 		| { kind: 'result'; index: number };
 
 	function freshSave(): SavedCareer {
@@ -47,6 +53,8 @@
 	let view = $state<View>({ kind: 'dashboard' });
 	let appReady = $state(false);
 	let welcomeVisible = $state(false);
+	let settings = $state<GameSettings>(defaultSettings);
+	let menuOpen = $state(false);
 
 	onMount(() => {
 		const loaded = loadCareer();
@@ -62,8 +70,13 @@
 		}
 		if (!restored) saveCareer(saved);
 		welcomeVisible = !hasDismissedWelcome();
+		settings = loadSettings();
 		appReady = true;
 		return setGameBackHandler(() => {
+			if (menuOpen) {
+				menuOpen = false;
+				return true;
+			}
 			if (view.kind === 'dashboard') return false;
 			toDashboard();
 			return true;
@@ -128,12 +141,26 @@
 		trackAnalyticsEvent('career-restarted');
 	}
 
+	function changeSettings(next: GameSettings) {
+		settings = next;
+		saveSettings(next);
+	}
+
+	function openFromMenu(destination: MenuDestination) {
+		welcomeVisible = false;
+		dismissWelcome();
+		view = { kind: destination };
+	}
+
 	const toDashboard = () => (view = { kind: 'dashboard' });
 </script>
 
 <main>
-	<header class="masthead">
+	<header class="masthead masthead-bar">
 		<h1>Spin Doctors</h1>
+		{#if appReady}
+			<Menu bind:open={menuOpen} experimental={settings.experimental} onSelect={openFromMenu} />
+		{/if}
 	</header>
 
 	{#if !appReady}
@@ -145,11 +172,14 @@
 		{#key id}
 			<CampaignView {career} campaignId={id} onMove={(m) => move(id, m)} onBack={toDashboard} />
 		{/key}
-	{:else if view.kind === 'career'}
-		<CareerView
-			{career}
-			onIncorporate={incorporate}
-			onHire={hire}
+	{:else if view.kind === 'career' && settings.experimental}
+		<CareerView {career} onIncorporate={incorporate} onHire={hire} onBack={toDashboard} />
+	{:else if view.kind === 'help'}
+		<HelpView onBack={toDashboard} />
+	{:else if view.kind === 'settings'}
+		<SettingsView
+			{settings}
+			onChange={changeSettings}
 			onNewCareer={newCareer}
 			onBack={toDashboard}
 		/>
@@ -162,7 +192,6 @@
 			onAccept={accept}
 			onResult={(index) => (view = { kind: 'result', index })}
 			onTick={tick}
-			onCareer={() => (view = { kind: 'career' })}
 		/>
 	{/if}
 </main>

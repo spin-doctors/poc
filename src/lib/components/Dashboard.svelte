@@ -16,10 +16,9 @@
 		onAccept: (scenarioId: string) => void;
 		onResult: (historyIndex: number) => void;
 		onTick: () => void;
-		onCareer: () => void;
 	}
 
-	let { career, onOpen, onAccept, onResult, onTick, onCareer }: Props = $props();
+	let { career, onOpen, onAccept, onResult, onTick }: Props = $props();
 
 	const operator = $derived(career.company ?? career.stats);
 	const cash = $derived(career.company ? career.company.cash : career.stats.personalFunds);
@@ -52,12 +51,6 @@
 	<div><span>Recognition</span><strong>{Math.round(operator.recognition)}</strong></div>
 	<div><span>Accounts</span><strong>{career.active.length} / {capacity}</strong></div>
 </section>
-
-<div class="row nav">
-	<button class="ghost" onclick={onCareer}>
-		{career.company ? 'Manage company' : 'Career & incorporation'}
-	</button>
-</div>
 
 <h2>Active accounts</h2>
 {#if rows.length === 0}

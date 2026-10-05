@@ -22,7 +22,7 @@
 
 	<h2>Game saves</h2>
 	<p>
-		Your career progress and welcome-screen preference are stored in the browser storage used by the
+		Your career progress, game settings and welcome-screen preference are stored in the browser storage used by the
 		game. In the iOS and Android apps, this storage belongs to the app's WebView and is separate from browsers and
 		other installations. Saves are not uploaded to a Spin Doctors server. They remain on the device
 		until you clear the app's website data or uninstall the app; removing the game may remove its

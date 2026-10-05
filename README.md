@@ -54,7 +54,8 @@ nothing, costs recognition, and the only phone that rings is the contract's
 | Harwell and Stoke Minster (Priya) | parliamentary | 10   | £30,000 | recognition 12+, ruthlessness 70 or below |
 
 Locked offers stay visible with their requirements, like locked moves. Alone
-you can run one account at a time; incorporate a company, then hire staff
+you can run one account at a time; incorporate a company (an experimental
+feature: turn it on in **Settings** from the ☰ menu), then hire staff
 (a one-off fee plus a daily wage from company cash) to run one more account
 per staffer, never the same seat twice at once. The career is saved in
 `localStorage` as the career seed plus an ordered log of accepts, moves, day
