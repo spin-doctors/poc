@@ -156,6 +156,43 @@ The bundle identifier in `capacitor.config.ts` is provisional and must be
 changed to an identifier you control before signing or distributing the app.
 Review App Store requirements before public submission.
 
+### App Store Connect metadata (English - U.K.)
+
+#### Description
+
+```text
+Run the campaign. Shape the story. Keep your job.
+
+Spin Doctors is a satirical campaign-management game where you play the strategist behind fictional candidates. Win voters, manage morale and meet the contract, while building a career from one election to the next.
+
+Make one move each day. Canvass, court the media, prepare the candidate, commission a poll or go on the attack. Every choice shifts voter support and your own credibility, ruthlessness and funds.
+
+Polls show what might happen, not what will. Scandals branch, turnout is uncertain, and a candidate can go off-script. At election night, find out whether your strategy was enough.
+
+Build recognition and funds across campaigns. Incorporate a company and hire staff to run multiple accounts. Earn access to tougher contracts and new tactics as your reputation develops.
+
+Features:
+- Three fictional election scenarios
+- Day-by-day, turn-based campaign decisions
+- Branching events and election-night results
+- Career progression, company management and hiring
+- Replayable single-player game with local saves
+
+Spin Doctors is a single-player satirical game. All campaign scenarios and characters are fictional.
+```
+
+#### Keywords (89 characters)
+
+```text
+election,campaign,strategy,management,politics,voters,polling,simulator,turn-based,satire
+```
+
+#### Support URL
+
+```text
+https://github.com/spin-doctors/poc/issues
+```
+
 ## ⚖️ Balance
 
 `npm run balance` plays thousands of campaigns per scenario under naive
