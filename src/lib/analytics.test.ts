@@ -6,6 +6,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.resetModules();
+  vi.restoreAllMocks();
 });
 
 describe("GoatCounter action events", () => {
@@ -21,10 +22,10 @@ describe("GoatCounter action events", () => {
       src: "",
       dataset: {} as DOMStringMap,
       addEventListener: (
-        _type: string,
+        type: string,
         listener: EventListenerOrEventListenerObject,
       ) => {
-        onLoad = listener as () => void;
+        if (type === "load") onLoad = listener as () => void;
       },
     } as HTMLScriptElement;
     const append = vi.fn();
@@ -63,5 +64,72 @@ describe("GoatCounter action events", () => {
         { path: event, title: `${event} (${version})`, event: true },
       ]),
     );
+  });
+
+  it("does not load remote analytics when no endpoint is configured", async () => {
+    vi.stubEnv("PUBLIC_GOATCOUNTER_URL", "");
+    const append = vi.fn();
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("document", { head: { append } });
+    const { initAnalytics, trackAnalyticsEvent } = await import("./analytics");
+    trackAnalyticsEvent("campaign-started");
+    initAnalytics();
+    expect(append).not.toHaveBeenCalled();
+  });
+
+  it("drops pending and future events when the remote script fails offline", async () => {
+    vi.stubEnv(
+      "PUBLIC_GOATCOUNTER_URL",
+      "https://example.goatcounter.com/count",
+    );
+    const listeners: Record<string, () => void> = {};
+    const script = {
+      dataset: {},
+      addEventListener: (type: string, listener: () => void) => {
+        listeners[type] = listener;
+      },
+    };
+    const browserWindow: Pick<Window, "goatcounter"> = {};
+    vi.stubGlobal("window", browserWindow);
+    vi.stubGlobal("document", {
+      createElement: () => script,
+      head: { append: vi.fn() },
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { initAnalytics, trackAnalyticsEvent } = await import("./analytics");
+    trackAnalyticsEvent("campaign-started");
+    initAnalytics();
+    expect(() => listeners.error()).not.toThrow();
+    const count = vi.fn();
+    browserWindow.goatcounter!.count = count;
+    trackAnalyticsEvent("campaign-move-played");
+    listeners.load();
+    expect(count).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      "GoatCounter is unavailable; gameplay continues without analytics.",
+    );
+  });
+
+  it("reports an unusable script without blocking the game", async () => {
+    vi.stubEnv(
+      "PUBLIC_GOATCOUNTER_URL",
+      "https://example.goatcounter.com/count",
+    );
+    const listeners: Record<string, () => void> = {};
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("document", {
+      createElement: () => ({
+        dataset: {},
+        addEventListener: (type: string, listener: () => void) => {
+          listeners[type] = listener;
+        },
+      }),
+      head: { append: vi.fn() },
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { initAnalytics } = await import("./analytics");
+    initAnalytics();
+    expect(() => listeners.load()).not.toThrow();
+    expect(warn).toHaveBeenCalledOnce();
   });
 });

@@ -25,6 +25,7 @@ import { version } from "$app/environment";
 const pendingEvents: AnalyticsEvent[] = [];
 const countUrl = import.meta.env.PUBLIC_GOATCOUNTER_URL ?? "";
 let initialized = false;
+let unavailable = false;
 
 function send(counter: GoatCounter, event: AnalyticsEvent) {
   // The path stays stable so counts aggregate across builds.
@@ -32,7 +33,7 @@ function send(counter: GoatCounter, event: AnalyticsEvent) {
 }
 
 export function trackAnalyticsEvent(event: AnalyticsEvent) {
-  if (typeof window === "undefined" || !countUrl) return;
+  if (typeof window === "undefined" || !countUrl || unavailable) return;
 
   const counter = window.goatcounter;
   if (initialized && counter?.count) {
@@ -57,11 +58,23 @@ export function initAnalytics() {
   script.dataset.goatcounter = countUrl;
   script.addEventListener("load", () => {
     const counter = window.goatcounter;
-    if (!counter?.count) return;
+    if (!counter?.count) {
+      markUnavailable();
+      return;
+    }
 
     for (const event of pendingEvents.splice(0)) {
       send(counter, event);
     }
   });
+  script.addEventListener("error", markUnavailable);
   document.head.append(script);
+}
+
+function markUnavailable() {
+  unavailable = true;
+  pendingEvents.length = 0;
+  console.warn(
+    "GoatCounter is unavailable; gameplay continues without analytics.",
+  );
 }

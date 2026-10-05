@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { version } from '$app/environment';
 	import { trackAnalyticsEvent } from '$lib/analytics';
+	import { setGameBackHandler } from '$lib/androidNavigation';
 	import {
 		dismissWelcome,
 		hasDismissedWelcome,
@@ -62,6 +63,11 @@
 		if (!restored) saveCareer(saved);
 		welcomeVisible = !hasDismissedWelcome();
 		appReady = true;
+		return setGameBackHandler(() => {
+			if (view.kind === 'dashboard') return false;
+			toDashboard();
+			return true;
+		});
 	});
 
 	function continueFromWelcome() {
