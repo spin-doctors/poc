@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { content, scenarios } from "../content";
+import { actionCategorySchema } from "../schema/content";
 import {
   applyMove,
   createGame,
@@ -91,6 +92,20 @@ describe.each(Object.values(scenarios))("scenario $contract.id", (content) => {
   it("has unique action ids", () => {
     const ids = content.actions.map((a) => a.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("files every action under a menu category, with a free move up front", () => {
+    for (const action of content.actions) {
+      expect(actionCategorySchema.options).toContain(action.category);
+    }
+    expect(
+      content.actions.some(
+        (a) =>
+          a.category === "constituents" &&
+          a.cost === 0 &&
+          a.requires.length === 0,
+      ),
+    ).toBe(true);
   });
 
   it("only references group ids that exist", () => {

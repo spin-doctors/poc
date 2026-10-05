@@ -279,6 +279,26 @@ button.ghost:hover:not(:disabled) {
   font-weight: 700;
 }
 
+.category {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.category summary {
+  cursor: pointer;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.category summary span {
+  color: var(--muted);
+  font-weight: 400;
+}
+
 .poll-note {
   grid-column: 1 / -1;
   margin: 0;
@@ -299,29 +319,6 @@ legend {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
-}
-
-.targets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.targets label {
-  border: 1px solid var(--rule);
-  padding: 0.35rem 0.7rem;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.targets label:has(input:checked) {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
-}
-
-.targets input {
-  display: none;
 }
 
 .feedback {

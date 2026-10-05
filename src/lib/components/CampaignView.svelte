@@ -11,6 +11,16 @@
 		unmetRequirements
 	} from '$lib/sim/engine';
 	import type { MoveResult, PlayerMove } from '$lib/sim/types';
+	import type { ActionCategory } from '$lib/schema/content';
+
+	const CATEGORY_ORDER: ActionCategory[] = ['constituents', 'pr', 'candidate', 'polling', 'special'];
+	const CATEGORY_LABELS: Record<ActionCategory, string> = {
+		constituents: 'Constituent concerns',
+		pr: 'PR & media',
+		candidate: 'The candidate',
+		polling: 'Polling',
+		special: 'Special'
+	};
 
 	interface Props {
 		career: CareerState;
@@ -50,7 +60,26 @@
 					: 'day'
 	);
 	let last = $state<MoveResult | null>(null);
-	let target = $state(untrack(() => groups[0].id));
+	// Targeted moves are listed once per voter group, so choosing the move chooses who to court.
+	const menu = $derived(
+		CATEGORY_ORDER.map((category) => ({
+			category,
+			moves: active.actions
+				.filter((action) => action.category === category)
+				.flatMap((action) =>
+					action.targeted
+						? groups.map((group) => ({ action, target: group.id as string | undefined }))
+						: [{ action, target: undefined }]
+				)
+		})).filter((section) => section.moves.length > 0)
+	);
+	let openCategories = $state<Record<ActionCategory, boolean>>({
+		constituents: true,
+		pr: false,
+		candidate: false,
+		polling: false,
+		special: false
+	});
 
 	const groupName = (id: string) => groups.find((g) => g.id === id)?.name ?? id;
 
@@ -155,19 +184,6 @@
 
 {#if stage === 'day'}
 	<h2>Day {game.day}</h2>
-	<fieldset>
-		<legend>Who are you courting today?</legend>
-		<div class="targets">
-			{#each groups as group (group.id)}
-				<label>
-					<input type="radio" name="target" value={group.id} bind:group={target} />
-					{group.name}
-				</label>
-			{/each}
-		</div>
-		<p class="hint">Only applies to targeted moves.</p>
-	</fieldset>
-
 	<div class="actions">
 		{#if commissionedPoll}
 			<p class="poll-note">
@@ -175,36 +191,38 @@
 				&plusmn;{commissionedPoll.margin} points.
 			</p>
 		{/if}
-		{#each active.actions as action (action.id)}
-			{@const locks = unmetRequirements(game, action)}
-			{@const forecast = forecastAction(game, active, action, action.targeted ? target : undefined)}
-			{@const tooLate = Boolean(action.pollMargin) && game.day >= contract.days}
-			<button
-				class="action"
-				class:locked={locks.length > 0}
-				disabled={!canAfford(game, action) || locks.length > 0 || tooLate}
-				onclick={() =>
-					play({
-						kind: 'action',
-						actionId: action.id,
-						target: action.targeted ? target : undefined
-					})}
-			>
-				<span>
-					<strong>{action.name}{action.targeted ? ` → ${groupName(target)}` : ''}</strong>
-					<em>{action.description}</em>
-					{#if forecast}
-						<em class="forecast">Projected vote share: {forecast.share}% &plusmn;{forecast.margin}</em>
-					{/if}
-					{#if tooLate}
-						<em class="lock">No campaign day remains to use the results</em>
-					{/if}
-					{#each locks as lock (lock.stat)}
-						<em class="lock">🔒 {lock.label}</em>
-					{/each}
-				</span>
-				<span class="cost">{action.cost === 0 ? 'Free' : pounds(action.cost)}</span>
-			</button>
+		{#each menu as section (section.category)}
+			<details class="category" bind:open={openCategories[section.category]}>
+				<summary>{CATEGORY_LABELS[section.category]} <span>({section.moves.length})</span></summary>
+				{#each section.moves as { action, target }, i (`${action.id}:${target ?? ''}`)}
+					{@const locks = unmetRequirements(game, action)}
+					{@const forecast = forecastAction(game, active, action, target)}
+					{@const tooLate = Boolean(action.pollMargin) && game.day >= contract.days}
+					<button
+						class="action"
+						class:locked={locks.length > 0}
+						disabled={!canAfford(game, action) || locks.length > 0 || tooLate}
+						onclick={() => play({ kind: 'action', actionId: action.id, target })}
+					>
+						<span>
+							<strong>{action.name}{target ? ` — ${groupName(target)}` : ''}</strong>
+							{#if section.moves[i - 1]?.action !== action}
+								<em>{action.description}</em>
+							{/if}
+							{#if forecast}
+								<em class="forecast">Projected vote share: {forecast.share}% &plusmn;{forecast.margin}</em>
+							{/if}
+							{#if tooLate}
+								<em class="lock">No campaign day remains to use the results</em>
+							{/if}
+							{#each locks as lock (lock.stat)}
+								<em class="lock">🔒 {lock.label}</em>
+							{/each}
+						</span>
+						<span class="cost">{action.cost === 0 ? 'Free' : pounds(action.cost)}</span>
+					</button>
+				{/each}
+			</details>
 		{/each}
 	</div>
 {/if}

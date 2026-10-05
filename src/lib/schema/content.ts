@@ -46,13 +46,23 @@ export const requirementSchema = z.object({
   label: z.string().min(1),
 });
 
+/** Where a move is listed on the day's menu; scenario specials default to "special". */
+export const actionCategorySchema = z.enum([
+  "constituents",
+  "pr",
+  "candidate",
+  "polling",
+  "special",
+]);
+
 export const actionSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
+  category: actionCategorySchema.default("special"),
   description: z.string().min(1),
   flavour: z.string().min(1),
   cost: z.number().min(0),
-  /** Targeted actions make the player choose which group to court that day. */
+  /** Targeted actions are offered once per voter group, so the player picks who to court. */
   targeted: z.boolean().default(false),
   requires: z.array(requirementSchema).default([]),
   /** A commissioned poll's confidence margin; commissioning does not move voters. */
@@ -178,6 +188,7 @@ export type Effect = z.infer<typeof effectSchema>;
 export type Requirement = z.infer<typeof requirementSchema>;
 export type VoterGroup = z.infer<typeof voterGroupSchema>;
 export type GameAction = z.infer<typeof actionSchema>;
+export type ActionCategory = z.infer<typeof actionCategorySchema>;
 export type EventResponse = z.infer<typeof responseSchema>;
 export type GameEvent = z.infer<typeof gameEventSchema>;
 export type Objective = z.infer<typeof objectiveSchema>;

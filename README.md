@@ -37,7 +37,7 @@ the day and some candidate morale.
 - 🗓️ **A contract up front.** Hit the objectives or you are out of a job.
 - 🎭 **One move a day.** Canvass, stage a photo op, buy media, run an attack ad, or prep the candidate.
 - 🗳️ **Commission a poll.** Spend a day and campaign money to see the projected vote share for each move tomorrow; better samples cost more and come with a tighter margin.
-- 🎯 **Pick your target.** Most moves are aimed at a single voter group.
+- 🎯 **Pick your target.** Moves are grouped by category, and most are listed once per voter group — choosing the move chooses who you court.
 - 🎙️ **An opportunity lands early.** Take the podcast or turn it down — and if you take it, decide what to drill him on.
 - 🔥 **A scandal lands mid-week.** Three ways to handle it, all of them bad.
 - 🏢 **Reality occasionally glitches.** Back a data-centre blockade and watch the campaign feed develop an entirely temporary problem.
@@ -295,6 +295,11 @@ shown to the player while the action is locked, so requirements read as goals.
 Adding a new unlockable is a content change, not a code change. Poll actions use
 `pollMargin` and an empty `effects` array; the engine stores a next-day report
 instead of changing voter stats.
+
+Each action has a `category` — `constituents`, `pr`, `candidate`, `polling` or
+`special` — which decides the collapsible section it appears under on the day's
+menu. Scenario actions that omit it are filed under `special`. A `targeted`
+action is listed once per voter group.
 
 ## � Deployment
 
