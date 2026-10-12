@@ -1,0 +1,14 @@
+[
+  {
+    "id": "ward",
+    "name": "Fiona Ward",
+    "blurb": "The opposition's tireless pavement inspector. Has photographed every pothole twice.",
+    "support": { "commuters": 43, "retirees": 48, "students": 25 }
+  },
+  {
+    "id": "mehta",
+    "name": "Arun Mehta",
+    "blurb": "An independent promising a working railway and an end to committee sandwiches.",
+    "support": { "commuters": 26, "retirees": 26, "students": 37 }
+  }
+]

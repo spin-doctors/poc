@@ -15,15 +15,23 @@
   "objectives": [
     {
       "id": "share",
-      "label": "Reach 38% vote share (currently polling around 31%)",
+      "label": "Reach 40.5% vote share (currently polling around 31%)",
       "stat": "voteShare",
-      "target": 38
+      "target": 40.5
     },
     {
       "id": "morale",
       "label": "Don't break the candidate (morale above 25 on election day)",
       "stat": "morale",
       "target": 25
+    },
+    {
+      "id": "win",
+      "label": "Bonus: win the seat",
+      "stat": "win",
+      "target": 1,
+      "optional": true,
+      "reward": { "funds": 3000, "recognition": 2 }
     }
   ],
   "keepMessage": "Bramley keeps the seat warm and you keep the retainer. His agent sends a bottle of something regrettable and a note reading 'onwards'.",

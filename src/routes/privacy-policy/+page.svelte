@@ -59,6 +59,14 @@
 		policies.
 	</p>
 
+	<h2>Local notifications</h2>
+	<p>
+		The iOS and Android apps can schedule daily reminders on your device if you enable them in
+		Settings and grant notification permission. These are local notifications, not server-sent push
+		messages. No push token or career data is sent to a game server. You can disable reminders in
+		the game or revoke permission in your device settings. Notification delivery may be delayed;
+		game progress is calculated from the local calendar when you return.
+	</p>
 	<h2>Your choices</h2>
 	<p>
 		You can play without analytics when the deployment has not enabled GoatCounter. You can remove

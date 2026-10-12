@@ -1,0 +1,38 @@
+[
+  {
+    "id": "blackwood",
+    "name": "Richard Blackwood",
+    "blurb": "A local grandee who considers a constituency surgery an unfortunate interruption to lunch.",
+    "support": {
+      "families": 40,
+      "retirees": 44,
+      "farmers": 48,
+      "graduates": 30
+    }
+  },
+  {
+    "id": "shaw",
+    "name": "Leila Shaw",
+    "blurb": "A science teacher campaigning for warmer homes and trains that are not hypothetical.",
+    "support": {
+      "families": 20,
+      "retirees": 20,
+      "farmers": 21,
+      "graduates": 26
+    }
+  },
+  {
+    "id": "loony",
+    "name": "Lady Marmalade, Monster Raving Loony Party",
+    "blurb": "Promises to nationalise queueing and install a custard-powered bypass.",
+    "novelty": true,
+    "support": { "families": 1, "retirees": 1, "farmers": 1, "graduates": 1 }
+  },
+  {
+    "id": "binface",
+    "name": "Count Binface",
+    "blurb": "The self-styled leader of the Recyclons from Sigma IX. Dustbin helmet, silver cape, General Waste at his side: an intergalactic space warrior on the ballot.",
+    "novelty": true,
+    "support": { "families": 1, "retirees": 1, "farmers": 1, "graduates": 2 }
+  }
+]

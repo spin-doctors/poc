@@ -24,6 +24,16 @@
       "label": "Don't let the party's rising star burn out (morale above 30 on election day)",
       "stat": "morale",
       "target": 30
+    },
+    { "id": "win", "label": "Win the seat", "stat": "win", "target": 1 },
+    {
+      "id": "majority",
+      "label": "Bonus: exceed 50% vote share",
+      "stat": "voteShare",
+      "target": 50,
+      "comparison": "above",
+      "optional": true,
+      "reward": { "funds": 8000, "recognition": 3 }
     }
   ],
   "keepMessage": "Castellane-Hughes takes the seat and thanks 'the whole team' in a speech that does not mention you by name. The party chair does, privately, twice.",

@@ -91,7 +91,7 @@ const loseAshcombe: Picker = (state) =>
   state.pendingEventId
     ? { respond: 1 }
     : state.money >= 6000
-      ? { kind: "action", actionId: "attackAd", target: "retirees" }
+      ? { kind: "action", actionId: "attackAd", target: "ward" }
       : { kind: "action", actionId: "doorstep", target: "retirees" };
 
 const doorstep: Picker = (state) =>
@@ -128,8 +128,14 @@ function after(
           sacked,
           groups: [],
           objectives: [],
+          candidates: [],
+          winnerId: null,
         },
         feeEarned: 0,
+        bonusFunds: 0,
+        bonusRecognition: 0,
+        news: [],
+        reports: [],
         recognitionDelta: 0,
         decidedOnDay: 7,
       },
@@ -211,6 +217,11 @@ describe("career", () => {
       contract.recognition.kept,
     );
     expect(run.career.stats.recognition).toBe(outcome.recognitionDelta);
+    expect(outcome.bonusFunds).toBe(3000);
+    expect(outcome.bonusRecognition).toBe(2);
+    expect(run.career.stats.personalFunds).toBe(
+      6000 + contract.fee + outcome.bonusFunds,
+    );
   });
 
   it("costs the candidate morale for a day left idle", () => {
@@ -221,6 +232,75 @@ describe("career", () => {
     const after = campaignView(run.career, 0);
     expect(after.day).toBe(2);
     expect(after.morale).toBe(before.morale - IDLE_MORALE_PENALTY);
+  });
+
+  it("pays no bonus when the win goal is met but a required goal fails", () => {
+    const run = driver();
+    const accepted = run.apply({
+      kind: "accept",
+      scenarioId: defaultScenarioId,
+    });
+    const campaign = accepted.active[0];
+    const complete = {
+      ...accepted,
+      active: [
+        {
+          ...campaign,
+          state: {
+            ...campaign.state,
+            day: 7,
+            turnTaken: true,
+            morale: 0,
+            support: Object.fromEntries(
+              scenarios[defaultScenarioId].groups.map((g) => [g.id, 100]),
+            ),
+            rivalSupport: Object.fromEntries(
+              scenarios[defaultScenarioId].rivals.map((r) => [
+                r.id,
+                Object.fromEntries(
+                  scenarios[defaultScenarioId].groups.map((g) => [g.id, 0]),
+                ),
+              ]),
+            ),
+          },
+        },
+      ],
+    };
+    const decided = applyCareerEntry(complete, scenarios, { kind: "tick" });
+    expect(
+      decided.history[0].election.objectives.find((o) => o.id === "win")?.met,
+    ).toBe(true);
+    expect(decided.history[0].election.sacked).toBe(true);
+    expect(decided.history[0].bonusFunds).toBe(0);
+    expect(decided.history[0].bonusRecognition).toBe(0);
+    expect(decided.stats.personalFunds).toBe(accepted.stats.personalFunds);
+  });
+
+  it("replays auxiliary polls around the normal move and keeps the news archive", () => {
+    const run = driver();
+    run.apply({ kind: "accept", scenarioId: defaultScenarioId });
+    run.apply({
+      kind: "move",
+      campaignId: 0,
+      move: { kind: "poll", actionId: "quickPoll" },
+    });
+    run.playDay(0, doorstep);
+    run.apply({ kind: "tick" });
+    run.playDay(0, doorstep);
+    run.apply({
+      kind: "move",
+      campaignId: 0,
+      move: { kind: "poll", actionId: "fullPoll" },
+    });
+    const original = campaignView(run.career, 0).reports[0];
+    run.apply({ kind: "tick" });
+    const state = campaignView(run.career, 0);
+    expect(state.reports).toHaveLength(2);
+    expect(state.reports[0]).toEqual(original);
+    expect(new Set(state.news.map((n) => n.id)).size).toBe(state.news.length);
+    expect(
+      replayCareer(scenarios, defaultScenarioId, careerSeed, run.log),
+    ).toEqual(run.career);
   });
 
   it("opens the parliamentary seat once recognition is earned", () => {
@@ -488,6 +568,9 @@ describe("company", () => {
       2000 + contract.fee,
     );
     expect(outcome.feeEarned).toBe(contract.fee);
+    expect(run.career.company?.cash).toBe(
+      2000 + contract.fee + outcome.bonusFunds,
+    );
   });
 
   it("needs a company and the fee to hire", () => {
@@ -528,6 +611,37 @@ describe("company", () => {
     expect(pool).toBeGreaterThan(before);
     expect(campaignView(run.career, 1).credibility).toBe(pool);
     expect(campaignView(run.career, 1).turnTaken).toBe(false);
+  });
+
+  it("keeps daily poll limits and budgets independent across accounts", () => {
+    const run = driver();
+    run.apply({ kind: "accept", scenarioId: defaultScenarioId });
+    run.playOut(0, winAshcombe);
+    run.apply({ kind: "incorporate", profile: company });
+    run.apply({ kind: "hire" });
+    run.apply({ kind: "accept", scenarioId: defaultScenarioId });
+    run.apply({ kind: "accept", scenarioId: "parliamentary-harwell" });
+    for (const campaignId of [1, 2]) {
+      run.apply({
+        kind: "move",
+        campaignId,
+        move: { kind: "poll", actionId: "quickPoll" },
+      });
+      expect(() =>
+        run.apply({
+          kind: "move",
+          campaignId,
+          move: { kind: "poll", actionId: "fullPoll" },
+        }),
+      ).toThrow(/already commissioned/);
+      expect(campaignView(run.career, campaignId).turnTaken).toBe(false);
+    }
+    run.apply({ kind: "tick" });
+    for (const campaignId of [1, 2])
+      expect(campaignView(run.career, campaignId).reports).toHaveLength(1);
+    expect(
+      replayCareer(scenarios, defaultScenarioId, careerSeed, run.log),
+    ).toEqual(run.career);
   });
 
   it("will not run the same seat twice at once", () => {

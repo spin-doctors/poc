@@ -7,7 +7,7 @@
  *   npm run balance -- 1000 parliamentary-harwell
  */
 import { scenarios } from "../src/lib/content/index.js";
-import type { Content } from "../src/lib/schema/content.js";
+import type { Content, GameAction } from "../src/lib/schema/content.js";
 import {
   applyMove,
   createGame,
@@ -36,6 +36,12 @@ function makeStrategies(content: Content) {
   const byId = (id: string) => content.actions.find((a) => a.id === id)!;
   const pickGroup = (pick: number) =>
     groupIds[Math.floor(pick * groupIds.length)];
+  const targetFor = (action: GameAction, pick: number) =>
+    action.targeting === "group"
+      ? pickGroup(pick)
+      : action.targeting === "rival"
+        ? content.rivals[Math.floor(pick * content.rivals.length)].id
+        : undefined;
 
   function use(state: GameState, id: string, pick: number): PlayerMove | null {
     const action = byId(id);
@@ -43,7 +49,7 @@ function makeStrategies(content: Content) {
     return {
       kind: "action",
       actionId: id,
-      target: action.targeted ? pickGroup(pick) : undefined,
+      target: targetFor(action, pick),
     };
   }
 
@@ -63,50 +69,69 @@ function makeStrategies(content: Content) {
       return {
         kind: "action",
         actionId: action.id,
-        target: action.targeted ? pickGroup(pick) : undefined,
+        target: targetFor(action, pick),
       };
     },
     randomIncludingPolls: (state, pick) => {
-      const available = content.actions.filter((a) => isAvailable(state, a));
+      if (
+        state.pollPurchasedOnDay !== state.day &&
+        state.day < content.contract.days &&
+        pick < 0.35
+      ) {
+        const polls = content.actions.filter(
+          (a) => a.pollMargin && isAvailable(state, a),
+        );
+        if (polls.length > 0)
+          return {
+            kind: "poll",
+            actionId: polls[Math.floor((pick / 0.35) * polls.length)].id,
+          };
+      }
+      const available = content.actions.filter(
+        (a) => !a.pollMargin && isAvailable(state, a),
+      );
       const action = available[Math.floor(pick * available.length)];
       if (!action) return fallback(pick);
       return {
         kind: "action",
         actionId: action.id,
-        target: action.targeted ? pickGroup(pick) : undefined,
+        target: targetFor(action, pick),
       };
     },
     pollWise: (state, pick) => {
       if (state.pollReport?.availableOnDay === state.day) {
         const forecasts = content.actions
-          .filter((action) => isAvailable(state, action))
-          .map((action) => ({
-            action,
-            forecast: forecastAction(
-              state,
-              content,
+          .filter((action) => !action.pollMargin && isAvailable(state, action))
+          .flatMap((action) =>
+            (action.targeting === "group"
+              ? groupIds
+              : action.targeting === "rival"
+                ? content.rivals.map((r) => r.id)
+                : [undefined]
+            ).map((target) => ({
               action,
-              action.targeted ? pickGroup(pick) : undefined,
-            ),
-          }))
+              target,
+              forecast: forecastAction(state, content, action, target),
+            })),
+          )
           .filter((item) => item.forecast !== null)
           .sort((a, b) => b.forecast!.share - a.forecast!.share);
-        const best = forecasts[0]?.action;
+        const best = forecasts[0];
         if (best) {
           return {
             kind: "action",
-            actionId: best.id,
-            target: best.targeted ? pickGroup(pick) : undefined,
+            actionId: best.action.id,
+            target: best.target,
           };
         }
       }
       if (
         state.day === 1 &&
         !state.history.some(
-          (move) => move.kind === "action" && move.actionId === "fullPoll",
+          (move) => move.kind === "poll" && move.actionId === "fullPoll",
         )
       ) {
-        return { kind: "action", actionId: "fullPoll" };
+        return { kind: "poll", actionId: "fullPoll" };
       }
       return strategies.balanced(state, pick);
     },
@@ -118,19 +143,22 @@ function makeStrategies(content: Content) {
       target: groupIds[0],
     }),
     balanced: (state, pick) => {
-      if (state.morale < 40) return { kind: "action", actionId: "debatePrep" };
+      if (state.morale < 40)
+        return use(state, "debatePrep", pick) ?? fallback(pick);
       return use(state, "photoOp", pick) ?? fallback(pick);
     },
     /** Builds credibility early, then cashes it in for inside information. */
     cleanHands: (state, pick) => {
       const inside = use(state, "insideTrack", pick);
       if (inside) return inside;
-      if (state.morale < 45) return { kind: "action", actionId: "debatePrep" };
+      if (state.morale < 45)
+        return use(state, "debatePrep", pick) ?? fallback(pick);
       return fallback(pick);
     },
     /** Builds ruthlessness early, then starts throwing dead cats. Rests when the candidate cracks. */
     bareKnuckle: (state, pick) => {
-      if (state.morale < 40) return { kind: "action", actionId: "debatePrep" };
+      if (state.morale < 40)
+        return use(state, "debatePrep", pick) ?? fallback(pick);
       return (
         use(state, "deadCat", pick) ??
         use(state, "attackAd", pick) ??
@@ -170,11 +198,7 @@ function playOne(content: Content, strategy: Strategy, seed: number) {
       move = strategy(state, roll.value);
     }
 
-    try {
-      state = applyMove(state, content, move).state;
-    } catch {
-      state = applyMove(state, content, fallback(roll.value)).state;
-    }
+    state = applyMove(state, content, move).state;
   }
   return { ...runElection(state, content), reached };
 }

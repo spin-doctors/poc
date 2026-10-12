@@ -1,0 +1,14 @@
+[
+  {
+    "id": "price",
+    "name": "Helen Price",
+    "blurb": "The incumbent. Knows where the council keeps the keys and would prefer not to hand them over.",
+    "support": { "allotments": 46, "estate": 49, "retirees": 48 }
+  },
+  {
+    "id": "doyle",
+    "name": "Sam Doyle",
+    "blurb": "A tenants' organiser with a megaphone and a very specific list of broken lifts.",
+    "support": { "allotments": 24, "estate": 29, "retirees": 25 }
+  }
+]
