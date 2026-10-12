@@ -3,13 +3,14 @@
 
 	interface Props {
 		settings: GameSettings;
+		notificationPermission: string;
 		soloCareer: boolean;
 		onChange: (settings: GameSettings) => void;
 		onNewCareer: () => void;
 		onBack: () => void;
 	}
 
-	let { settings, soloCareer, onChange, onNewCareer, onBack }: Props = $props();
+	let { settings, notificationPermission, soloCareer, onChange, onNewCareer, onBack }: Props = $props();
 </script>
 
 <p class="dateline">Settings</p>
@@ -20,6 +21,12 @@
 
 <div class="card">
 	<h3>Playtest</h3>
+	<label class="toggle">
+		<input type="checkbox" checked={settings.instantAdvance}
+			onchange={(event) => onChange({ ...settings, instantAdvance: event.currentTarget.checked })} />
+		Tester: allow immediate day advancement
+	</label>
+	<p class="hint">Off by default. Normal play advances at local midnight; days away count as idle days. Tester mode pauses automatic advancement and exposes manual next-day controls.</p>
 	<label class="toggle">
 		<input
 			type="checkbox"
@@ -39,6 +46,19 @@
 			start a new career.
 		</p>
 	{/if}
+</div>
+
+<div class="card">
+	<h3>Daily reminders</h3>
+	<label class="toggle">
+		<input type="checkbox" checked={settings.reminders} disabled={notificationPermission === 'unsupported'}
+			onchange={(event) => onChange({ ...settings, reminders: event.currentTarget.checked })} />
+		Notify me when the next day opens
+	</label>
+	<p class="hint">Permission: {notificationPermission}. Reminders are scheduled on this device, not sent by a server. They may arrive late; the game’s calendar does not wait for them.</p>
+	{#if notificationPermission === 'denied'}<p>Enable notifications in the device’s app settings, then return here.</p>{/if}
+	{#if notificationPermission === 'unsupported'}<p>Available in the iOS and Android apps only.</p>{/if}
+	{#if settings.instantAdvance}<p>Reminders are paused in tester mode.</p>{/if}
 </div>
 
 <div class="card">

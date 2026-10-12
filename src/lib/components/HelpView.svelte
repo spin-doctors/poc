@@ -24,8 +24,37 @@
 	<h3>Each day</h3>
 	<p>
 		Make one move: canvass, stage a photo op, buy media, run an attack ad, prep the candidate or
-		commission a poll. Some days a story breaks instead, and you choose how to handle it.
+		throw a distraction. You may also pay for one private poll per account per day without using
+		your move. Some moves trigger a story, and you choose how to handle it.
 	</p>
+	<p>Days advance at local midnight, even while you are away. An unfinished day loses 5 morale.
+		After today’s move and any event responses, come back tomorrow. Immediate advancement is a tester option in Settings.</p>
+</div>
+
+<div class="card">
+	<h3>The opposition</h3>
+	<p>Doorstep canvassing asks which voter group to visit. Attack ads ask which opponent to attack;
+		gains cannot exceed that opponent’s available support. Other moves are broad.</p>
+	<p>Parliamentary elections also have novelty contenders, including Count Binface and a Monster
+		Raving Loony Party candidate. They attract very few votes and cannot become clients.</p>
+</div>
+
+<div class="card">
+	<h3>Polling and the papers</h3>
+	<p>A paid poll arrives tomorrow with all candidates’ standings by voter group and action forecasts.
+		Bigger samples cost more and narrow the margin. Old reports remain in your private archive;
+		the forecasts are available only on the delivery day. No new poll can be used after the final day.</p>
+	<p>The newspaper covers public polling, stories and gaffes. Paid polling stays private.
+		Native iOS and Android reminders are optional and may be delayed; the calendar works without them.</p>
+</div>
+
+<div class="card">
+	<h3>Required goals and bonuses</h3>
+	<p>Only required objectives decide whether you keep the account. Optional objectives pay extra
+		funds and recognition, but only if you keep the job. Council clients offer a bonus for winning;
+		Harwell expects to win and offers a bonus for exceeding 50% of votes.</p>
+	<p>First past the post means beating every opponent, not necessarily winning a majority.
+		A tied lead is not a win, and exactly 50% does not earn the majority bonus.</p>
 </div>
 
 <div class="card">

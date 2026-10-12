@@ -8,6 +8,7 @@ import type {
 } from "../schema/content";
 import { nextRandom, randomRange } from "./rng";
 import type {
+  CandidateStanding,
   ElectionResult,
   FeedbackLine,
   GaffeReport,
@@ -17,6 +18,7 @@ import type {
   ObjectiveResult,
   PlayerMove,
   PollForecast,
+  PollReport,
   StartingStats,
 } from "./types";
 
@@ -58,8 +60,15 @@ export function createGame(
     personalFunds: start.personalFunds,
     pollAccuracy: 0,
     support,
+    rivalSupport: Object.fromEntries(
+      content.rivals.map((r) => [r.id, { ...r.support }]),
+    ),
     turnout,
     pollReport: null,
+    pendingPoll: null,
+    pollPurchasedOnDay: null,
+    reports: [],
+    news: [],
     positions: {},
     pendingEventId: null,
     queuedEventId: null,
@@ -98,8 +107,15 @@ function applyEffects(
   content: Content,
   effects: Effect[],
   targetId?: string,
+  rivalId?: string,
 ): { state: GameState; feedback: FeedbackLine[] } {
   const support = { ...state.support };
+  const rivalSupport = Object.fromEntries(
+    Object.entries(state.rivalSupport).map(([id, shares]) => [
+      id,
+      { ...shares },
+    ]),
+  );
   const turnout = { ...state.turnout };
   const globals: Record<GlobalStat, number> = {
     morale: state.morale,
@@ -139,7 +155,42 @@ function applyEffects(
         : effect.delta;
       if (effect.stat === "support") {
         const before = support[group.id];
-        support[group.id] = clamp(before + delta, 0, 100);
+        const sources =
+          delta > 0 && rivalId
+            ? content.rivals.filter((r) => r.id === rivalId)
+            : delta > 0
+              ? content.rivals
+              : content.rivals.filter((r) => !r.novelty);
+        const available = sources.reduce(
+          (sum, r) => sum + rivalSupport[r.id][group.id],
+          0,
+        );
+        const change =
+          delta > 0
+            ? Math.min(delta, 100 - before, available)
+            : -Math.min(-delta, before);
+        const baseTotal = sources.reduce(
+          (sum, s) => sum + s.support[group.id],
+          0,
+        );
+        const weights = sources.map((r) =>
+          available > 0
+            ? rivalSupport[r.id][group.id] / available
+            : baseTotal > 0
+              ? r.support[group.id] / baseTotal
+              : 1 / sources.length,
+        );
+        let remaining = change;
+        sources.forEach((r, i) => {
+          const transferred =
+            i === sources.length - 1 ? remaining : change * weights[i];
+          rivalSupport[r.id][group.id] = Math.max(
+            0,
+            rivalSupport[r.id][group.id] - transferred,
+          );
+          remaining -= transferred;
+        });
+        support[group.id] = clamp(before + change, 0, 100);
         feedback.push({
           groupId: group.id,
           label: group.name,
@@ -161,7 +212,10 @@ function applyEffects(
     }
   }
 
-  return { state: { ...state, support, turnout, ...globals }, feedback };
+  return {
+    state: { ...state, support, rivalSupport, turnout, ...globals },
+    feedback,
+  };
 }
 
 /** Merges repeated hits on the same group/stat so the player sees one number per line. */
@@ -215,20 +269,58 @@ export function endDay(state: GameState, content: Content): GameState {
     ? state.morale
     : clamp(state.morale - IDLE_MORALE_PENALTY, 0, 100);
   const day = state.day + 1;
-  const pollReport =
-    state.pollReport && state.day >= state.pollReport.availableOnDay
-      ? null
-      : state.pollReport;
-  return {
+  const delivered = state.pendingPoll
+    ? makePollReport(state, content, state.pendingPoll.margin, day)
+    : null;
+  const next: GameState = {
     ...state,
     morale,
     day,
-    pollReport,
+    pollReport: delivered,
+    pendingPoll: null,
+    reports: delivered ? [...state.reports, delivered] : state.reports,
     pendingEventId: state.turnTaken ? state.queuedEventId : null,
     queuedEventId: null,
     turnTaken: false,
     finished: day > content.contract.days,
   };
+  if (!state.turnTaken)
+    next.news = [
+      ...next.news,
+      {
+        id: `idle:${state.day}`,
+        day: state.day,
+        kind: "idle",
+        headline: "Campaign diary left blank",
+        body: `No completed move today. Candidate morale fell by ${state.morale - morale} points.`,
+      },
+    ];
+  if (!next.finished) {
+    const report = publicPoll(next, content);
+    next.news = [
+      ...next.news,
+      {
+        id: `poll:${day}`,
+        day,
+        kind: "poll",
+        headline: "The morning numbers",
+        body: `${report.standings.map((c) => `${c.name}: ${round1(c.share)}%`).join("; ")}. Estimates only, with up to ±${report.margin} points uncertainty (novelty contenders remain within 0–2%).`,
+      },
+    ];
+    const queued = content.events.find((e) => e.id === next.pendingEventId);
+    if (queued)
+      next.news = [
+        ...next.news,
+        {
+          id: `event:${day}:${queued.id}`,
+          day,
+          kind: "event",
+          headline: queued.headline,
+          body: queued.body,
+        },
+      ];
+  }
+  return next;
 }
 
 export function canAfford(state: GameState, action: GameAction): boolean {
@@ -258,7 +350,7 @@ export function applyMove(
   move: PlayerMove,
 ): MoveResult {
   const result = playTurn(state, content, move);
-  return result.state.turnTaken
+  return move.kind !== "poll" && result.state.turnTaken
     ? { ...result, state: endDay(result.state, content) }
     : result;
 }
@@ -270,6 +362,30 @@ export function playTurn(
   move: PlayerMove,
 ): MoveResult {
   if (state.finished) throw new Error("Campaign is over");
+  if (move.kind === "poll") {
+    const action = content.actions.find((a) => a.id === move.actionId);
+    if (!action?.pollMargin) throw new Error("Unknown poll product");
+    if (state.day >= content.contract.days)
+      throw new Error("There is no campaign day left to use this poll");
+    if (state.pollPurchasedOnDay === state.day)
+      throw new Error("A poll is already commissioned today");
+    if (!canAfford(state, action)) throw new Error("Not enough money");
+    if (!isUnlocked(state, action)) throw new Error("Poll is not unlocked");
+    return {
+      state: {
+        ...state,
+        money: state.money - action.cost,
+        pendingPoll: { margin: action.pollMargin },
+        pollPurchasedOnDay: state.day,
+        history: [...state.history, move],
+      },
+      flavour: action.flavour,
+      feedback: [],
+      gaffe: null,
+      triggeredEventId: null,
+      pollCommissioned: true,
+    };
+  }
   if (state.turnTaken) throw new Error("Today's move is already done");
 
   if (move.kind === "respond") {
@@ -310,9 +426,29 @@ export function playTurn(
           queuedEventId: response.nextDay ?? null,
           turnTaken: true,
         };
+    const news = [...next.news];
+    if (gaffed.gaffe)
+      news.push({
+        id: `gaffe:${state.history.length}`,
+        day: state.day,
+        kind: "gaffe",
+        headline: gaffed.gaffe.headline,
+        body: "An unguarded remark. The campaign is dealing with the fallout.",
+      });
+    const followUp = response.next
+      ? content.events.find((e) => e.id === response.next)
+      : null;
+    if (followUp)
+      news.push({
+        id: `event:${state.day}:${followUp.id}`,
+        day: state.day,
+        kind: "event",
+        headline: followUp.headline,
+        body: followUp.body,
+      });
 
     return {
-      state: { ...next, history: [...state.history, move] },
+      state: { ...next, news, history: [...state.history, move] },
       flavour: response.flavour,
       feedback: condense(applied.feedback),
       gaffe: gaffed.gaffe,
@@ -325,35 +461,68 @@ export function playTurn(
 
   const action = content.actions.find((a) => a.id === move.actionId);
   if (!action) throw new Error(`Unknown action: ${move.actionId}`);
-  if (action.pollMargin && state.day >= content.contract.days)
-    throw new Error("There is no campaign day left to use this poll");
-  if (action.targeted && !move.target)
-    throw new Error(`${action.name} needs a target group`);
-  if (action.targeted && !findGroup(content, move.target!))
+  if (action.pollMargin)
+    throw new Error("Commission polling as an additional poll move");
+  if (action.targeting !== "none" && !move.target)
+    throw new Error(`${action.name} needs a target`);
+  if (action.targeting === "group" && !findGroup(content, move.target!))
     throw new Error("Unknown target group");
+  if (
+    action.targeting === "rival" &&
+    !content.rivals.some((r) => r.id === move.target)
+  )
+    throw new Error("Unknown rival target");
+  if (action.targeting === "none" && move.target)
+    throw new Error("This action does not take a target");
   if (!canAfford(state, action)) throw new Error("Not enough money");
   if (!isUnlocked(state, action))
     throw new Error(`${action.name} is not unlocked`);
 
   const paid = { ...state, money: state.money - action.cost };
-  const applied = applyEffects(paid, content, action.effects, move.target);
+  const applied = applyEffects(
+    paid,
+    content,
+    action.effects,
+    action.targeting === "group" ? move.target : undefined,
+    action.targeting === "rival" ? move.target : undefined,
+  );
   const gaffed = action.pollMargin
     ? { state: applied.state, gaffe: null }
     : rollGaffe(applied.state, content);
-  const commissioned = action.pollMargin
-    ? {
-        ...gaffed.state,
-        pollReport: {
-          availableOnDay: state.day + 1,
-          margin: action.pollMargin,
+  let commissioned = gaffed.state;
+  if (gaffed.gaffe)
+    commissioned = {
+      ...commissioned,
+      news: [
+        ...commissioned.news,
+        {
+          id: `gaffe:${state.history.length}`,
+          day: state.day,
+          kind: "gaffe",
+          headline: gaffed.gaffe.headline,
+          body: "The candidate went off-script. The campaign is dealing with the fallout.",
         },
-      }
-    : gaffed.state;
+      ],
+    };
 
   const event = eventForDay(content, state.day);
-  const afterEvent = event
+  let afterEvent = event
     ? { ...commissioned, pendingEventId: event.id }
     : { ...commissioned, turnTaken: true };
+  if (event)
+    afterEvent = {
+      ...afterEvent,
+      news: [
+        ...afterEvent.news,
+        {
+          id: `event:${state.day}:${event.id}`,
+          day: state.day,
+          kind: "event",
+          headline: event.headline,
+          body: event.body,
+        },
+      ],
+    };
 
   return {
     state: { ...afterEvent, history: [...state.history, move] },
@@ -365,6 +534,81 @@ export function playTurn(
   };
 }
 
+function makePollReport(
+  state: GameState,
+  content: Content,
+  margin: number,
+  availableOnDay: number,
+): PollReport {
+  const candidates = [
+    { id: "client", name: content.contract.candidateName, novelty: false },
+    ...content.rivals,
+  ];
+  const groups = content.groups.map((group, groupIndex) => {
+    const shares = candidates.map((candidate) =>
+      candidate.id === "client"
+        ? state.support[group.id]
+        : state.rivalSupport[candidate.id][group.id],
+    );
+    if (!shares.includes(100)) {
+      const step = margin / (candidates.length - 1);
+      for (let i = 1; i < candidates.length; i++) {
+        const noise = randomRange(
+          state.seed + state.day * 7919 + groupIndex * 101 + i * 313,
+          -step,
+          step,
+        ).value;
+        const transfer = clamp(
+          noise,
+          -Math.min(shares[i], 100 - shares[0]),
+          Math.min(shares[0], (candidates[i].novelty ? 2 : 100) - shares[i]),
+        );
+        shares[i] += transfer;
+        shares[0] -= transfer;
+      }
+    }
+    const standings: CandidateStanding[] = candidates.map((candidate, i) => ({
+      id: candidate.id,
+      name: candidate.name,
+      share: shares[i],
+      margin: candidate.novelty ? Math.min(2, margin) : margin,
+    }));
+    return { groupId: group.id, standings };
+  });
+  const weights = content.groups.map(
+    (g) => g.size * clamp(g.baseTurnout + state.turnout[g.id], 0, 100),
+  );
+  const total = weights.reduce((a, b) => a + b, 0);
+  const standings = candidates.map((candidate, i) => ({
+    id: candidate.id,
+    name: candidate.name,
+    share:
+      total === 0
+        ? 0
+        : groups.reduce(
+            (sum, g, j) => sum + g.standings[i].share * weights[j],
+            0,
+          ) / total,
+    margin: candidate.novelty ? Math.min(2, margin) : margin,
+  }));
+  return {
+    commissionedOnDay: state.day,
+    availableOnDay,
+    margin,
+    standings,
+    groups,
+  };
+}
+
+export function publicPoll(state: GameState, content: Content): PollReport {
+  return makePollReport(
+    state,
+    content,
+    Math.max(0.5, 3 - state.pollAccuracy),
+    state.day,
+  );
+}
+
 /**
  * The published poll. Deterministic per day, but deliberately wrong by a few points —
  * the player should never be certain they've done enough.
@@ -373,31 +617,10 @@ export function pollEstimate(
   state: GameState,
   content: Content,
 ): { share: number; margin: number } {
-  let votes = 0;
-  let ours = 0;
-  for (const group of content.groups) {
-    const turnoutPct = clamp(
-      group.baseTurnout + state.turnout[group.id],
-      0,
-      100,
-    );
-    const cast = group.size * (turnoutPct / 100);
-    votes += cast;
-    ours += cast * (state.support[group.id] / 100);
-  }
-  const truth = votes === 0 ? 0 : (ours / votes) * 100;
-  const margin = round1(Math.max(0.5, 3 - state.pollAccuracy));
-  const noise = randomRange(
-    state.seed + state.day * 7919,
-    -margin,
-    margin,
-  ).value;
-  const unanimous = content.groups.every(
-    (group) => state.support[group.id] >= 100,
-  );
+  const report = publicPoll(state, content);
   return {
-    share: unanimous ? 100 : round1(clamp(truth + noise, 0, 100)),
-    margin,
+    share: round1(report.standings[0].share),
+    margin: round1(report.margin),
   };
 }
 
@@ -429,7 +652,11 @@ export function forecastAction(
     !state.pollReport ||
     state.pollReport.availableOnDay !== state.day ||
     action.pollMargin ||
-    !isAvailable(state, action)
+    !isAvailable(state, action) ||
+    (action.targeting === "group" &&
+      !content.groups.some((g) => g.id === targetId)) ||
+    (action.targeting === "rival" &&
+      !content.rivals.some((r) => r.id === targetId))
   ) {
     return null;
   }
@@ -437,7 +664,8 @@ export function forecastAction(
     state,
     content,
     action.effects,
-    targetId,
+    action.targeting === "group" ? targetId : undefined,
+    action.targeting === "rival" ? targetId : undefined,
   ).state;
   return {
     share: expectedVoteShare(projected, content),
@@ -453,6 +681,15 @@ export function runElection(
   const groups: GroupResult[] = [];
   let totalVotes = 0;
   let ourVotes = 0;
+  const candidates = [
+    { id: "client", name: content.contract.candidateName, votes: 0, share: 0 },
+    ...content.rivals.map((r) => ({
+      id: r.id,
+      name: r.name,
+      votes: 0,
+      share: 0,
+    })),
+  ];
 
   for (const group of content.groups) {
     // Enthusiasm nudges turnout: people who like you are likelier to show up.
@@ -466,7 +703,27 @@ export function runElection(
       100,
     );
     const votesCast = Math.round(group.size * (turnoutPct / 100));
-    const votesForUs = Math.round(votesCast * (state.support[group.id] / 100));
+    const raw = candidates.map(
+      (c) =>
+        (votesCast *
+          (c.id === "client"
+            ? state.support[group.id]
+            : state.rivalSupport[c.id][group.id])) /
+        100,
+    );
+    const allocated = raw.map(Math.floor);
+    const order = raw
+      .map((n, i) => ({ i, fraction: n - allocated[i] }))
+      .sort((a, b) => b.fraction - a.fraction || a.i - b.i);
+    const remaining = votesCast - allocated.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < remaining; i++) allocated[order[i % order.length].i]++;
+    const candidateVotes = Object.fromEntries(
+      candidates.map((c, i) => {
+        c.votes += allocated[i];
+        return [c.id, allocated[i]];
+      }),
+    );
+    const votesForUs = candidateVotes.client;
 
     totalVotes += votesCast;
     ourVotes += votesForUs;
@@ -477,21 +734,38 @@ export function runElection(
       turnoutPct: round1(turnoutPct),
       votesCast,
       votesForUs,
+      candidateVotes,
     });
   }
 
   const voteShare =
     totalVotes === 0 ? 0 : round1((ourVotes / totalVotes) * 100);
+  for (const candidate of candidates)
+    candidate.share =
+      totalVotes === 0 ? 0 : round1((candidate.votes / totalVotes) * 100);
+  const sorted = [...candidates].sort((a, b) => b.votes - a.votes);
+  const winnerId = sorted[0].votes > sorted[1].votes ? sorted[0].id : null;
   const objectives: ObjectiveResult[] = content.contract.objectives.map(
     (objective) => {
       const actual =
-        objective.stat === "voteShare" ? voteShare : round1(state.morale);
+        objective.stat === "win"
+          ? Number(winnerId === "client")
+          : objective.stat === "voteShare"
+            ? totalVotes === 0
+              ? 0
+              : (ourVotes / totalVotes) * 100
+            : round1(state.morale);
       return {
         id: objective.id,
         label: objective.label,
         target: objective.target,
-        actual,
-        met: actual >= objective.target,
+        actual: round1(actual),
+        met:
+          objective.comparison === "above"
+            ? actual > objective.target
+            : actual >= objective.target,
+        optional: objective.optional,
+        reward: objective.reward,
       };
     },
   );
@@ -503,7 +777,9 @@ export function runElection(
     voteShare,
     morale: round1(state.morale),
     objectives,
-    sacked: objectives.some((o) => !o.met),
+    sacked: objectives.some((o) => !o.optional && !o.met),
+    candidates,
+    winnerId,
   };
 }
 

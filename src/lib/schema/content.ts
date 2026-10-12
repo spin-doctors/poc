@@ -62,8 +62,8 @@ export const actionSchema = z.object({
   description: z.string().min(1),
   flavour: z.string().min(1),
   cost: z.number().min(0),
-  /** Targeted actions are offered once per voter group, so the player picks who to court. */
-  targeted: z.boolean().default(false),
+  /** Group and rival targets are chosen after opening the action's single menu card. */
+  targeting: z.enum(["none", "group", "rival"]).default("none"),
   requires: z.array(requirementSchema).default([]),
   /** A commissioned poll's confidence margin; commissioning does not move voters. */
   pollMargin: z.number().positive().max(10).optional(),
@@ -103,11 +103,31 @@ export const gameEventSchema = z.object({
   responses: z.array(responseSchema).min(1).max(4),
 });
 
-export const objectiveSchema = z.object({
+export const objectiveSchema = z
+  .object({
+    id: z.string().min(1),
+    label: z.string().min(1),
+    stat: z.enum(["voteShare", "morale", "win"]),
+    target: z.number(),
+    comparison: z.enum(["at-least", "above"]).default("at-least"),
+    optional: z.boolean().default(false),
+    reward: z
+      .object({
+        funds: z.number().min(0).default(0),
+        recognition: z.number().min(0).max(100).default(0),
+      })
+      .optional(),
+  })
+  .refine((objective) => !objective.reward || objective.optional, {
+    message: "Only optional objectives may declare bonus rewards",
+  });
+
+export const rivalSchema = z.object({
   id: z.string().min(1),
-  label: z.string().min(1),
-  stat: z.enum(["voteShare", "morale"]),
-  target: z.number(),
+  name: z.string().min(1),
+  blurb: z.string().min(1),
+  novelty: z.boolean().default(false),
+  support: z.record(z.number().min(0).max(100)),
 });
 
 /** Who will hire you between campaigns. Read against career stats, not campaign state. */
@@ -172,11 +192,13 @@ export const scenarioSchema = z.object({
   contract: contractSchema,
   groups: z.array(voterGroupSchema).min(1),
   events: z.array(gameEventSchema),
+  rivals: z.array(rivalSchema).min(2),
   actions: z.array(actionSchema).default([]),
 });
 
 export const contentSchema = z.object({
   groups: z.array(voterGroupSchema).min(1),
+  rivals: z.array(rivalSchema).min(2),
   actions: z.array(actionSchema).min(1),
   events: z.array(gameEventSchema),
   /** Fired when the candidate's morale collapses and they go off-script. */

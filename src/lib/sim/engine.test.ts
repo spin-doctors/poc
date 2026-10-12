@@ -208,9 +208,7 @@ describe("carried-over stats", () => {
     const insideTrack = content.actions.find((a) => a.id === "insideTrack")!;
     expect(isUnlocked(state, insideTrack)).toBe(true);
 
-    const moves: PlayerMove[] = [
-      { kind: "action", actionId: "insideTrack", target: "retirees" },
-    ];
+    const moves: PlayerMove[] = [{ kind: "action", actionId: "insideTrack" }];
     const played = applyMove(state, content, moves[0]).state;
     expect(replay(content, seed, moves, start)).toEqual(played);
   });
@@ -245,7 +243,6 @@ describe("unlockable actions", () => {
       applyMove(state, content, {
         kind: "action",
         actionId: "deadCat",
-        target: "students",
       }),
     ).toThrow(/not unlocked/);
   });
@@ -257,7 +254,6 @@ describe("unlockable actions", () => {
       applyMove(state, content, {
         kind: "action",
         actionId: "insideTrack",
-        target: "retirees",
       }),
     ).not.toThrow();
   });
@@ -277,7 +273,7 @@ describe("unlockable actions", () => {
     const dirty = applyMove(state, content, {
       kind: "action",
       actionId: "attackAd",
-      target: "commuters",
+      target: "ward",
     }).state;
 
     expect(clean.credibility).toBeGreaterThan(state.credibility);
@@ -293,7 +289,6 @@ describe("unlockable actions", () => {
       state = applyMove(state, content, {
         kind: "action",
         actionId: "photoOp",
-        target: "commuters",
       }).state;
       if (state.pendingEventId) {
         state = applyMove(state, content, {
@@ -315,7 +310,6 @@ describe("inside information", () => {
     const after = applyMove(state, content, {
       kind: "action",
       actionId: "insideTrack",
-      target: "retirees",
     }).state;
     expect(pollEstimate(after, content).margin).toBeLessThan(before);
   });
@@ -387,12 +381,12 @@ describe("applyMove", () => {
     const credulous = applyMove(state, content, {
       kind: "action",
       actionId: "attackAd",
-      target: "students",
+      target: "ward",
     });
     const sceptical = applyMove(state, content, {
       kind: "action",
       actionId: "attackAd",
-      target: "retirees",
+      target: "ward",
     });
     const studentGain = credulous.feedback.find(
       (f) => f.groupId === "students",
@@ -400,7 +394,7 @@ describe("applyMove", () => {
     const retireeGain = sceptical.feedback.find(
       (f) => f.groupId === "retirees",
     )!.delta;
-    // 14 * (70/50) - 4 = 15.6 vs 14 * (30/50) - 4 = 4.4
+    // The same opponent's voters respond differently to spin in each group.
     expect(studentGain).toBeGreaterThan(retireeGain);
   });
 
@@ -448,25 +442,30 @@ describe("commissioned polls", () => {
   )!;
   const fullPoll = content.actions.find((action) => action.id === "fullPoll")!;
 
-  it("costs money and a day without changing voter support or turnout", () => {
+  it("costs money without consuming the move or changing voter support or turnout", () => {
     const initial = createGame(content, seed);
     const result = applyMove(initial, content, {
-      kind: "action",
+      kind: "poll",
       actionId: "quickPoll",
     });
 
     expect(result.state.money).toBe(initial.money - quickPoll.cost);
-    expect(result.state.day).toBe(initial.day + 1);
+    expect(result.state.day).toBe(initial.day);
+    expect(result.state.turnTaken).toBe(false);
     expect(result.state.support).toEqual(initial.support);
     expect(result.state.turnout).toEqual(initial.turnout);
-    expect(result.state.pollReport).toEqual({ availableOnDay: 2, margin: 5 });
+    expect(result.state.pollReport).toBeNull();
+    expect(endDay(result.state, content).pollReport).toMatchObject({
+      availableOnDay: 2,
+      margin: 5,
+    });
     expect(result.pollCommissioned).toBe(true);
   });
 
   it("does not create a candidate gaffe while commissioning", () => {
     const fragile = { ...createGame(content, seed), morale: 0 };
     const result = applyMove(fragile, content, {
-      kind: "action",
+      kind: "poll",
       actionId: "quickPoll",
     });
     expect(result.gaffe).toBeNull();
@@ -485,11 +484,14 @@ describe("commissioned polls", () => {
   });
 
   it("projects action effects for the currently selected target", () => {
-    const commissioned = applyMove(createGame(content, seed), content, {
-      kind: "action",
-      actionId: "fullPoll",
-    }).state;
-    const attack = content.actions.find((action) => action.id === "attackAd")!;
+    const commissioned = endDay(
+      applyMove(createGame(content, seed), content, {
+        kind: "poll",
+        actionId: "fullPoll",
+      }).state,
+      content,
+    );
+    const attack = content.actions.find((action) => action.id === "doorstep")!;
     const studentForecast = forecastAction(
       commissioned,
       content,
@@ -514,10 +516,13 @@ describe("commissioned polls", () => {
       forecastAction(initial, content, content.actions[0], "commuters"),
     ).toBeNull();
 
-    const commissioned = applyMove(initial, content, {
-      kind: "action",
-      actionId: "quickPoll",
-    }).state;
+    const commissioned = endDay(
+      applyMove(initial, content, {
+        kind: "poll",
+        actionId: "quickPoll",
+      }).state,
+      content,
+    );
     const afterDayTwoAction = applyMove(commissioned, content, {
       kind: "action",
       actionId: "doorstep",
@@ -538,7 +543,7 @@ describe("commissioned polls", () => {
   it("rejects commissioning when the campaign cannot afford the tier", () => {
     const broke = { ...createGame(content, seed), money: quickPoll.cost - 1 };
     expect(() =>
-      applyMove(broke, content, { kind: "action", actionId: "quickPoll" }),
+      applyMove(broke, content, { kind: "poll", actionId: "quickPoll" }),
     ).toThrow(/Not enough money/);
   });
 
@@ -548,7 +553,7 @@ describe("commissioned polls", () => {
       day: content.contract.days,
     };
     expect(() =>
-      applyMove(finalDay, content, { kind: "action", actionId: "quickPoll" }),
+      applyMove(finalDay, content, { kind: "poll", actionId: "quickPoll" }),
     ).toThrow(/no campaign day left/i);
   });
 });
@@ -798,11 +803,11 @@ describe("data-centre storyline", () => {
 describe("determinism", () => {
   it("replays identically from seed plus move list", () => {
     const moves: PlayerMove[] = [
-      { kind: "action", actionId: "attackAd", target: "students" },
-      { kind: "action", actionId: "attackAd", target: "commuters" },
+      { kind: "action", actionId: "attackAd", target: "ward" },
+      { kind: "action", actionId: "attackAd", target: "mehta" },
       { kind: "respond", eventId: "podcast", responseIndex: 0 },
       { kind: "respond", eventId: "podcast-prep", responseIndex: 2 },
-      { kind: "action", actionId: "attackAd", target: "retirees" },
+      { kind: "action", actionId: "attackAd", target: "ward" },
       { kind: "action", actionId: "doorstep", target: "students" },
       { kind: "respond", eventId: "casino", responseIndex: 2 },
     ];
@@ -834,7 +839,7 @@ describe("morale and gaffes", () => {
       state = applyMove(state, content, {
         kind: "action",
         actionId: "attackAd",
-        target: "students",
+        target: "ward",
       }).state;
     }
     expect(state.morale).toBeLessThan(content.contract.startingMorale);
@@ -867,7 +872,7 @@ describe("runElection", () => {
   it("scores objectives against the contract", () => {
     const state = createGame(content, seed);
     const result = runElection(state, content);
-    expect(result.objectives).toHaveLength(2);
+    expect(result.objectives).toHaveLength(3);
     expect(result.objectives.every((o) => typeof o.met === "boolean")).toBe(
       true,
     );

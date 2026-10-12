@@ -16,14 +16,18 @@ describe("game settings", () => {
   it("hides experimental features by default", () => {
     useMemoryStorage();
 
-    expect(loadSettings()).toEqual({ experimental: false });
+    expect(loadSettings()).toEqual({
+      experimental: false,
+      instantAdvance: false,
+      reminders: false,
+    });
     expect(defaultSettings.experimental).toBe(false);
   });
 
   it("round-trips the experimental flag", () => {
     useMemoryStorage();
 
-    saveSettings({ experimental: true });
+    saveSettings({ ...defaultSettings, experimental: true });
 
     expect(loadSettings().experimental).toBe(true);
   });
@@ -48,7 +52,9 @@ describe("game settings", () => {
       },
     });
 
-    expect(() => saveSettings({ experimental: true })).not.toThrow();
+    expect(() =>
+      saveSettings({ ...defaultSettings, experimental: true }),
+    ).toThrow(/denied/);
     expect(loadSettings()).toEqual(defaultSettings);
   });
 });

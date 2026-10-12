@@ -16,9 +16,14 @@ export interface GameState {
   pollAccuracy: number;
   /** Current support percentage per group id. */
   support: Record<string, number>;
+  rivalSupport: Record<string, Record<string, number>>;
   /** Additive turnout modifier per group id. */
   turnout: Record<string, number>;
   pollReport: PollReport | null;
+  pendingPoll: { margin: number } | null;
+  pollPurchasedOnDay: number | null;
+  reports: PollReport[];
+  news: NewsItem[];
   positions: Record<string, string>;
   pendingEventId: string | null;
   /** A `nextDay` follow-up waiting for the day to end. */
@@ -37,6 +42,7 @@ export interface StartingStats {
 
 export type PlayerMove =
   | { kind: "action"; actionId: string; target?: string }
+  | { kind: "poll"; actionId: string }
   | { kind: "respond"; eventId: string; responseIndex: number };
 
 /** What the player is told immediately. Relationships are certain; turnout is not. */
@@ -58,8 +64,26 @@ export interface MoveResult {
 }
 
 export interface PollReport {
+  commissionedOnDay: number;
   availableOnDay: number;
   margin: number;
+  standings: CandidateStanding[];
+  groups: { groupId: string; standings: CandidateStanding[] }[];
+}
+
+export interface CandidateStanding {
+  id: string;
+  name: string;
+  share: number;
+  margin: number;
+}
+
+export interface NewsItem {
+  id: string;
+  day: number;
+  headline: string;
+  body: string;
+  kind: "poll" | "event" | "gaffe" | "idle";
 }
 
 export interface PollForecast {
@@ -79,6 +103,7 @@ export interface GroupResult {
   turnoutPct: number;
   votesCast: number;
   votesForUs: number;
+  candidateVotes: Record<string, number>;
 }
 
 export interface ElectionResult {
@@ -89,6 +114,8 @@ export interface ElectionResult {
   morale: number;
   objectives: ObjectiveResult[];
   sacked: boolean;
+  candidates: { id: string; name: string; votes: number; share: number }[];
+  winnerId: string | null;
 }
 
 export interface ObjectiveResult {
@@ -97,6 +124,8 @@ export interface ObjectiveResult {
   target: number;
   actual: number;
   met: boolean;
+  optional: boolean;
+  reward?: { funds: number; recognition: number };
 }
 
 export type { Content };

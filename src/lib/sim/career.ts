@@ -11,7 +11,9 @@ import type {
   ElectionResult,
   GameState,
   MoveResult,
+  NewsItem,
   PlayerMove,
+  PollReport,
   StartingStats,
 } from "./types";
 
@@ -64,6 +66,10 @@ export interface CampaignOutcome {
   election: ElectionResult;
   feeEarned: number;
   recognitionDelta: number;
+  bonusFunds: number;
+  bonusRecognition: number;
+  news: NewsItem[];
+  reports: PollReport[];
   /** The career day whose close decided the election. */
   decidedOnDay: number;
 }
@@ -467,7 +473,7 @@ function resolveCampaign(
   const shareTarget = Math.max(
     0,
     ...contract.objectives
-      .filter((o) => o.stat === "voteShare")
+      .filter((o) => o.stat === "voteShare" && !o.optional)
       .map((o) => o.target),
   );
   const marginBonus = clamp(
@@ -479,13 +485,28 @@ function resolveCampaign(
     ? contract.recognition.sacked
     : contract.recognition.kept + marginBonus;
   const feeEarned = election.sacked ? 0 : contract.fee;
-  const recognition = clamp(current.recognition + rawDelta, 0, 100);
+  const bonuses = election.sacked
+    ? []
+    : election.objectives.filter((o) => o.optional && o.met);
+  const bonusFunds = bonuses.reduce(
+    (sum, o) => sum + (o.reward?.funds ?? 0),
+    0,
+  );
+  const bonusRecognition = bonuses.reduce(
+    (sum, o) => sum + (o.reward?.recognition ?? 0),
+    0,
+  );
+  const recognition = clamp(
+    current.recognition + rawDelta + bonusRecognition,
+    0,
+    100,
+  );
 
   return {
     ...withOperatingStats(career, {
       ...current,
       recognition,
-      cash: current.cash + feeEarned,
+      cash: current.cash + feeEarned + bonusFunds,
     }),
     active: career.active.filter((c) => c.id !== campaign.id),
     history: [
@@ -496,6 +517,10 @@ function resolveCampaign(
         start: campaign.state.start,
         election,
         feeEarned,
+        bonusFunds,
+        bonusRecognition,
+        news: campaign.state.news,
+        reports: campaign.state.reports,
         recognitionDelta: recognition - current.recognition,
         decidedOnDay: career.day,
       },

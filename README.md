@@ -22,22 +22,30 @@ If Football Manager is the model, the mapping is roughly:
 
 One campaign at a time. A new player is dropped straight into the Ashcombe
 South council by-election: a week or so of one move per day, then an election.
-After each move you move on to the next day; the election is called when the
-final day ends, and then the next client calls. Who that is depends on how
+After each move and any event responses, wait for **local midnight**; the election is called when the
+final day ends, and then the next client calls. Missed days still pass and cost
+5 morale per unfinished day. On returning, the game catches up offline, stopping
+at the current campaigns' elections rather than accepting future jobs for you.
+Who calls next depends on how
 you did — a strong win gets you promoted, a sacking gets you a worse
 candidate. There is no dashboard and no candidate picker; funds and fees stay
-out of sight.
+out of sight except for optional bonus rewards.
 
 The full career — a dashboard with an offers board, several accounts at once,
-and a **Simulate next day** button standing in for the real calendar — sits
+— sits
 behind the experimental flag in **Settings** (☰ menu). There, days pass for
 every account at once, and an account left without a move for the day loses
-the day and some candidate morale.
+the day and some candidate morale. **Tester: allow immediate day advancement**
+is a separate Settings option, off by default. It pauses automatic progression
+and exposes manual next-day buttons in both solo and dashboard play. Returning
+to normal play reanchors to today's date without replaying tester days.
 
-- 🗓️ **A contract up front.** Hit the objectives or you are out of a job.
+- 🗓️ **A contract up front.** Hit required objectives or you are out of a job; optional goals pay bonuses if you keep the account.
 - 🎭 **One move a day.** Canvass, stage a photo op, buy media, run an attack ad, or prep the candidate.
-- 🗳️ **Commission a poll.** Spend a day and campaign money to see the projected vote share for each move tomorrow; better samples cost more and come with a tighter margin.
-- 🎯 **Pick your target.** Moves are grouped by category, and most are listed once per voter group — choosing the move chooses who you court.
+- 🗳️ **Commission a poll.** Spend campaign money, not your daily move, on one private poll per account per day. Tomorrow's report shows candidate standings, group breakdowns and action forecasts.
+- 🎯 **Pick your target.** One card per action. Doorstep canvassing opens a voter-group choice; attack ads open an opponent choice. Other actions are broad.
+- 📰 **Read the papers.** Public polling, scandals and gaffes have newspaper snippets and a replayable archive. Paid reports stay private.
+- 🗑️ **A full field.** Two main rivals in every seat; parliamentary races also include Count Binface and a Monster Raving Loony Party candidate. Novelty contenders start at no more than 2% per group, never gain support, are attackable, and never become clients.
 - 🎙️ **An opportunity lands early.** Take the podcast or turn it down — and if you take it, decide what to drill him on.
 - 🔥 **A scandal lands mid-week.** Three ways to handle it, all of them bad.
 - 🏢 **Reality occasionally glitches.** Back a data-centre blockade and watch the campaign feed develop an entirely temporary problem.
@@ -75,7 +83,15 @@ feature: turn it on in **Settings** from the ☰ menu), then hire staff
 per staffer, never the same seat twice at once. The career is saved in
 `localStorage` as the career seed plus an ordered log of accepts, moves, day
 ticks, incorporation and hires, and rebuilt by replay on load. Saves from
-before the dashboard are discarded.
+before these daily/rival rules are deliberately reset with an explanatory notice;
+this is an unreleased game. Calendar metadata is stored alongside the replay log,
+not inside the deterministic simulation.
+
+Council clients offer an optional win bonus (Ashcombe: £3,000 and 2 recognition;
+Pendle: £2,000 and 3 recognition). Harwell requires winning and pays an extra
+£8,000 and 3 recognition for exceeding 50% vote share. A tied lead is not a win;
+exactly 50% is not an above-50% bonus. Bonuses are paid only when all required
+objectives are met, into personal funds or company cash as appropriate.
 
 ### Two ways to be good at this
 
@@ -86,7 +102,7 @@ burning credibility down.
 | Path            | Unlocks              | What it buys                                                         |
 | --------------- | -------------------- | -------------------------------------------------------------------- |
 | Credibility 68  | **The Inside Track** | Tightens your poll's margin of error — the only way to buy certainty |
-| Ruthlessness 45 | **Throw a Dead Cat** | A huge, cheap swing at one group, and a bill your candidate pays     |
+| Ruthlessness 45 | **Throw a Dead Cat** | A broad, cheap distraction, and a bill your candidate pays           |
 
 Locked moves are **visible from day one** with their thresholds shown, so they
 shape the whole week rather than arriving as a late surprise. Playing the safe
@@ -151,6 +167,29 @@ npm run balance    # balance report
 The Capacitor iOS shell bundles the static SvelteKit build in a native WebView.
 The app can launch without a network connection, though online services such as
 analytics will be unavailable. Saves stay in the iOS app's WebView storage and
+
+The viewport uses `viewport-fit=cover`; the existing safe-area padding then
+clears the iPhone's status bar/Dynamic Island and the home indicator, including
+landscape side insets, without adding fixed extra spacing to desktop browsers. Saves stay in the iOS app's WebView storage and
+
+### Daily reminders (iOS and Android)
+
+Settings can opt into on-device reminders using `@capacitor/local-notifications`.
+Permission is requested only when enabling reminders. No backend, push token or
+remote messaging service is needed. Reminders are scheduled for the remaining
+campaign boundaries, including the count, and replaced/cancelled when campaigns,
+settings or the local calendar change. They are suppressed in tester mode.
+Only this game's notification IDs are cancelled.
+
+OS delivery is best-effort and may be late, particularly under power-saving
+restrictions. Exact-alarm privileges are not required. The calendar, not receipt
+of a notification, controls progression. Notification taps reconcile the calendar;
+they reveal a single active campaign or the latest result, or the dashboard
+when multiple accounts are running. The web game does not request notification permission.
+
+After changes, build without `BASE_PATH` and run `npm run ios:sync` and
+`npx cap sync android` to update native assets/plugin wiring. Test permissions,
+background delivery, opt-out and notification taps on real devices before release. Saves stay in the iOS app's WebView storage and
 are separate from Safari and other app installations. Web changes reach the
 iOS app with a new app build, rather than immediately through the hosted site.
 
@@ -181,9 +220,9 @@ Run the campaign. Shape the story. Keep your job.
 
 Spin Doctors is a satirical campaign-management game where you play the strategist behind fictional candidates. Win voters, manage morale and meet the contract, while building a career from one election to the next.
 
-Make one move each day. Canvass, court the media, prepare the candidate, commission a poll or go on the attack. Every choice shifts voter support and your own credibility, ruthlessness and funds.
+Make one campaign move each real-world day. Canvass, court the media, prepare the candidate or go on the attack. Commission a private poll as an additional daily purchase. Optional on-device reminders tell you when the next day opens.
 
-Polls show what might happen, not what will. Scandals branch, turnout is uncertain, and a candidate can go off-script. At election night, find out whether your strategy was enough.
+Polls show what might happen, not what will. Read newspaper snippets, study your rivals, and aim for optional contract bonuses. Scandals branch, turnout is uncertain, and a candidate can go off-script. At election night, see the full candidate count.
 
 Build recognition and funds across campaigns. Incorporate a company and hire staff to run multiple accounts. Earn access to tougher contracts and new tactics as your reputation develops.
 
@@ -218,21 +257,20 @@ enough to feel real, rare enough that taking stupid risks is still worth it.
 The harness plays each scenario from its contract's default stats, not with
 carried-over career stats.
 
-Current numbers for Ashcombe (4,000 campaigns each):
+Current numbers for Ashcombe (1,000 campaigns per strategy, daily/rival rules):
 
 | Strategy             | Sacked | Mean share | Notes                                             |
 | -------------------- | ------ | ---------- | ------------------------------------------------- |
-| random               | 18.9%  | 61.1       | random campaign moves; 100% branch lifts the mean |
-| randomIncludingPolls | 31.9%  | 58.8       | commissions polls without using reports           |
-| pollWise             | 2.0%   | 63.1       | buys a full poll, chooses by forecast             |
+| random               | 21.6%  | 61.9       | random campaign moves; 100% branch lifts the mean |
+| randomIncludingPolls | 27.5%  | 61.1       | buys auxiliary polls without using reports        |
+| pollWise             | 3.8%   | 64.9       | buys a full poll, chooses by forecast             |
 | allAttack            | 100.0% | 50.1       | degenerate control; morale still collapses        |
-| allDoorstep          | 28.4%  | 65.9       | high share, candidate morale is fragile           |
-| balanced             | 3.5%   | 62.9       | safe, unlocks nothing                             |
-| cleanHands           | 6.3%   | 62.2       | credibility path                                  |
-| bareKnuckle          | 14.9%  | 61.5       | ruthless path, higher variance                    |
+| allDoorstep          | 28.5%  | 65.8       | high share, candidate morale is fragile           |
+| balanced             | 12.7%  | 62.6       | safe, unlocks nothing                             |
+| cleanHands           | 20.8%  | 61.5       | credibility path                                  |
+| bareKnuckle          | 17.3%  | 62.3       | ruthless path, higher variance                    |
 
-The two identity paths land close on mean share but differ on risk, which is the
-intended shape: going dirty should be a gamble, not a strictly worse choice.
+The two identity paths land close on mean share but differ on risk and career reputation.
 These figures now include the low-probability data-centre branch: backing the
 blockade produces the guaranteed 100% support result, but does not waive the
 separate candidate-morale contract objective.
@@ -241,33 +279,39 @@ The other scenarios, random / pollWise / balanced / cleanHands / bareKnuckle sac
 
 | Scenario              | random | pollWise | balanced | cleanHands | bareKnuckle |
 | --------------------- | ------ | -------- | -------- | ---------- | ----------- |
-| council-pendle        | 29.1%  | 0.1%     | 4.9%     | 4.3%       | 36.6%       |
-| parliamentary-harwell | 28.9%  | 10.7%    | 22.8%    | 3.6%       | 33.1%       |
+| council-pendle        | 29.7%  | 0.1%     | 1.9%     | 3.7%       | 25.2%       |
+| parliamentary-harwell | 29.4%  | 0.0%     | 0.0%     | 3.2%       | 2.8%        |
 
-Harwell is ten days with four groups, and the photo-op-spamming `balanced`
-strategy stops being safe there. `allDoorstep` is sacked 77.5% of the time
-because the morale objective is stricter.
+Harwell is ten days with four groups and now requires an outright win against
+its full candidate field. `allDoorstep` is sacked 77.9% of the time because
+the morale objective is stricter. Ashcombe's required share is now 40.5% to
+keep random play within the 20–30% target after broad-action conversion.
 
 ### Commissioning polls
 
 There are three tiers: a £2,500 quick poll (±5 points), a £6,000 constituency
-poll (±3), and a £12,000 full-sample poll (±1.5). Commissioning spends that day's
-move but does not change support or turnout. On the following day, each
-available campaign move shows its projected vote share and the poll's margin;
-the report expires after that day's move. A poll cannot be commissioned on the
+poll (±3), and a £12,000 full-sample poll (±1.5). Commissioning is a separate
+`poll` move: it spends budget but neither uses the normal turn nor triggers a
+gaffe or scheduled event. One purchase is allowed per account per day, including
+after the normal action or while a story awaits a response.
+
+The report reflects the completed day's standings and is delivered on the
+following day. It shows every candidate overall and by voter group; low-share
+novelty estimates remain in a 0–2% range. Reports are private dated snapshots
+and remain in the archive, including after the election. Available campaign
+moves show forecasts only on the report's delivery day. A poll cannot be commissioned on the
 final day because there would be no time to act on it.
 
 The projection shows a central estimate from the expected-turnout model, not a
 promise about election night. Poll-informed play performs better in the balance
 harness; commissioning polls randomly without consulting their reports is
-deliberately costly in both time and money.
+deliberately costly in money without improving decisions.
 
 ### Known tuning issue
 
-`balanced` — spamming staged photo ops — currently has both the lowest sack rate
-and a high mean share in the council scenarios, making the safe middle a little
-too strong there. The career layer now gives it a cost: it drifts credibility
-down and unlocks nothing to carry forward, and it is far riskier at Harwell.
+`balanced` — spamming staged photo ops — remains particularly safe in Pendle
+and Harwell. The career layer gives it a cost: it drifts credibility
+down and unlocks nothing to carry forward.
 Carried-over credibility also means a clean career can open the Inside Track
 from day one, which the harness does not yet measure. Worth revisiting after
 playtesting.
@@ -298,8 +342,22 @@ instead of changing voter stats.
 
 Each action has a `category` — `constituents`, `pr`, `candidate`, `polling` or
 `special` — which decides the collapsible section it appears under on the day's
-menu. Scenario actions that omit it are filed under `special`. A `targeted`
-action is listed once per voter group.
+menu, except polling products, which have their own auxiliary-purchase panel.
+Scenario actions that omit the category are filed under `special`. The
+`targeting` field is `none`, `group` or `rival`; the menu always shows one card,
+and targeted actions open a separate choice before committing.
+
+Scenario `rivals.json` files declare profiles and starting group support.
+Client and rival support must total 100% in every group. General gains draw
+proportionally from all opponents; losses return only to main opponents.
+Attacks can draw only from the selected opponent. Novelty opponents cannot
+gain actual support, even through backlash. Integer election votes are
+allocated with largest remainders, so the candidate totals match votes cast.
+
+Contract objectives accept `optional`, `reward` (funds/recognition), `stat: "win"`
+and `comparison: "above"` as well as the existing share/morale requirements.
+Optional goals never affect sack status or the required-target recognition
+baseline; their rewards are applied once when the account is kept.
 
 ## � Deployment
 

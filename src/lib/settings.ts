@@ -5,6 +5,8 @@ const KEY = "spin-doctors:settings:v1";
 const settingsSchema = z.object({
   /** Playtest-only systems (company, staff) that are not part of the core loop yet. */
   experimental: z.boolean().catch(false).default(false),
+  instantAdvance: z.boolean().catch(false).default(false),
+  reminders: z.boolean().catch(false).default(false),
 });
 
 export type GameSettings = z.infer<typeof settingsSchema>;
@@ -24,9 +26,5 @@ export function loadSettings(): GameSettings {
 }
 
 export function saveSettings(settings: GameSettings): void {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(settings));
-  } catch {
-    // Settings just won't survive a reload if storage is unavailable.
-  }
+  localStorage.setItem(KEY, JSON.stringify(settings));
 }

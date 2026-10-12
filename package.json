@@ -46,6 +46,7 @@
     "zod": "^4.6.5"
   },
   "dependencies": {
+    "@capacitor/local-notifications": "8.3.1",
     "@capacitor/app": "8.1.2",
     "@capacitor/core": "^8.5.2",
     "@capacitor/android": "8.5.2",

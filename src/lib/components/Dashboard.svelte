@@ -16,9 +16,11 @@
 		onAccept: (scenarioId: string) => void;
 		onResult: (historyIndex: number) => void;
 		onTick: () => void;
+		instantAdvance: boolean;
+		nextDayLabel: string;
 	}
 
-	let { career, onOpen, onAccept, onResult, onTick }: Props = $props();
+	let { career, onOpen, onAccept, onResult, onTick, instantAdvance, nextDayLabel }: Props = $props();
 
 	const operator = $derived(career.company ?? career.stats);
 	const cash = $derived(career.company ? career.company.cash : career.stats.personalFunds);
@@ -97,15 +99,15 @@
 {/if}
 
 <div class="card">
-	<h3>Playtest</h3>
+	<h3>{instantAdvance ? 'Playtest' : 'The calendar'}</h3>
 	<p>
-		Days pass on their own in the full game. For now, end the day by hand.
+		The next day opens at {nextDayLabel}.
 		{#if idle > 0}
 			{idle} account{idle === 1 ? '' : 's'} still {idle === 1 ? 'has' : 'have'} no move today and
 			will lose {IDLE_MORALE_PENALTY} morale.
 		{/if}
 	</p>
-	<button class="ghost" onclick={onTick}>Simulate next day</button>
+	{#if instantAdvance}<button class="ghost" onclick={onTick}>Tester: simulate next day</button>{/if}
 </div>
 
 {#if results.length > 0}
