@@ -10,9 +10,9 @@ export function nextMidnight(now = new Date()): Date {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 }
 
-function nextDate(date: string): string {
+export function offsetDate(date: string, offset: number): string {
   const [year, month, day] = date.split("-").map(Number);
-  return localDate(new Date(year, month - 1, day + 1, 12));
+  return localDate(new Date(year, month - 1, day + offset, 12));
 }
 
 export function reconcileCalendar(
@@ -25,15 +25,30 @@ export function reconcileCalendar(
   let next = career;
   let date = saved.calendarDate;
   const log = [...saved.log];
+  const pendingElectionReminders = [...(saved.pendingElectionReminders ?? [])];
   let ticks = 0;
   while (date < today && next.active.length > 0) {
+    const historyLength = next.history.length;
     next = applyCareerEntry(next, scenarios, { kind: "tick" });
     log.push({ kind: "tick" });
     ticks++;
-    date = nextDate(date);
+    date = offsetDate(date, 1);
+    for (const outcome of next.history.slice(historyLength))
+      pendingElectionReminders.push({ campaignId: outcome.campaignId, date });
   }
 
-  return { career: next, saved: { ...saved, log, calendarDate: today }, ticks };
+  return {
+    career: next,
+    saved: {
+      ...saved,
+      log,
+      calendarDate: today,
+      pendingElectionReminders: pendingElectionReminders.filter(
+        (reminder) => reminder.date >= today,
+      ),
+    },
+    ticks,
+  };
 }
 
 export function advanceTesterDay(

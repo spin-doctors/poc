@@ -11,6 +11,19 @@
 	}
 
 	let { settings, notificationPermission, soloCareer, onChange, onNewCareer, onBack }: Props = $props();
+	let timeError = $state('');
+
+	function changeReminderTime(event: Event) {
+		const input = event.currentTarget;
+		if (!(input instanceof HTMLInputElement)) return;
+		if (!input.validity.valid || !input.value) {
+			timeError = 'Choose a valid reminder time.';
+			input.value = settings.reminderTime;
+			return;
+		}
+		timeError = '';
+		onChange({ ...settings, reminderTime: input.value });
+	}
 </script>
 
 <p class="dateline">Settings</p>
@@ -53,8 +66,16 @@
 	<label class="toggle">
 		<input type="checkbox" checked={settings.reminders} disabled={notificationPermission === 'unsupported'}
 			onchange={(event) => onChange({ ...settings, reminders: event.currentTarget.checked })} />
-		Notify me when the next day opens
+		Remind me about unfinished campaign actions
 	</label>
+	<label for="reminder-time">Daily reminder time (local time)</label>
+	<input id="reminder-time" type="time" required value={settings.reminderTime}
+		disabled={notificationPermission === 'unsupported'} onchange={changeReminderTime}
+		aria-describedby="reminder-time-help" />
+	{#if timeError}<p role="alert" class="error">{timeError}</p>{/if}
+	<p id="reminder-time-help" class="hint">09:00 by default. Days still open at midnight.
+		A reminder is sent only if a normal move or event response remains in any account;
+		an optional poll alone does not count. Election results get a separate reminder.</p>
 	<p class="hint">Permission: {notificationPermission}. Reminders are scheduled on this device, not sent by a server. They may arrive late; the game’s calendar does not wait for them.</p>
 	{#if notificationPermission === 'denied'}<p>Enable notifications in the device’s app settings, then return here.</p>{/if}
 	{#if notificationPermission === 'unsupported'}<p>Available in the iOS and Android apps only.</p>{/if}

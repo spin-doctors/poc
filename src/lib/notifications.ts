@@ -3,6 +3,8 @@ import {
   LocalNotifications,
   type LocalNotificationSchema,
 } from "@capacitor/local-notifications";
+import type { ReminderDay } from "./reminderSchedule";
+import { reminderTimeSchema } from "./settings";
 
 export type NotificationPermission =
   "granted" | "denied" | "prompt" | "unsupported";
@@ -35,50 +37,66 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 }
 
 /**
- * remainingDays counts future local midnights, with election night at the last.
- * Zero clears reminders. Above 60 days, retain the first 59 plus election night.
- * Callers disable this for tester mode or no active campaigns. Permission is
+ * Explicit local dates avoid shifting today's reminder to tomorrow on resume.
+ * Above 60 dates, retain the first 59 plus the last campaign boundary.
+ * Callers disable this for tester mode or opt-out. Permission is
  * requested separately; plugin failures reject. Calls serialize, latest wins.
  */
 export function replaceDailyReminders({
   enabled,
-  remainingDays,
+  reminderTime,
+  days,
 }: {
   enabled: boolean;
-  remainingDays: number;
+  reminderTime: string;
+  days: ReminderDay[];
 }): Promise<void> {
   if (!isSupported()) return Promise.resolve();
+  const snapshot = days.map((day) => ({ ...day }));
   const replacement = replacementQueue.then(async () => {
     const notifications: LocalNotificationSchema[] = [];
     if (enabled) {
-      if (!Number.isSafeInteger(remainingDays) || remainingDays < 0) {
-        throw new RangeError(
-          "remainingDays must be a non-negative safe integer.",
-        );
+      const [hour, minute] = reminderTimeSchema
+        .parse(reminderTime)
+        .split(":")
+        .map(Number);
+      const now = Date.now();
+      const unique = new Map<string, ReminderDay>();
+      for (const day of snapshot) {
+        const parsed = new Date(`${day.date}T12:00:00Z`);
+        if (
+          !/^\d{4}-\d{2}-\d{2}$/.test(day.date) ||
+          !Number.isFinite(parsed.getTime()) ||
+          parsed.toISOString().slice(0, 10) !== day.date ||
+          !["actions", "election"].includes(day.kind)
+        )
+          throw new RangeError("Invalid reminder date or kind.");
+        unique.set(`${day.date}:${day.kind}`, day);
       }
-      const now = new Date();
-      for (
-        let index = 0;
-        index < Math.min(remainingDays, MAX_REMINDERS);
-        index++
-      ) {
-        const offset = index === MAX_REMINDERS - 1 ? remainingDays : index + 1;
-        // Calendar arithmetic preserves local midnight across DST transitions.
-        const at = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate() + offset,
-        );
-        if (!Number.isFinite(at.getTime())) {
-          throw new RangeError(
-            "remainingDays exceeds the supported date range.",
-          );
-        }
+      const future = [...unique.values()]
+        .sort(
+          (a, b) =>
+            a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind),
+        )
+        .map((day) => {
+          const [year, month, date] = day.date.split("-").map(Number);
+          return { ...day, at: new Date(year, month - 1, date, hour, minute) };
+        })
+        .filter((day) => day.at.getTime() > now);
+      const bounded =
+        future.length > MAX_REMINDERS
+          ? [...future.slice(0, MAX_REMINDERS - 1), future[future.length - 1]]
+          : future;
+      for (const [index, day] of bounded.entries()) {
         notifications.push({
           id: FIRST_REMINDER_ID + index,
           title: "Spin Doctors",
-          body: "Your campaigns are waiting. Return to Spin Doctors.",
-          schedule: { at },
+          body:
+            day.kind === "election"
+              ? "The count is in. Return to Spin Doctors for your election results."
+              : "Your campaigns have unfinished moves or events. Return to Spin Doctors.",
+          extra: { date: day.date, kind: day.kind },
+          schedule: { at: day.at },
           isExactNotification: false,
         });
       }
@@ -88,7 +106,13 @@ export function replaceDailyReminders({
       notifications.length > 0 &&
       (await getNotificationPermission()) === "granted"
     ) {
-      await LocalNotifications.schedule({ notifications });
+      const upcoming = notifications.filter(
+        (notification) =>
+          notification.schedule?.at &&
+          notification.schedule.at.getTime() > Date.now(),
+      );
+      if (upcoming.length > 0)
+        await LocalNotifications.schedule({ notifications: upcoming });
     }
   });
   replacementQueue = replacement.catch(() => {});
@@ -99,7 +123,9 @@ export function replaceDailyReminders({
  * Listen only to owned reminder taps. Await registration before storing cleanup.
  * Cleanup is idempotent; asynchronous removal failures are reported to console.
  */
-export async function onReminderTap(callback: () => void): Promise<() => void> {
+export async function onReminderTap(
+  callback: (kind: ReminderDay["kind"]) => void,
+): Promise<() => void> {
   if (!isSupported()) return () => {};
   let active = true;
   const listener = await LocalNotifications.addListener(
@@ -110,7 +136,9 @@ export async function onReminderTap(callback: () => void): Promise<() => void> {
         notification.id >= FIRST_REMINDER_ID &&
         notification.id < FIRST_REMINDER_ID + MAX_REMINDERS
       ) {
-        callback();
+        callback(
+          notification.extra?.kind === "election" ? "election" : "actions",
+        );
       }
     },
   );

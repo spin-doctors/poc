@@ -41,21 +41,31 @@ const entrySchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("hire") }),
 ]);
 
+const calendarDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((date) => {
+    const parsed = new Date(`${date}T12:00:00Z`);
+    return (
+      Number.isFinite(parsed.getTime()) &&
+      parsed.toISOString().slice(0, 10) === date
+    );
+  }, "Invalid calendar date");
+
 const savedCareerSchema = z.object({
   careerSeed: z.number(),
   log: z.array(entrySchema),
   startedVersion: z.string().optional(),
   savedVersion: z.string().optional(),
-  calendarDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .refine((date) => {
-      const parsed = new Date(`${date}T12:00:00Z`);
-      return (
-        Number.isFinite(parsed.getTime()) &&
-        parsed.toISOString().slice(0, 10) === date
-      );
-    }, "Invalid calendar date"),
+  calendarDate: calendarDateSchema,
+  pendingElectionReminders: z
+    .array(
+      z.object({
+        campaignId: z.number().int().min(0),
+        date: calendarDateSchema,
+      }),
+    )
+    .optional(),
 });
 
 export interface SavedCareer {
@@ -65,6 +75,7 @@ export interface SavedCareer {
   startedVersion?: string;
   savedVersion?: string;
   calendarDate: string;
+  pendingElectionReminders?: { campaignId: number; date: string }[];
 }
 
 /** Null for no save or an unreadable one; the caller starts a fresh career. */

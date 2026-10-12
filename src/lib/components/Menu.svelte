@@ -3,6 +3,9 @@
 </script>
 
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { Capacitor } from '@capacitor/core';
+
 	interface Props {
 		open: boolean;
 		/** The career screen belongs to the multi-account game only. */
@@ -13,6 +16,8 @@
 	let { open = $bindable(), showCareer, onSelect }: Props = $props();
 
 	const feedbackUrl = 'https://github.com/spin-doctors/poc/issues/new';
+	let externalTarget = $state('_blank');
+	onMount(() => { if (Capacitor.isNativePlatform()) externalTarget = '_self'; });
 
 	let root = $state<HTMLElement>();
 
@@ -52,7 +57,7 @@
 				<li>
 					<a
 						href={feedbackUrl}
-						target="_blank"
+						target={externalTarget}
 						rel="noopener noreferrer"
 						onclick={() => (open = false)}>Send feedback</a
 					>

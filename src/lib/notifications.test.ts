@@ -1,4 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { localDate, offsetDate } from "./calendar";
+import type { ReminderDay } from "./reminderSchedule";
+
+function request(remainingDays: number, reminderTime = "00:00") {
+  return {
+    enabled: true,
+    reminderTime,
+    days: Array.from({ length: remainingDays }, (_, index): ReminderDay => ({
+      date: offsetDate(localDate(), index + 1),
+      kind: index === remainingDays - 1 ? "election" : "actions",
+    })),
+  };
+}
 
 const native = vi.hoisted(() => ({
   platform: "android",
@@ -40,7 +53,7 @@ describe("native campaign reminders", () => {
     const adapter = await import("./notifications");
     expect(await adapter.getNotificationPermission()).toBe("unsupported");
     expect(await adapter.requestNotificationPermission()).toBe("unsupported");
-    await adapter.replaceDailyReminders({ enabled: true, remainingDays: 3 });
+    await adapter.replaceDailyReminders(request(3));
     const cleanup = await adapter.onReminderTap(vi.fn());
     cleanup();
     for (const method of [
@@ -77,7 +90,7 @@ describe("native campaign reminders", () => {
 
   it("replaces only owned IDs with one-shot inexact local midnights including election night", async () => {
     const { replaceDailyReminders } = await import("./notifications");
-    await replaceDailyReminders({ enabled: true, remainingDays: 3 });
+    await replaceDailyReminders(request(3));
     const cancelled = native.cancel.mock.calls[0][0].notifications;
     expect(cancelled).toHaveLength(60);
     expect(cancelled[0]).toEqual({ id: 2_100_000 });
@@ -105,7 +118,7 @@ describe("native campaign reminders", () => {
 
   it("bounds the queue while preserving a distant election night", async () => {
     const { replaceDailyReminders } = await import("./notifications");
-    await replaceDailyReminders({ enabled: true, remainingDays: 100 });
+    await replaceDailyReminders(request(100));
     const reminders = native.schedule.mock.calls[0][0].notifications;
     expect(reminders).toHaveLength(60);
     expect(reminders[58].schedule.at).toEqual(new Date(2026, 5, 10 + 59));
@@ -119,7 +132,7 @@ describe("native campaign reminders", () => {
     vi.stubEnv("TZ", "Europe/London");
     vi.setSystemTime(new Date(now));
     const { replaceDailyReminders } = await import("./notifications");
-    await replaceDailyReminders({ enabled: true, remainingDays: 2 });
+    await replaceDailyReminders(request(2));
     const [first, second] = native.schedule.mock.calls[0][0].notifications;
     expect(first.schedule.at.getHours()).toBe(0);
     expect(second.schedule.at.getHours()).toBe(0);
@@ -130,8 +143,8 @@ describe("native campaign reminders", () => {
 
   it("clears reminders when disabled or no days remain without requesting permission", async () => {
     const { replaceDailyReminders } = await import("./notifications");
-    await replaceDailyReminders({ enabled: false, remainingDays: NaN });
-    await replaceDailyReminders({ enabled: true, remainingDays: 0 });
+    await replaceDailyReminders({ ...request(2), enabled: false });
+    await replaceDailyReminders(request(0));
     expect(native.cancel).toHaveBeenCalledTimes(2);
     expect(native.schedule).not.toHaveBeenCalled();
     expect(native.checkPermissions).not.toHaveBeenCalled();
@@ -143,19 +156,22 @@ describe("native campaign reminders", () => {
     async (display) => {
       native.checkPermissions.mockResolvedValue({ display });
       const { replaceDailyReminders } = await import("./notifications");
-      await replaceDailyReminders({ enabled: true, remainingDays: 3 });
+      await replaceDailyReminders(request(3));
       expect(native.cancel).toHaveBeenCalledOnce();
       expect(native.schedule).not.toHaveBeenCalled();
       expect(native.requestPermissions).not.toHaveBeenCalled();
     },
   );
 
-  it.each([-1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER])(
-    "rejects invalid horizon %s before modifying the queue",
-    async (remainingDays) => {
+  it.each(["not-a-date", "2026-02-30", "2026-13-01", "2026-6-01"])(
+    "rejects invalid date %s before modifying the queue",
+    async (date) => {
       const { replaceDailyReminders } = await import("./notifications");
       await expect(
-        replaceDailyReminders({ enabled: true, remainingDays }),
+        replaceDailyReminders({
+          ...request(1),
+          days: [{ date, kind: "actions" }],
+        }),
       ).rejects.toBeInstanceOf(RangeError);
       expect(native.cancel).not.toHaveBeenCalled();
       expect(native.schedule).not.toHaveBeenCalled();
@@ -170,8 +186,8 @@ describe("native campaign reminders", () => {
         resolve = done;
       }),
     );
-    const first = replaceDailyReminders({ enabled: true, remainingDays: 2 });
-    const second = replaceDailyReminders({ enabled: false, remainingDays: 2 });
+    const first = replaceDailyReminders(request(2));
+    const second = replaceDailyReminders({ ...request(2), enabled: false });
     await vi.waitFor(() => expect(native.schedule).toHaveBeenCalledOnce());
     expect(native.cancel).toHaveBeenCalledOnce();
     resolve();
@@ -186,12 +202,8 @@ describe("native campaign reminders", () => {
       const error = new Error("native failure");
       native[method].mockRejectedValueOnce(error);
       const { replaceDailyReminders } = await import("./notifications");
-      await expect(
-        replaceDailyReminders({ enabled: true, remainingDays: 2 }),
-      ).rejects.toBe(error);
-      await expect(
-        replaceDailyReminders({ enabled: true, remainingDays: 1 }),
-      ).resolves.toBeUndefined();
+      await expect(replaceDailyReminders(request(2))).rejects.toBe(error);
+      await expect(replaceDailyReminders(request(1))).resolves.toBeUndefined();
     },
   );
 
@@ -204,6 +216,131 @@ describe("native campaign reminders", () => {
     await expect(adapter.getNotificationPermission()).rejects.toBe(error);
     await expect(adapter.requestNotificationPermission()).rejects.toBe(error);
     await expect(adapter.onReminderTap(vi.fn())).rejects.toBe(error);
+  });
+
+  it("keeps a same-day reminder before the chosen time and removes it afterwards", async () => {
+    const { replaceDailyReminders } = await import("./notifications");
+    const today = {
+      enabled: true,
+      reminderTime: "18:45",
+      days: [{ date: "2026-06-10", kind: "actions" as const }],
+    };
+    await replaceDailyReminders(today);
+    expect(
+      native.schedule.mock.calls[0][0].notifications[0].schedule.at,
+    ).toEqual(new Date(2026, 5, 10, 18, 45));
+    await replaceDailyReminders(today);
+    expect(
+      native.schedule.mock.calls[1][0].notifications[0].schedule.at,
+    ).toEqual(new Date(2026, 5, 10, 18, 45));
+    vi.setSystemTime(new Date(2026, 5, 10, 18, 45));
+    await replaceDailyReminders(today);
+    expect(native.cancel).toHaveBeenCalledTimes(3);
+    expect(native.schedule).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not deliver a reminder retroactively after a slow native cancellation", async () => {
+    const { replaceDailyReminders } = await import("./notifications");
+    native.cancel.mockImplementationOnce(async () => {
+      vi.setSystemTime(new Date(2026, 5, 10, 19));
+    });
+    await replaceDailyReminders({
+      enabled: true,
+      reminderTime: "18:00",
+      days: [{ date: "2026-06-10", kind: "actions" }],
+    });
+    expect(native.cancel).toHaveBeenCalledOnce();
+    expect(native.schedule).not.toHaveBeenCalled();
+  });
+
+  it("uses the selected local time and distinguishes election results", async () => {
+    const { replaceDailyReminders } = await import("./notifications");
+    await replaceDailyReminders(request(3, "09:15"));
+    const reminders = native.schedule.mock.calls[0][0].notifications;
+    expect(reminders[0].schedule.at).toEqual(new Date(2026, 5, 11, 9, 15));
+    expect(reminders[0].extra.kind).toBe("actions");
+    expect(reminders[2].extra.kind).toBe("election");
+    expect(reminders[2].body).toMatch(/election results/);
+  });
+
+  it("deduplicates reminders but keeps election results separate from same-day actions", async () => {
+    const { replaceDailyReminders } = await import("./notifications");
+    await replaceDailyReminders({
+      ...request(1),
+      days: [
+        { date: "2026-06-11", kind: "election" },
+        { date: "2026-06-11", kind: "actions" },
+        { date: "2026-06-11", kind: "actions" },
+      ],
+    });
+    const reminders = native.schedule.mock.calls[0][0].notifications;
+    expect(reminders).toHaveLength(2);
+    expect(
+      reminders.map(
+        (reminder: { extra: { kind: string } }) => reminder.extra.kind,
+      ),
+    ).toEqual(["actions", "election"]);
+  });
+
+  it("captures queued dates and drops schedules that became past while waiting", async () => {
+    const { replaceDailyReminders } = await import("./notifications");
+    let resolve!: () => void;
+    native.schedule.mockReturnValueOnce(
+      new Promise<void>((done) => {
+        resolve = done;
+      }),
+    );
+    const first = replaceDailyReminders(request(1));
+    const queued = {
+      ...request(1, "18:00"),
+      days: [{ date: "2026-06-10", kind: "actions" as const }],
+    };
+    const second = replaceDailyReminders(queued);
+    queued.days[0].date = "2026-06-12";
+    await vi.waitFor(() => expect(native.schedule).toHaveBeenCalledOnce());
+    vi.setSystemTime(new Date(2026, 5, 10, 19));
+    resolve();
+    await Promise.all([first, second]);
+    expect(native.schedule).toHaveBeenCalledOnce();
+    expect(native.cancel).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["", "24:00", "12:60"])(
+    "rejects invalid time %s before cancellation",
+    async (reminderTime) => {
+      const { replaceDailyReminders } = await import("./notifications");
+      await expect(
+        replaceDailyReminders(request(1, reminderTime)),
+      ).rejects.toThrow(/valid reminder time/);
+      expect(native.cancel).not.toHaveBeenCalled();
+    },
+  );
+
+  it("normalizes a nonexistent spring time and emits only once in an autumn repeated hour", async () => {
+    vi.stubEnv("TZ", "Europe/London");
+    vi.setSystemTime(new Date("2026-03-28T12:00:00Z"));
+    const { replaceDailyReminders } = await import("./notifications");
+    await replaceDailyReminders(request(1, "01:30"));
+    const spring = native.schedule.mock.calls[0][0].notifications;
+    expect(spring).toHaveLength(1);
+    expect(spring[0].schedule.at.getHours()).toBe(2);
+    vi.setSystemTime(new Date("2026-10-24T12:00:00Z"));
+    await replaceDailyReminders(request(1, "01:30"));
+    expect(native.schedule.mock.calls[1][0].notifications).toHaveLength(1);
+  });
+
+  it("replaces reminders at the same wall time after a timezone change", async () => {
+    const { replaceDailyReminders } = await import("./notifications");
+    const schedule = request(1, "09:00");
+    vi.stubEnv("TZ", "Europe/London");
+    await replaceDailyReminders(schedule);
+    const first = native.schedule.mock.calls[0][0].notifications[0].schedule.at;
+    vi.stubEnv("TZ", "America/New_York");
+    await replaceDailyReminders(schedule);
+    const second =
+      native.schedule.mock.calls[1][0].notifications[0].schedule.at;
+    expect(first.getTime()).not.toBe(second.getTime());
+    expect(second.getHours()).toBe(9);
   });
 
   it("handles only owned taps and cleans up idempotently", async () => {
@@ -222,10 +359,13 @@ describe("native campaign reminders", () => {
     tap({ notification: { id: 2_100_000 } });
     tap({ notification: { id: 2_100_059 } });
     expect(callback).toHaveBeenCalledTimes(2);
+    expect(callback).toHaveBeenLastCalledWith("actions");
+    tap({ notification: { id: 2_100_000, extra: { kind: "election" } } });
+    expect(callback).toHaveBeenLastCalledWith("election");
     cleanup();
     cleanup();
     tap({ notification: { id: 2_100_000 } });
-    expect(callback).toHaveBeenCalledTimes(2);
+    expect(callback).toHaveBeenCalledTimes(3);
     expect(remove).toHaveBeenCalledOnce();
   });
 

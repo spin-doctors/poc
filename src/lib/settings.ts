@@ -2,11 +2,16 @@ import { z } from "zod/v3";
 
 const KEY = "spin-doctors:settings:v1";
 
+export const reminderTimeSchema = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Choose a valid reminder time.");
+
 const settingsSchema = z.object({
   /** Playtest-only systems (company, staff) that are not part of the core loop yet. */
   experimental: z.boolean().catch(false).default(false),
   instantAdvance: z.boolean().catch(false).default(false),
   reminders: z.boolean().catch(false).default(false),
+  reminderTime: reminderTimeSchema.default("09:00"),
 });
 
 export type GameSettings = z.infer<typeof settingsSchema>;
@@ -26,5 +31,5 @@ export function loadSettings(): GameSettings {
 }
 
 export function saveSettings(settings: GameSettings): void {
-  localStorage.setItem(KEY, JSON.stringify(settings));
+  localStorage.setItem(KEY, JSON.stringify(settingsSchema.parse(settings)));
 }

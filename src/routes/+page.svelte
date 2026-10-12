@@ -8,6 +8,7 @@
 	import { discardLegacyCareer, loadCareer, saveCareer, type SavedCareer } from '$lib/careerStorage';
 	import { advanceTesterDay, localDate, nextMidnight, reconcileCalendar } from '$lib/calendar';
 	import { getNotificationPermission, requestNotificationPermission, replaceDailyReminders, onReminderTap } from '$lib/notifications';
+	import { reminderDays } from '$lib/reminderSchedule';
 	import CampaignView from '$lib/components/CampaignView.svelte';
 	import CareerView from '$lib/components/CareerView.svelte';
 	import Dashboard from '$lib/components/Dashboard.svelte';
@@ -79,10 +80,30 @@
 		scheduleReminders();
 	});
 
+	$effect(() => {
+		if (!appReady || error || view.kind === 'help' || view.kind === 'settings') return;
+		const shown = careerOver ? lastOutcome
+			: simple ? (!solo ? lastOutcome : undefined)
+			: view.kind === 'result' ? career.history[view.index] : undefined;
+		if (!shown || !saved.pendingElectionReminders?.some((reminder) => reminder.campaignId === shown.campaignId)) return;
+		try {
+			const nextSave = { ...saved, pendingElectionReminders: saved.pendingElectionReminders.filter(
+				(reminder) => reminder.campaignId !== shown.campaignId
+			) };
+			saveCareer(nextSave);
+			saved = nextSave;
+		} catch (cause) {
+			reportError(cause, 'Could not mark this election result as seen.');
+		}
+	});
+
 	function scheduleReminders() {
-		const enabled = settings.reminders && !settings.instantAdvance && career.active.length > 0;
-		const remainingDays = Math.max(0, ...career.active.map((c) => scenarios[c.scenarioId].contract.days - c.state.day + 1));
-		notificationWork = notificationWork.then(() => replaceDailyReminders({ enabled, remainingDays })).catch((cause) => {
+		const request = {
+			enabled: settings.reminders && !settings.instantAdvance,
+			reminderTime: settings.reminderTime,
+			days: reminderDays(career, saved, scenarios)
+		};
+		notificationWork = notificationWork.then(() => replaceDailyReminders(request)).catch((cause) => {
 			console.error('Could not update daily reminders.', cause);
 			error = 'Could not update daily reminders. Check notification permissions in your device settings.';
 		});
@@ -134,9 +155,11 @@
 				.then((listener) => { if (disposed) void listener.remove(); else removeNative = () => void listener.remove(); })
 				.catch((cause) => reportError(cause, 'Could not listen for app resume.'));
 		}
-		void onReminderTap(() => {
+		void onReminderTap((kind) => {
 			resume();
-			view = career.active.length === 1
+			view = kind === 'election' && career.history.length > 0
+				? { kind: 'result', index: career.history.length - 1 }
+				: career.active.length === 1
 				? { kind: 'campaign', id: career.active[0].id }
 				: career.active.length === 0 && career.history.length > 0
 					? { kind: 'result', index: career.history.length - 1 }
@@ -303,6 +326,10 @@
 
 	const toDashboard = () => (view = { kind: 'dashboard' });
 </script>
+
+<svelte:head>
+	<title>Spin Doctors</title>
+</svelte:head>
 
 <main>
 	<header class="masthead masthead-bar">

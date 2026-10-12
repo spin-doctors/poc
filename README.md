@@ -166,19 +166,31 @@ npm run balance    # balance report
 
 The Capacitor iOS shell bundles the static SvelteKit build in a native WebView.
 The app can launch without a network connection, though online services such as
-analytics will be unavailable. Saves stay in the iOS app's WebView storage and
+analytics will be unavailable.
 
 The viewport uses `viewport-fit=cover`; the existing safe-area padding then
 clears the iPhone's status bar/Dynamic Island and the home indicator, including
-landscape side insets, without adding fixed extra spacing to desktop browsers. Saves stay in the iOS app's WebView storage and
+landscape side insets, without adding fixed extra spacing to desktop browsers.
+
+Internal pages, including the privacy policy, have a **Back to the game** link.
+External websites open in the device's browser, leaving the game available in the
+app. On the web, external links open a separate tab.
 
 ### Daily reminders (iOS and Android)
 
 Settings can opt into on-device reminders using `@capacitor/local-notifications`.
 Permission is requested only when enabling reminders. No backend, push token or
-remote messaging service is needed. Reminders are scheduled for the remaining
-campaign boundaries, including the count, and replaced/cancelled when campaigns,
-settings or the local calendar change. They are suppressed in tester mode.
+remote messaging service is needed. The daily reminder time defaults to **09:00
+local time** and can be changed in Settings. Game days still open at midnight.
+Daily action reminders are sent only when a normal campaign move or event response
+remains in at least one account; optional polling alone does not count. Completing
+all moves and event responses cancels today's pending reminder. Opening the app
+before the selected time does not postpone a reminder if work remains.
+
+Future campaign dates and separate election-result reminders are scheduled ahead
+of time and replaced/cancelled when campaigns, settings or the local calendar
+change. An election reminder remains until its results have been shown or the
+scheduled time has passed. Reminders are suppressed in tester mode.
 Only this game's notification IDs are cancelled.
 
 OS delivery is best-effort and may be late, particularly under power-saving
@@ -186,10 +198,16 @@ restrictions. Exact-alarm privileges are not required. The calendar, not receipt
 of a notification, controls progression. Notification taps reconcile the calendar;
 they reveal a single active campaign or the latest result, or the dashboard
 when multiple accounts are running. The web game does not request notification permission.
+Reminder times follow the device's local timezone; returning to the app reschedules
+them if the timezone has changed. A nonexistent DST time moves to the next valid
+wall-clock time, and a repeated hour does not produce two reminders. The app cannot
+inspect game state while it is terminated; it updates eligibility when it observes
+moves, event responses or calendar changes.
 
 After changes, build without `BASE_PATH` and run `npm run ios:sync` and
 `npx cap sync android` to update native assets/plugin wiring. Test permissions,
-background delivery, opt-out and notification taps on real devices before release. Saves stay in the iOS app's WebView storage and
+background delivery, opt-out and notification taps on real devices before release.
+Saves stay in the iOS app's WebView storage and
 are separate from Safari and other app installations. Web changes reach the
 iOS app with a new app build, rather than immediately through the hosted site.
 

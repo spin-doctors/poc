@@ -20,6 +20,7 @@ describe("game settings", () => {
       experimental: false,
       instantAdvance: false,
       reminders: false,
+      reminderTime: "09:00",
     });
     expect(defaultSettings.experimental).toBe(false);
   });
@@ -31,6 +32,32 @@ describe("game settings", () => {
 
     expect(loadSettings().experimental).toBe(true);
   });
+
+  it("adds a morning reminder time to existing settings without losing opt-in", () => {
+    useMemoryStorage({
+      "spin-doctors:settings:v1": JSON.stringify({ reminders: true }),
+    });
+    expect(loadSettings()).toEqual({ ...defaultSettings, reminders: true });
+    expect(loadSettings().reminderTime).toBe("09:00");
+  });
+
+  it("round-trips a custom local time", () => {
+    useMemoryStorage();
+    saveSettings({ ...defaultSettings, reminderTime: "18:45" });
+    expect(loadSettings().reminderTime).toBe("18:45");
+  });
+
+  it.each(["", "9:00", "24:00", "12:60"])(
+    "rejects invalid reminder time %s on save",
+    (reminderTime) => {
+      useMemoryStorage();
+      saveSettings({ ...defaultSettings, reminderTime: "18:45" });
+      expect(() =>
+        saveSettings({ ...defaultSettings, reminderTime }),
+      ).toThrow();
+      expect(loadSettings().reminderTime).toBe("18:45");
+    },
+  );
 
   it("falls back to defaults for unreadable settings", () => {
     useMemoryStorage({ "spin-doctors:settings:v1": "{not json" });

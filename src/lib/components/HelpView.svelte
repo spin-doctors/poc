@@ -45,7 +45,9 @@
 		Bigger samples cost more and narrow the margin. Old reports remain in your private archive;
 		the forecasts are available only on the delivery day. No new poll can be used after the final day.</p>
 	<p>The newspaper covers public polling, stories and gaffes. Paid polling stays private.
-		Native iOS and Android reminders are optional and may be delayed; the calendar works without them.</p>
+		Native iOS and Android reminders are optional and may be delayed; the calendar works without them.
+		Choose a local reminder time in Settings (09:00 by default). You are reminded only about unfinished
+		normal moves or event responses, not optional polls. Election results get a separate reminder.</p>
 </div>
 
 <div class="card">

@@ -71,6 +71,17 @@ describe("career versions", () => {
     });
     expect(loadCareer()?.calendarDate).toBe("2026-10-12");
   });
+  it("round-trips unseen election reminder dates without changing the replay log", () => {
+    useMemoryStorage();
+    const saved = {
+      careerSeed: 7,
+      calendarDate: "2026-10-12",
+      log: [],
+      pendingElectionReminders: [{ campaignId: 2, date: "2026-10-12" }],
+    };
+    saveCareer(saved);
+    expect(loadCareer()).toMatchObject(saved);
+  });
   it("rejects invalid dates and surfaces persistence failures", () => {
     const { values, storage } = useMemoryStorage();
     values.set(

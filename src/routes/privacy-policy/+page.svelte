@@ -1,3 +1,12 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
+	import { Capacitor } from '@capacitor/core';
+
+	let externalTarget = $state('_blank');
+	onMount(() => { if (Capacitor.isNativePlatform()) externalTarget = '_self'; });
+</script>
+
 <svelte:head>
 	<title>Privacy Policy | Spin Doctors</title>
 	<meta
@@ -11,6 +20,9 @@
 		<h1>Privacy Policy</h1>
 		<p>Spin Doctors</p>
 	</header>
+	<div class="row nav">
+		<a class="ghost" href={`${base}/`}>&larr; Back to the game</a>
+	</div>
 
 	<p><strong>Effective date:</strong> October 5, 2026</p>
 
@@ -43,8 +55,8 @@
 		Whether analytics are enabled is a build configuration choice, not an in-game opt-in setting.
 	</p>
 	<p>
-		Analytics are provided by <a href="https://www.goatcounter.com/">GoatCounter</a>. GoatCounter's
-		<a href="https://www.goatcounter.com/help/privacy">privacy policy</a> explains the technical
+		Analytics are provided by <a href="https://www.goatcounter.com/" target={externalTarget} rel="noopener noreferrer">GoatCounter</a>. GoatCounter's
+		<a href="https://www.goatcounter.com/help/privacy" target={externalTarget} rel="noopener noreferrer">privacy policy</a> explains the technical
 		information it processes for aggregate statistics, including browser, operating system, coarse
 		location, language, screen width, and referrer information. GoatCounter states that it does not
 		store IP addresses, full user-agent headers, or browser identifiers in its database, and does not
@@ -66,6 +78,9 @@
 		messages. No push token or career data is sent to a game server. You can disable reminders in
 		the game or revoke permission in your device settings. Notification delivery may be delayed;
 		game progress is calculated from the local calendar when you return.
+		You can choose a local reminder time (09:00 by default). Daily action reminders are cancelled
+		when all normal moves and event responses are finished; optional polling alone does not trigger
+		a reminder. Election results receive a separate reminder.
 	</p>
 	<h2>Your choices</h2>
 	<p>
@@ -77,7 +92,10 @@
 	<h2>Changes and contact</h2>
 	<p>
 		This policy may be updated when the game or its data practices change. Questions can be raised in
-		the <a href="https://github.com/spin-doctors/poc/issues">Spin Doctors GitHub issue tracker</a>.
+		the <a href="https://github.com/spin-doctors/poc/issues" target={externalTarget} rel="noopener noreferrer">Spin Doctors GitHub issue tracker</a>.
 		It is public, so do not include personal or sensitive information in an issue.
 	</p>
+	<div class="row nav">
+		<a class="ghost" href={`${base}/`}>&larr; Back to the game</a>
+	</div>
 </main>
