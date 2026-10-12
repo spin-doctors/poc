@@ -32,6 +32,12 @@ export interface GameState {
   turnTaken: boolean;
   history: PlayerMove[];
   finished: boolean;
+  dismissal: {
+    actionId: string;
+    headline: string;
+    body: string;
+    credibilityLoss: number;
+  } | null;
 }
 
 export interface StartingStats {
@@ -61,6 +67,7 @@ export interface MoveResult {
   gaffe: GaffeReport | null;
   triggeredEventId: string | null;
   pollCommissioned: boolean;
+  specialOutcome?: "success" | "failed" | "caught" | "dismissed";
 }
 
 export interface PollReport {
@@ -83,7 +90,7 @@ export interface NewsItem {
   day: number;
   headline: string;
   body: string;
-  kind: "poll" | "event" | "gaffe" | "idle";
+  kind: "poll" | "event" | "gaffe" | "idle" | "special";
 }
 
 export interface PollForecast {

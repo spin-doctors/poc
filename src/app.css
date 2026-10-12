@@ -301,7 +301,8 @@ button.ghost:hover:not(:disabled) {
   gap: 0.75rem;
 }
 
-.category summary {
+.category summary,
+.campaign-information > summary {
   cursor: pointer;
   padding: 0.5rem 0;
   border-bottom: 1px solid var(--rule);
@@ -314,6 +315,18 @@ button.ghost:hover:not(:disabled) {
 .category summary span {
   color: var(--muted);
   font-weight: 400;
+}
+
+.campaign-information {
+  margin: 1.5rem 0 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.poll-purchase {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
 }
 
 .poll-note {

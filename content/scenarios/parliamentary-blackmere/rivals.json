@@ -1,0 +1,38 @@
+[
+  {
+    "id": "rowe",
+    "name": "Martin Rowe",
+    "blurb": "An incumbent whose chief qualification is not owning any newspapers.",
+    "support": {
+      "families": 40,
+      "retirees": 44,
+      "farmers": 48,
+      "graduates": 30
+    }
+  },
+  {
+    "id": "aziz",
+    "name": "Nadia Aziz",
+    "blurb": "A librarian campaigning to make reliable information less of a novelty.",
+    "support": {
+      "families": 20,
+      "retirees": 20,
+      "farmers": 21,
+      "graduates": 26
+    }
+  },
+  {
+    "id": "loony",
+    "name": "Professor Wobble, Monster Raving Loony Party",
+    "blurb": "Wants all opinion columns printed in invisible ink, by popular demand.",
+    "novelty": true,
+    "support": { "families": 1, "retirees": 1, "farmers": 1, "graduates": 1 }
+  },
+  {
+    "id": "binface",
+    "name": "Count Binface",
+    "blurb": "Sigma IX's dustbin-helmeted contender and General Waste arrive with a silver cape and a manifesto that is at least labelled as satire.",
+    "novelty": true,
+    "support": { "families": 1, "retirees": 1, "farmers": 1, "graduates": 2 }
+  }
+]

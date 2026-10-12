@@ -83,9 +83,9 @@
 	$effect(() => {
 		if (!appReady || error || view.kind === 'help' || view.kind === 'settings') return;
 		const shown = careerOver ? lastOutcome
-			: simple ? (!solo ? lastOutcome : undefined)
-			: view.kind === 'result' ? career.history[view.index] : undefined;
-		if (!shown || !saved.pendingElectionReminders?.some((reminder) => reminder.campaignId === shown.campaignId)) return;
+			: view.kind === 'result' ? career.history[view.index]
+			: simple ? (!solo ? lastOutcome : undefined) : undefined;
+		if (!shown || shown.kind !== 'election' || !saved.pendingElectionReminders?.some((reminder) => reminder.campaignId === shown.campaignId)) return;
 		try {
 			const nextSave = { ...saved, pendingElectionReminders: saved.pendingElectionReminders.filter(
 				(reminder) => reminder.campaignId !== shown.campaignId
@@ -112,7 +112,7 @@
 	onMount(() => {
 		try {
 			settings = loadSettings();
-			if (discardLegacyCareer()) notice = 'The unreleased game’s rules have changed. Your old career has been reset; settings are preserved.';
+			if (discardLegacyCareer()) notice = 'Special actions now have risk and dismissal outcomes. Your old career has been reset so past moves are not reinterpreted; your settings are preserved.';
 			const loaded = loadCareer();
 			if (loaded) {
 				career = replayCareer(scenarios, defaultScenarioId, loaded.careerSeed, loaded.log);
@@ -157,8 +157,9 @@
 		}
 		void onReminderTap((kind) => {
 			resume();
-			view = kind === 'election' && career.history.length > 0
-				? { kind: 'result', index: career.history.length - 1 }
+			const latestElection = career.history.findLastIndex((outcome) => outcome.kind === 'election');
+			view = kind === 'election' && latestElection >= 0
+				? { kind: 'result', index: latestElection }
 				: career.active.length === 1
 				? { kind: 'campaign', id: career.active[0].id }
 				: career.active.length === 0 && career.history.length > 0
@@ -223,7 +224,7 @@
 			}
 			apply({ kind: 'accept', scenarioId });
 			trackAnalyticsEvent('campaign-started');
-			if (!simple) view = { kind: 'campaign', id: career.active.at(-1)!.id };
+			view = { kind: 'campaign', id: career.active.at(-1)!.id };
 		} catch (cause) {
 			reportError(cause, 'Could not accept this client.');
 		}
@@ -246,6 +247,10 @@
 		if (career.day !== before) throw new Error('A new day has opened. Choose your move again.');
 		const played = playCampaignMove(career, scenarios, campaignId, playerMove);
 		record({ kind: 'move', campaignId, move: playerMove }, played.career);
+		if (played.result.specialOutcome === 'dismissed') {
+			view = { kind: 'result', index: career.history.length - 1 };
+			trackAnalyticsEvent('campaign-sacked');
+		}
 		trackAnalyticsEvent(
 			playerMove.kind === 'respond' ? 'campaign-event-answered' : 'campaign-move-played'
 		);
@@ -262,7 +267,7 @@
 			if (openCampaignId !== null && !career.active.some((c) => c.id === openCampaignId)) view = { kind: 'dashboard' };
 			trackAnalyticsEvent('campaign-day-advanced');
 			for (const outcome of career.history.slice(decided))
-				trackAnalyticsEvent(outcome.election.sacked ? 'campaign-sacked' : 'campaign-kept');
+				trackAnalyticsEvent(outcome.kind === 'dismissal' || outcome.election.sacked ? 'campaign-sacked' : 'campaign-kept');
 			return true;
 		} catch (cause) {
 			reportError(cause, 'Could not advance the day.');
@@ -362,6 +367,9 @@
 			onRestart={restart}
 			onBack={toDashboard}
 		/>
+	{:else if view.kind === 'result'}
+		<ElectionNight outcome={career.history[view.index]} {simple}
+			onNext={simple && !solo ? takeNextClient : undefined} onBack={toDashboard} />
 	{:else if simple}
 		{#if solo}
 			{@const id = solo.id}
@@ -389,8 +397,6 @@
 		{/key}
 	{:else if view.kind === 'career'}
 		<CareerView {career} onIncorporate={incorporate} onHire={hire} onBack={toDashboard} />
-	{:else if view.kind === 'result'}
-		<ElectionNight outcome={career.history[view.index]} onBack={toDashboard} />
 	{:else}
 		<Dashboard
 			{career}

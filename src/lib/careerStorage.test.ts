@@ -1,6 +1,7 @@
 import { version } from "$app/environment";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { discardLegacyCareer, loadCareer, saveCareer } from "./careerStorage";
+import { loadSettings, saveSettings } from "./settings";
 
 function useMemoryStorage() {
   const values = new Map<string, string>();
@@ -53,6 +54,28 @@ describe("career versions", () => {
     expect(discardLegacyCareer()).toBe(true);
     expect(discardLegacyCareer()).toBe(false);
   });
+  it("resets v4 careers once without touching saved settings", () => {
+    const { values } = useMemoryStorage();
+    values.set(
+      "spin-doctors:career:v4",
+      JSON.stringify({ careerSeed: 42, log: [] }),
+    );
+    saveSettings({
+      reminderTime: "14:42",
+      reminders: true,
+      experimental: true,
+      instantAdvance: false,
+    });
+    expect(loadCareer()).toBeNull();
+    expect(discardLegacyCareer()).toBe(true);
+    expect(values.has("spin-doctors:career:v4")).toBe(false);
+    expect(loadSettings()).toMatchObject({
+      reminderTime: "14:42",
+      reminders: true,
+      experimental: true,
+    });
+    expect(discardLegacyCareer()).toBe(false);
+  });
   it("round-trips poll entries and the processed calendar boundary", () => {
     useMemoryStorage();
     saveCareer({
@@ -85,7 +108,7 @@ describe("career versions", () => {
   it("rejects invalid dates and surfaces persistence failures", () => {
     const { values, storage } = useMemoryStorage();
     values.set(
-      "spin-doctors:career:v4",
+      "spin-doctors:career:v5",
       JSON.stringify({ careerSeed: 7, log: [], calendarDate: "2026-02-30" }),
     );
     expect(loadCareer).toThrow(/unreadable/);

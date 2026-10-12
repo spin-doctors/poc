@@ -39,7 +39,7 @@ export const voterGroupSchema = z.object({
   gullibility: z.number().min(0).max(100),
 });
 
-/** Locked actions stay visible from day one so they can shape the week's plan. */
+/** The next locked action in each track is shown as a progression goal. */
 export const requirementSchema = z.object({
   stat: z.enum(["credibility", "ruthlessness", "personalFunds"]),
   min: z.number(),
@@ -55,20 +55,88 @@ export const actionCategorySchema = z.enum([
   "special",
 ]);
 
-export const actionSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  category: actionCategorySchema.default("special"),
-  description: z.string().min(1),
-  flavour: z.string().min(1),
-  cost: z.number().min(0),
-  /** Group and rival targets are chosen after opening the action's single menu card. */
-  targeting: z.enum(["none", "group", "rival"]).default("none"),
-  requires: z.array(requirementSchema).default([]),
-  /** A commissioned poll's confidence margin; commissioning does not move voters. */
-  pollMargin: z.number().positive().max(10).optional(),
-  effects: z.array(effectSchema),
+export const specialRiskSchema = z.object({
+  track: z.enum(["credibility", "ruthlessness", "personalFunds"]),
+  credibilityCostPct: z.number().min(0).max(100),
+  failureChance: z.number().min(0).max(1),
+  failureCredibilityPct: z.number().min(0).max(100),
+  /** Conditional on detection; client tolerance reduces but never removes this. */
+  dismissalChance: z.number().min(0).max(1),
+  failureEffects: z.array(effectSchema),
+  failureHeadline: z.string().min(1),
+  failureFlavour: z.string().min(1),
 });
+
+export const actionSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    category: actionCategorySchema.default("special"),
+    description: z.string().min(1),
+    flavour: z.string().min(1),
+    cost: z.number().min(0),
+    /** Group and rival targets are chosen after opening the action's single menu card. */
+    targeting: z.enum(["none", "group", "rival"]).default("none"),
+    requires: z.array(requirementSchema).default([]),
+    /** A commissioned poll's confidence margin; commissioning does not move voters. */
+    pollMargin: z.number().positive().max(10).optional(),
+    effects: z.array(effectSchema),
+    special: specialRiskSchema.optional(),
+  })
+  .superRefine((action, ctx) => {
+    const risk = action.special;
+    if ((action.category === "special") !== Boolean(risk))
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Special actions must declare special risk data, and only specials may do so",
+      });
+    if (!risk) return;
+    if (
+      action.pollMargin ||
+      !action.requires.some((r) => r.stat === risk.track)
+    )
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Specials need a matching track requirement and cannot be polls",
+      });
+    if (
+      risk.track === "credibility" &&
+      (risk.credibilityCostPct <= 0 ||
+        action.effects.some((e) => e.stat === "credibility" && e.delta > 0))
+    )
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Credibility specials must spend credibility without refunding it",
+      });
+    if (risk.failureChance > 0 && risk.failureCredibilityPct <= 0)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Failed specials must cost credibility",
+      });
+    if (
+      risk.track === "ruthlessness" &&
+      (risk.failureChance <= 0 || risk.dismissalChance < 0.01)
+    )
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Ruthless specials must risk detection and dismissal",
+      });
+    if (risk.track !== "ruthlessness" && risk.dismissalChance > 0)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Only ruthless specials risk dismissal",
+      });
+    if (
+      risk.failureEffects.some((e) => e.stat === "credibility" && e.delta > 0)
+    )
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Failure effects cannot refund credibility penalties",
+      });
+  });
 
 export const responseSchema = z
   .object({
@@ -180,6 +248,8 @@ export const contractSchema = z.object({
    * weighting ruthlessness, a clean one those weighting credibility.
    */
   appeal: z.array(contractAppealSchema).default([]),
+  /** Approval of dirty tactics is not protection from being made the scapegoat. */
+  dismissalRiskMultiplier: z.number().positive().max(1).default(1),
   /** The sadder job waiting for you if you're sacked. Without one, the sack ends your career. */
   fallback: z.string().min(1).optional(),
 });

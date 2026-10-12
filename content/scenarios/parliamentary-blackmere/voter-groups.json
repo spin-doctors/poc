@@ -1,0 +1,38 @@
+[
+  {
+    "id": "families",
+    "name": "West Dock Families",
+    "blurb": "Need childcare and steady shifts, not another war between newspaper columnists.",
+    "size": 26000,
+    "baseSupport": 38,
+    "baseTurnout": 62,
+    "gullibility": 45
+  },
+  {
+    "id": "retirees",
+    "name": "Blackmere Retirees",
+    "blurb": "Read the proprietor's papers but are beginning to notice the contradictions.",
+    "size": 21000,
+    "baseSupport": 34,
+    "baseTurnout": 82,
+    "gullibility": 30
+  },
+  {
+    "id": "farmers",
+    "name": "Western Smallholders",
+    "blurb": "Would prefer a working drainage board to a culture war about drainage boards.",
+    "size": 7000,
+    "baseSupport": 29,
+    "baseTurnout": 76,
+    "gullibility": 25
+  },
+  {
+    "id": "graduates",
+    "name": "Media Quarter Graduates",
+    "blurb": "Know how headlines are made. Still occasionally fall for a very good one.",
+    "size": 18000,
+    "baseSupport": 41,
+    "baseTurnout": 34,
+    "gullibility": 65
+  }
+]

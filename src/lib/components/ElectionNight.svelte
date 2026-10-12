@@ -29,6 +29,17 @@
 	</div>
 {/if}
 
+{#if outcome.kind === 'dismissal'}
+	<h2>Thrown under the bus</h2>
+	<article class="newspaper">
+		<p class="dateline">The Constituency Chronicle · Campaign scandal</p>
+		<h3>{outcome.dismissal.headline}</h3>
+		<p>{outcome.dismissal.body}</p>
+	</article>
+	<p>Your account ended before the count. No fee or bonuses were paid. The credibility loss follows you, but your career continues.</p>
+	<p>Credibility lost: {outcome.dismissal.credibilityLoss.toFixed(1)} points.</p>
+	<p>Recognition: {sign(outcome.recognitionDelta)}</p>
+{:else if election}
 <h2>Election night</h2>
 <article class="newspaper">
 	<p class="dateline">The Constituency Chronicle · Election edition</p>
@@ -123,6 +134,7 @@
 	</ul>
 </div>
 
+{/if}
 {#if outcome.reports.length > 0}
 	<details class="card">
 		<summary>Campaign’s private polling archive</summary>
@@ -148,7 +160,7 @@
 	</div>
 	<button onclick={onRestart}>Start again</button>
 {:else if simple && onNext}
-	<button onclick={onNext}>{election.sacked ? 'Take whatever work you can get' : 'Meet your next client'}</button>
+	<button onclick={onNext}>{outcome.kind === 'election' && outcome.election.sacked ? 'Take whatever work you can get' : 'Meet your next client'}</button>
 {:else}
 	<button onclick={onBack}>Back to dashboard</button>
 {/if}

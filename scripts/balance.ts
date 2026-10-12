@@ -14,6 +14,7 @@ import {
   forecastAction,
   isAvailable,
   isUnlocked,
+  pollEstimate,
   runElection,
 } from "../src/lib/sim/engine.js";
 import { nextRandom } from "../src/lib/sim/rng.js";
@@ -165,6 +166,21 @@ function makeStrategies(content: Content) {
         fallback(pick)
       );
     },
+    /** Tries the most extreme available scheme; measures whether repeated cheating is safe. */
+    reckless: (state, pick) => {
+      const action = [...content.actions]
+        .reverse()
+        .find(
+          (a) => a.special?.track === "ruthlessness" && isAvailable(state, a),
+        );
+      if (action)
+        return {
+          kind: "action",
+          actionId: action.id,
+          target: targetFor(action, pick),
+        };
+      return use(state, "attackAd", pick) ?? fallback(pick);
+    },
   };
 
   return { strategies, byId, fallback };
@@ -200,7 +216,15 @@ function playOne(content: Content, strategy: Strategy, seed: number) {
 
     state = applyMove(state, content, move).state;
   }
-  return { ...runElection(state, content), reached };
+  if (state.dismissal)
+    return {
+      sacked: true,
+      voteShare: pollEstimate(state, content).share,
+      morale: state.morale,
+      reached,
+      dismissed: true,
+    };
+  return { ...runElection(state, content), reached, dismissed: false };
 }
 
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
@@ -223,6 +247,7 @@ for (const content of Object.values(scenarios)) {
       "morale",
       "inside",
       "deadcat",
+      "early sack",
     ].join("\t"),
   );
 
@@ -232,6 +257,7 @@ for (const content of Object.values(scenarios)) {
     let moraleTotal = 0;
     let inside = 0;
     let deadCat = 0;
+    let dismissed = 0;
 
     for (let i = 0; i < runs; i++) {
       const result = playOne(content, strategy, i * 7919 + 13);
@@ -240,6 +266,7 @@ for (const content of Object.values(scenarios)) {
       if (result.sacked) sacked++;
       if (result.reached.insideTrack) inside++;
       if (result.reached.deadCat) deadCat++;
+      if (result.dismissed) dismissed++;
     }
 
     shares.sort((a, b) => a - b);
@@ -255,11 +282,12 @@ for (const content of Object.values(scenarios)) {
         (moraleTotal / runs).toFixed(1),
         pct(inside / runs),
         pct(deadCat / runs),
+        pct(dismissed / runs),
       ].join("\t"),
     );
   }
 }
 
 console.log(
-  `\nRandom excludes polls for comparison with the prior baseline; randomIncludingPolls shows the cost of commissioning without using information.\n`,
+  `\nRandom excludes polls for comparison with the prior baseline; randomIncludingPolls shows the cost of commissioning without using information. Sack rates include early scandal dismissals; their shares are pre-dismissal public estimates, not election results. High-tier scenarios use their authored eligible starting stats.\n`,
 );

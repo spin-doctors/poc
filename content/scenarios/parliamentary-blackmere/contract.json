@@ -1,0 +1,54 @@
+{
+  "id": "parliamentary-blackmere",
+  "tier": "parliamentary",
+  "election": "parliamentary seat",
+  "pitch": "A media magnate wants a parliamentary microphone and a consultant whose conscience has an off switch.",
+  "candidateName": "Octavia Voss",
+  "candidateBlurb": "A fictional proprietor of several mutually outraged newspapers. Treats the truth as a premium subscription tier. Welcomes ruthless operators, but has a ready-made headline blaming them if anything comes to light.",
+  "seat": "Blackmere and West Docks",
+  "days": 9,
+  "budget": 85000,
+  "startingMorale": 72,
+  "startingCredibility": 40,
+  "startingRuthlessness": 85,
+  "personalFunds": 6000,
+  "dismissalRiskMultiplier": 0.4,
+  "objectives": [
+    {
+      "id": "share",
+      "label": "Reach 40% vote share",
+      "stat": "voteShare",
+      "target": 40
+    },
+    {
+      "id": "morale",
+      "label": "Keep the proprietor composed (morale at least 25)",
+      "stat": "morale",
+      "target": 25
+    },
+    {
+      "id": "win",
+      "label": "Bonus: win the seat",
+      "stat": "win",
+      "target": 1,
+      "optional": true,
+      "reward": { "funds": 12000, "recognition": 4 }
+    }
+  ],
+  "keepMessage": "Every Voss paper calls it a historic triumph. Your invoice is filed under miscellaneous editorial necessities.",
+  "sackMessage": "The morning headline reads CONSULTANT LETS DOWN TRUSTING CANDIDATE. You recognise the photograph from your staff pass.",
+  "fee": 45000,
+  "recognition": { "kept": 18, "sacked": -12 },
+  "requires": [
+    {
+      "stat": "ruthlessness",
+      "min": 85,
+      "label": "Ruthlessness 85 — Voss only hires operators who have crossed almost every line"
+    }
+  ],
+  "appeal": [
+    { "stat": "ruthlessness", "weight": 3 },
+    { "stat": "credibility", "weight": -0.3 }
+  ],
+  "fallback": "council-ashcombe"
+}

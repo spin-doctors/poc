@@ -68,11 +68,19 @@ declare an `appeal` (credibility or ruthlessness weights); when several clients
 at the same tier would hire you, the one whose appeal best matches your record
 calls first, so a ruthless operator draws shadier clients.
 
-| Scenario                          | Tier          | Days | Fee     | Who will hire you                         |
-| --------------------------------- | ------------- | ---- | ------- | ----------------------------------------- |
-| Ashcombe South (Bramley)          | council       | 7    | £12,000 | anyone; where every career starts         |
-| Pendle Hurst West (Malcolm)       | council       | 7    | £4,000  | recognition 15 or below; the bottom rung  |
-| Harwell and Stoke Minster (Priya) | parliamentary | 10   | £30,000 | recognition 12+, ruthlessness 70 or below |
+An **early scandal dismissal** is different: a caught ruthless special can get you
+thrown under the bus immediately. That account closes without an election result,
+fee or bonus. Credibility and recognition losses persist, but your career stays
+open, other accounts continue, and another eligible client can call without the
+forced fallback. The usual election-objective sacking ladder is unchanged.
+
+| Scenario                            | Tier          | Days | Fee     | Who will hire you                         |
+| ----------------------------------- | ------------- | ---- | ------- | ----------------------------------------- |
+| Ashcombe South (Bramley)            | council       | 7    | £12,000 | anyone; where every career starts         |
+| Pendle Hurst West (Malcolm)         | council       | 7    | £4,000  | recognition 15 or below; the bottom rung  |
+| Harwell and Stoke Minster (Priya)   | parliamentary | 10   | £30,000 | recognition 12+, ruthlessness 70 or below |
+| Gravesend Fen and North Quay (Vale) | parliamentary | 8    | £35,000 | ruthlessness 75+                          |
+| Blackmere and West Docks (Voss)     | parliamentary | 9    | £45,000 | ruthlessness 85+                          |
 
 In the simple game the next client is chosen for you: the highest-tier
 contract you qualify for, avoiding an immediate repeat. With experimental
@@ -83,8 +91,8 @@ feature: turn it on in **Settings** from the ☰ menu), then hire staff
 per staffer, never the same seat twice at once. The career is saved in
 `localStorage` as the career seed plus an ordered log of accepts, moves, day
 ticks, incorporation and hires, and rebuilt by replay on load. Saves from
-before these daily/rival rules are deliberately reset with an explanatory notice;
-this is an unreleased game. Calendar metadata is stored alongside the replay log,
+before the special-action risk rules are deliberately reset with an explanatory notice;
+settings are preserved. This is an unreleased game. Calendar metadata is stored alongside the replay log,
 not inside the deterministic simulation.
 
 Council clients offer an optional win bonus (Ashcombe: £3,000 and 2 recognition;
@@ -104,9 +112,29 @@ burning credibility down.
 | Credibility 68  | **The Inside Track** | Tightens your poll's margin of error — the only way to buy certainty |
 | Ruthlessness 45 | **Throw a Dead Cat** | A broad, cheap distraction, and a bill your candidate pays           |
 
-Locked moves are **visible from day one** with their thresholds shown, so they
-shape the whole week rather than arriving as a late surprise. Playing the safe
-middle unlocks neither.
+Specials appear in **Credibility**, **Ruthlessness** and **Personal funds** tracks:
+all currently unlocked actions plus only the next locked action in each track.
+Content order defines progression. Unlocks use current stats; spending credibility
+can lock an action again. Budget affordability does not hide the next unlock.
+
+Every special opens a **risk confirmation** before commitment, after any target
+choice. It shows the budget cost, reputation spend, conditional reward, failure or
+detection chance, failure consequences and both conditional/overall dismissal
+probabilities. Cancel changes neither state nor RNG. Risky specials are not shown
+as guaranteed polling forecasts.
+
+Credibility actions are favours, verified disclosures and public endorsements.
+Each spends 3–6% of current credibility even on success. Failure grants no success
+reward and costs a further 12–20% of credibility **before the attempt**.
+Both percentage amounts round to one decimal point; failure losses are capped at
+what remains. Ruthless actions range from diversionary scandals to fictional
+framing and voter fraud: 25–50% detection risk, with a 12–25% chance of dismissal
+**if caught**, plus 15–35% progressive credibility loss and authored backlash.
+These are satirical game abstractions, not descriptions of how to commit crimes.
+
+Vale halves conditional dismissal risk; Voss multiplies it by 0.4. A 1% conditional
+dismissal floor prevents any client from making it safe. The personal cheque is a certain transaction, showing its fixed financial
+and reputation costs rather than inventing a random failure.
 
 ### The design rule
 
@@ -275,35 +303,45 @@ enough to feel real, rare enough that taking stupid risks is still worth it.
 The harness plays each scenario from its contract's default stats, not with
 carried-over career stats.
 
-Current numbers for Ashcombe (1,000 campaigns per strategy, daily/rival rules):
+Current numbers for Ashcombe (1,000 campaigns per strategy, special-risk rules):
 
-| Strategy             | Sacked | Mean share | Notes                                             |
-| -------------------- | ------ | ---------- | ------------------------------------------------- |
-| random               | 21.6%  | 61.9       | random campaign moves; 100% branch lifts the mean |
-| randomIncludingPolls | 27.5%  | 61.1       | buys auxiliary polls without using reports        |
-| pollWise             | 3.8%   | 64.9       | buys a full poll, chooses by forecast             |
-| allAttack            | 100.0% | 50.1       | degenerate control; morale still collapses        |
-| allDoorstep          | 28.5%  | 65.8       | high share, candidate morale is fragile           |
-| balanced             | 12.7%  | 62.6       | safe, unlocks nothing                             |
-| cleanHands           | 20.8%  | 61.5       | credibility path                                  |
-| bareKnuckle          | 17.3%  | 62.3       | ruthless path, higher variance                    |
+| Strategy             | Sacked | Mean share | Notes                                                |
+| -------------------- | ------ | ---------- | ---------------------------------------------------- |
+| random               | 22.1%  | 61.8       | random campaign moves; 100% branch lifts the mean    |
+| randomIncludingPolls | 28.6%  | 60.8       | buys auxiliary polls without using reports           |
+| pollWise             | 3.8%   | 64.9       | buys a full poll, chooses by forecast                |
+| allAttack            | 100.0% | 50.1       | degenerate control; morale still collapses           |
+| allDoorstep          | 28.5%  | 65.8       | high share, candidate morale is fragile              |
+| balanced             | 12.7%  | 62.6       | safe, unlocks nothing                                |
+| cleanHands           | 20.8%  | 61.5       | credibility path                                     |
+| bareKnuckle          | 37.0%  | 58.6       | repeated diversions now risk detection and dismissal |
 
-The two identity paths land close on mean share but differ on risk and career reputation.
+The two identity paths differ on risk and career reputation.
 These figures now include the low-probability data-centre branch: backing the
 blockade produces the guaranteed 100% support result, but does not waive the
 separate candidate-morale contract objective.
 
 The other scenarios, random / pollWise / balanced / cleanHands / bareKnuckle sacked:
 
-| Scenario              | random | pollWise | balanced | cleanHands | bareKnuckle |
-| --------------------- | ------ | -------- | -------- | ---------- | ----------- |
-| council-pendle        | 29.7%  | 0.1%     | 1.9%     | 3.7%       | 25.2%       |
-| parliamentary-harwell | 29.4%  | 0.0%     | 0.0%     | 3.2%       | 2.8%        |
+| Scenario                | random | pollWise | balanced | cleanHands | bareKnuckle |
+| ----------------------- | ------ | -------- | -------- | ---------- | ----------- |
+| council-pendle          | 29.4%  | 0.0%     | 1.6%     | 3.4%       | 55.5%       |
+| parliamentary-harwell   | 30.0%  | 0.0%     | 0.0%     | 1.9%       | 40.6%       |
+| parliamentary-gravesend | 30.0%  | 0.0%     | 0.0%     | 0.3%       | 11.6%       |
+| parliamentary-blackmere | 29.5%  | 0.0%     | 0.0%     | 0.0%       | 10.0%       |
 
-Harwell is ten days with four groups and now requires an outright win against
-its full candidate field. `allDoorstep` is sacked 77.9% of the time because
-the morale objective is stricter. Ashcombe's required share is now 40.5% to
-keep random play within the 20–30% target after broad-action conversion.
+Harwell still requires an outright win and morale at least 30; its share target
+is 39.5% and Pendle's is 37.9% after special-risk tuning. Ashcombe remains 40.5%.
+The new clients start the isolated harness at eligible ruthlessness 75/85;
+actual careers must earn those stats. Their early-sack rates under random play
+are 10.7% and 10.5%, included in the total sack rates above. Early-dismissal
+shares in the harness are pre-dismissal public estimates, not fabricated
+election results. `reckless` repeatedly tries the highest available ruthless
+special to expose the cost of spamming criminal schemes; `bareKnuckle` prefers
+the lower-risk diversion and rests when morale falls.
+At these settings `reckless` gets sacked in 100% of both nefarious-client runs,
+with 31.6% (Vale) and 30.9% (Voss) ending in early dismissal. Client tolerance is
+not a licence to spam the most extreme schemes.
 
 ### Commissioning polls
 
@@ -312,6 +350,9 @@ poll (±3), and a £12,000 full-sample poll (±1.5). Commissioning is a separate
 `poll` move: it spends budget but neither uses the normal turn nor triggers a
 gaffe or scheduled event. One purchase is allowed per account per day, including
 after the normal action or while a story awaits a response.
+Open **Opponents & public polling** to see the field, public estimates,
+commissioning controls and private-report archive. This is a separate collapsible
+panel below the campaign actions; its contents are hidden when collapsed.
 
 The report reflects the completed day's standings and is delivered on the
 following day. It shows every candidate overall and by voter group; low-share
@@ -364,6 +405,16 @@ menu, except polling products, which have their own auxiliary-purchase panel.
 Scenario actions that omit the category are filed under `special`. The
 `targeting` field is `none`, `group` or `rival`; the menu always shows one card,
 and targeted actions open a separate choice before committing.
+
+Every `special` action must also declare `special`: `track`,
+`credibilityCostPct`, `failureChance`, `failureCredibilityPct`,
+`dismissalChance` (conditional on detection), `failureEffects`,
+`failureHeadline` and `failureFlavour`. Probabilities are 0–1; percentage costs
+are 0–100. Credibility specials require positive spending without refunding it;
+every probabilistic failure costs credibility; ruthless specials require positive
+detection and dismissal probabilities. Contracts may set a positive
+`dismissalRiskMultiplier` up to 1 (default 1). Seeded resolution occurs only on
+committed moves, never previews. Success effects are not applied on failure.
 
 Scenario `rivals.json` files declare profiles and starting group support.
 Client and rival support must total 100% in every group. General gains draw

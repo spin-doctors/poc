@@ -15,9 +15,9 @@
   "objectives": [
     {
       "id": "share",
-      "label": "Reach 40% vote share (the seat was lost by 2,000 votes last time)",
+      "label": "Reach 39.5% vote share (the seat was lost by 2,000 votes last time)",
       "stat": "voteShare",
-      "target": 40
+      "target": 39.5
     },
     {
       "id": "morale",

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "families",
+    "name": "Quayside Families",
+    "blurb": "Want homes they can afford, not another rendering of a luxury marina.",
+    "size": 26000,
+    "baseSupport": 38,
+    "baseTurnout": 62,
+    "gullibility": 45
+  },
+  {
+    "id": "retirees",
+    "name": "Fenland Retirees",
+    "blurb": "Remember every failed regeneration plan and keep the leaflets as evidence.",
+    "size": 21000,
+    "baseSupport": 34,
+    "baseTurnout": 82,
+    "gullibility": 30
+  },
+  {
+    "id": "farmers",
+    "name": "Marsh Farmers",
+    "blurb": "Suspicious of anyone who describes a flooded field as a development opportunity.",
+    "size": 7000,
+    "baseSupport": 29,
+    "baseTurnout": 76,
+    "gullibility": 25
+  },
+  {
+    "id": "graduates",
+    "name": "Dockside Graduates",
+    "blurb": "Work in the converted warehouses; cannot afford to live in the converted warehouses.",
+    "size": 18000,
+    "baseSupport": 41,
+    "baseTurnout": 34,
+    "gullibility": 65
+  }
+]

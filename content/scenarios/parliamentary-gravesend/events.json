@@ -1,0 +1,109 @@
+[
+  {
+    "id": "envelopes",
+    "day": 2,
+    "headline": "PATRON REQUESTS A MEETING WITHOUT MINUTES",
+    "body": "Vale asks whether the press strategy can be discussed somewhere without a receptionist. He considers this a perfectly normal request.",
+    "responses": [
+      {
+        "label": "Keep everything on the record",
+        "hint": "A paper trail, even for your own side.",
+        "flavour": "Vale sighs. The local paper notices the unusual openness.",
+        "effects": [
+          { "on": "all", "stat": "credibility", "delta": 5 },
+          { "on": "retirees", "stat": "support", "delta": 5 },
+          { "on": "all", "stat": "morale", "delta": -4 }
+        ]
+      },
+      {
+        "label": "Accept his discreet invitation",
+        "hint": "He expects you to understand the subtext.",
+        "flavour": "The restaurant has no menu prices. Vale has plenty of suggestions.",
+        "effects": [{ "on": "all", "stat": "ruthlessness", "delta": 7 }],
+        "next": "discreet-brief"
+      }
+    ]
+  },
+  {
+    "id": "discreet-brief",
+    "headline": "EVERY SUGGESTION COMES WITH PLAUSIBLE DENIABILITY",
+    "body": "Vale would like an opponent embarrassed, but would prefer never to have asked. You must decide what sort of relationship this is.",
+    "responses": [
+      {
+        "label": "Insist on verified claims only",
+        "hint": "No manufactured evidence.",
+        "flavour": "He calls you cautious. For the moment, that is not a dismissal.",
+        "effects": [
+          { "on": "all", "stat": "credibility", "delta": 4 },
+          { "on": "all", "stat": "morale", "delta": -3 }
+        ]
+      },
+      {
+        "label": "Promise an aggressive campaign",
+        "hint": "The dangerous specials still require a separate decision.",
+        "flavour": "Vale is delighted. His lawyer is already drafting a denial of knowledge.",
+        "effects": [
+          { "on": "all", "stat": "ruthlessness", "delta": 5 },
+          { "on": "all", "stat": "morale", "delta": 7 },
+          { "on": "all", "stat": "credibility", "delta": -4 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "marina",
+    "day": 4,
+    "headline": "MARINA MODEL OMITS EXISTING RESIDENTS",
+    "body": "The launch display has tiny yachts, tiny restaurants and no sign of the families currently living on the site.",
+    "responses": [
+      {
+        "label": "Promise protected tenancies",
+        "hint": "A real concession.",
+        "flavour": "Families warm to the proposal. Vale takes an extremely long walk around the model.",
+        "effects": [
+          { "on": "families", "stat": "support", "delta": 10 },
+          { "on": "all", "stat": "morale", "delta": -6 },
+          { "on": "all", "stat": "credibility", "delta": 4 }
+        ]
+      },
+      {
+        "label": "Sell the jobs story",
+        "hint": "Big numbers, small print.",
+        "flavour": "Graduates like the promised jobs. Retirees ask where the people went.",
+        "effects": [
+          { "on": "graduates", "stat": "support", "delta": 10 },
+          { "on": "retirees", "stat": "support", "delta": -5 },
+          { "on": "all", "stat": "morale", "delta": 5 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "audit",
+    "day": 7,
+    "headline": "NEWSPAPER ASKS WHO PAID FOR THE CAMPAIGN",
+    "body": "A journalist arrives with receipts. Vale arrives with an expression that suggests you should have intercepted the journalist.",
+    "responses": [
+      {
+        "label": "Publish the accounts",
+        "hint": "Transparency has a price.",
+        "flavour": "The accounts are unflattering but verifiable. The story loses its sting.",
+        "effects": [
+          { "on": "all", "stat": "money", "delta": -4000 },
+          { "on": "all", "stat": "credibility", "delta": 5 },
+          { "on": "all", "stat": "support", "delta": 2 }
+        ]
+      },
+      {
+        "label": "Call the question a distraction",
+        "hint": "The receipts are still there.",
+        "flavour": "The paper prints your phrase above a photograph of the receipts.",
+        "effects": [
+          { "on": "all", "stat": "support", "delta": -3 },
+          { "on": "all", "stat": "morale", "delta": -5 },
+          { "on": "all", "stat": "ruthlessness", "delta": 5 }
+        ]
+      }
+    ]
+  }
+]

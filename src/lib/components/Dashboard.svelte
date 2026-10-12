@@ -130,9 +130,9 @@
 						{#if outcome.decidedOnDay === career.day - 1}<span class="sub new">New</span>{/if}
 					</td>
 					<td>Day {outcome.decidedOnDay}</td>
-					<td>{outcome.election.voteShare}%</td>
-					<td class="delta {outcome.election.sacked ? 'down' : 'up'}">
-						{outcome.election.sacked ? 'Sacked' : 'Kept'}
+					<td>{outcome.kind === 'election' ? `${outcome.election.voteShare}%` : 'No count — dismissed early'}</td>
+					<td class="delta {outcome.kind === 'dismissal' || outcome.election.sacked ? 'down' : 'up'}">
+						{outcome.kind === 'dismissal' ? 'Thrown under the bus' : outcome.election.sacked ? 'Sacked' : 'Kept'}
 					</td>
 					<td><button class="ghost" onclick={() => onResult(index)}>Election night</button></td>
 				</tr>

@@ -59,11 +59,10 @@ interface ActiveCampaign {
   state: GameState;
 }
 
-export interface CampaignOutcome {
+interface CampaignOutcomeBase {
   campaignId: number;
   scenarioId: string;
   start: StartingStats;
-  election: ElectionResult;
   feeEarned: number;
   recognitionDelta: number;
   bonusFunds: number;
@@ -73,6 +72,16 @@ export interface CampaignOutcome {
   /** The career day whose close decided the election. */
   decidedOnDay: number;
 }
+
+export type CampaignOutcome = CampaignOutcomeBase &
+  (
+    | { kind: "election"; election: ElectionResult; dismissal: null }
+    | {
+        kind: "dismissal";
+        election: null;
+        dismissal: NonNullable<GameState["dismissal"]>;
+      }
+  );
 
 export interface CareerState {
   careerSeed: number;
@@ -273,6 +282,15 @@ function unmetCareerRequirements(
   );
 }
 
+function fallbackRequirements(career: CareerState, content: Content) {
+  return unmetCareerRequirements(
+    operatingStats(career),
+    content.contract.requires.filter(
+      (r) => r.stat === "ruthlessness" && r.min !== undefined,
+    ),
+  );
+}
+
 /** Sacked operators get the fallback; everyone else sees every contract, locked ones as goals. */
 export function careerOffers(
   career: CareerState,
@@ -280,12 +298,19 @@ export function careerOffers(
 ): Offer[] {
   const running = new Set(career.active.map((c) => c.scenarioId));
   const last = career.history.at(-1);
-  if (last?.election.sacked) {
+  if (last?.kind === "election" && last.election.sacked) {
     const fallback = scenarioOrThrow(scenarios, last.scenarioId).contract
       .fallback;
     if (fallback === undefined) return [];
     return [
-      { scenarioId: fallback, unmet: [], running: running.has(fallback) },
+      {
+        scenarioId: fallback,
+        unmet: fallbackRequirements(
+          career,
+          scenarioOrThrow(scenarios, fallback),
+        ),
+        running: running.has(fallback),
+      },
     ];
   }
 
@@ -302,12 +327,20 @@ export function careerOffers(
     .sort((a, b) => a.tier - b.tier)
     .map(({ scenarioId, unmet, running }) => ({ scenarioId, unmet, running }));
 
-  if (last && !offers.some((o) => o.unmet.length === 0)) {
+  if (last?.kind === "election" && !offers.some((o) => o.unmet.length === 0)) {
     const fallback = scenarioOrThrow(scenarios, last.scenarioId).contract
       .fallback;
     if (fallback === undefined) return offers;
     return offers.map((o) =>
-      o.scenarioId === fallback ? { ...o, unmet: [] } : o,
+      o.scenarioId === fallback
+        ? {
+            ...o,
+            unmet: fallbackRequirements(
+              career,
+              scenarioOrThrow(scenarios, fallback),
+            ),
+          }
+        : o,
     );
   }
   return offers;
@@ -338,6 +371,7 @@ export function isCareerOver(
   return (
     career.active.length === 0 &&
     last !== undefined &&
+    last.kind === "election" &&
     last.election.sacked &&
     scenarioOrThrow(scenarios, last.scenarioId).contract.fallback === undefined
   );
@@ -449,6 +483,42 @@ export function playCampaignMove(
     ruthlessness: result.state.ruthlessness,
     cash: result.state.personalFunds,
   });
+  if (result.state.dismissal) {
+    const recognition = clamp(
+      current.recognition + content.contract.recognition.sacked,
+      0,
+      100,
+    );
+    const next = withOperatingStats(pooled, {
+      ...operatingStats(pooled),
+      recognition,
+    });
+    return {
+      career: {
+        ...next,
+        active: next.active.filter((c) => c.id !== campaignId),
+        history: [
+          ...next.history,
+          {
+            kind: "dismissal",
+            election: null,
+            dismissal: result.state.dismissal,
+            campaignId,
+            scenarioId: campaign.scenarioId,
+            start: campaign.state.start,
+            feeEarned: 0,
+            bonusFunds: 0,
+            bonusRecognition: 0,
+            recognitionDelta: recognition - current.recognition,
+            news: result.state.news,
+            reports: result.state.reports,
+            decidedOnDay: career.day,
+          },
+        ],
+      },
+      result,
+    };
+  }
   return {
     career: {
       ...pooled,
@@ -512,6 +582,8 @@ function resolveCampaign(
     history: [
       ...career.history,
       {
+        kind: "election",
+        dismissal: null,
         campaignId: campaign.id,
         scenarioId: campaign.scenarioId,
         start: campaign.state.start,

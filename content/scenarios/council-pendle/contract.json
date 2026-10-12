@@ -15,9 +15,9 @@
   "objectives": [
     {
       "id": "share",
-      "label": "Reach 38% vote share (he has never cleared 27%)",
+      "label": "Reach 37.9% vote share (he has never cleared 27%)",
       "stat": "voteShare",
-      "target": 38
+      "target": 37.9
     },
     {
       "id": "morale",

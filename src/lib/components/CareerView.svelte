@@ -24,7 +24,7 @@
 	let companyLogo = $state('');
 	let companyValues = $state('');
 
-	const kept = $derived(career.history.filter((h) => !h.election.sacked).length);
+	const kept = $derived(career.history.filter((h) => h.kind === 'election' && !h.election.sacked).length);
 
 	function incorporate() {
 		onIncorporate({

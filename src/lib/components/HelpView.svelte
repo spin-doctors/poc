@@ -75,4 +75,16 @@
 		<strong>ruthlessness</strong> and burn credibility. Each unlocks its own moves, and locked moves
 		show what they need.
 	</p>
+	<p>Specials have three tracks: credibility, ruthlessness and personal funds.
+		Each shows unlocked moves and only its next locked move. Unlocks use your current stats:
+		spending credibility can lock a move again.</p>
+	<p>Credibility specials spend a small percentage of your reputation on every attempt.
+		A failed special also costs a percentage of your pre-attempt credibility.
+		Before committing, review the exact costs, conditional rewards and failure risks;
+		cancelling spends nothing.</p>
+	<p>Ruthless specials can be caught and can get you thrown under the bus. This ends that
+		account immediately and forfeits fees and bonuses, but your career and other accounts
+		continue. Ordinary election-night sackings still lead down the fallback-client ladder.</p>
+	<p>At ruthlessness 75 and 85, fictional parliamentary patrons Vale and Voss become
+		available. They tolerate underhand tactics, reducing dismissal risk without eliminating it.</p>
 </div>

@@ -14,6 +14,7 @@
 	} from '$lib/sim/engine';
 	import type { MoveResult, PlayerMove } from '$lib/sim/types';
 	import type { ActionCategory, GameAction } from '$lib/schema/content';
+	import { SPECIAL_LABELS, SPECIAL_TRACKS, specialPreview, visibleSpecialActions } from '$lib/sim/specialActions';
 
 	const CATEGORY_ORDER: ActionCategory[] = ['constituents', 'pr', 'candidate', 'polling', 'special'];
 	const CATEGORY_LABELS: Record<ActionCategory, string> = {
@@ -67,25 +68,37 @@
 	);
 	let last = $state<MoveResult | null>(null);
 	let selection = $state<GameAction | null>(null);
+	let confirmation = $state<{ action: GameAction; target?: string } | null>(null);
 	let pollMessage = $state('');
 	let error = $state('');
 	const menu = $derived(
-		CATEGORY_ORDER.map((category) => ({
-			category,
-			moves: active.actions
-				.filter((action) => action.category === category && !action.pollMargin)
-		})).filter((section) => section.moves.length > 0)
+		CATEGORY_ORDER.flatMap<{ id: string; label: string; moves: GameAction[] }>((category) => category === 'special'
+			? SPECIAL_TRACKS.map((track) => ({
+				id: track, label: `Special: ${SPECIAL_LABELS[track]}`,
+				moves: visibleSpecialActions(game, active.actions.filter((a) => a.special?.track === track))
+			}))
+			: [{ id: category, label: CATEGORY_LABELS[category],
+				moves: active.actions.filter((action) => action.category === category && !action.pollMargin) }]
+		).filter((section) => section.moves.length > 0)
 	);
-	let openCategories = $state<Record<ActionCategory, boolean>>({
+	let openCategories = $state<Record<string, boolean>>({
 		constituents: true,
 		pr: false,
 		candidate: false,
 		polling: false,
-		special: false
+		credibility: false, ruthlessness: false, personalFunds: false
 	});
 
 	const firstJob = $derived(career.history.length === 0);
 	const finalDay = $derived(game.day >= contract.days);
+	const risk = $derived(confirmation ? specialPreview(game, active, confirmation.action) : null);
+
+	function choose(action: GameAction, target?: string) {
+		if (action.special) {
+			confirmation = { action, target };
+			selection = null;
+		} else play({ kind: 'action', actionId: action.id, target });
+	}
 
 	function play(move: PlayerMove) {
 		try {
@@ -96,6 +109,7 @@
 			} else {
 				last = result;
 				selection = null;
+				confirmation = null;
 				stage = 'feedback';
 			}
 		} catch (cause) {
@@ -128,8 +142,8 @@
 		<div><span>{fundsLabel}</span><strong>{pounds(game.personalFunds)}</strong></div>
 	{/if}
 	<div><span>Candidate morale</span><strong>{Math.round(game.morale)}</strong></div>
-	<div><span>Credibility</span><strong>{Math.round(game.credibility)}</strong></div>
-	<div><span>Ruthlessness</span><strong>{Math.round(game.ruthlessness)}</strong></div>
+	<div><span>Credibility</span><strong>{game.credibility.toFixed(1)}</strong></div>
+	<div><span>Ruthlessness</span><strong>{game.ruthlessness.toFixed(1)}</strong></div>
 	<div>
 		<span>Poll</span>
 		<strong>{poll.share}% <span class="uncertain">&plusmn;{poll.margin}</span></strong>
@@ -201,7 +215,7 @@
 	</div>
 {/if}
 
-{#if stage === 'day' && !selection}
+{#if stage === 'day' && !selection && !confirmation}
 	<h2>Day {game.day}</h2>
 	<div class="actions">
 		{#if commissionedPoll}
@@ -210,9 +224,9 @@
 				&plusmn;{commissionedPoll.margin} points.
 			</p>
 		{/if}
-		{#each menu as section (section.category)}
-			<details class="category" bind:open={openCategories[section.category]}>
-				<summary>{CATEGORY_LABELS[section.category]} <span>({section.moves.length})</span></summary>
+		{#each menu as section (section.id)}
+			<details class="category" bind:open={openCategories[section.id]}>
+				<summary>{section.label} <span>({section.moves.length})</span></summary>
 				{#each section.moves as action (action.id)}
 					{@const locks = unmetRequirements(game, action)}
 					{@const forecast = action.targeting === 'none' ? forecastAction(game, active, action) : null}
@@ -220,7 +234,7 @@
 						class="action"
 						class:locked={locks.length > 0}
 						disabled={!canAfford(game, action) || locks.length > 0}
-						onclick={() => action.targeting === 'none' ? play({ kind: 'action', actionId: action.id }) : (selection = action)}
+						onclick={() => action.targeting === 'none' ? choose(action) : (selection = action)}
 					>
 						<span>
 							<strong>{action.name}</strong>
@@ -243,12 +257,13 @@
 {#if stage === 'day' && selection}
 	<h2>{selection.name}</h2>
 	<button class="ghost" onclick={() => (selection = null)}>&larr; Back to actions</button>
-	<p>Choose {selection.targeting === 'group' ? 'who to visit' : 'which opponent to attack'}. This choice commits today’s move.</p>
+	<p>Choose {selection.targeting === 'group' ? 'who to visit' : 'which opponent to target'}.
+		{selection.special ? 'You will review the risks before committing.' : 'This choice commits today’s move.'}</p>
 	<div class="actions">
 		{#each (selection.targeting === 'group' ? groups : active.rivals) as target (target.id)}
 			{@const forecast = forecastAction(game, active, selection, target.id)}
 			<button class="action" disabled={!canAfford(game, selection) || unmetRequirements(game, selection).length > 0}
-				onclick={() => selection && play({ kind: 'action', actionId: selection.id, target: target.id })}>
+				onclick={() => selection && choose(selection, target.id)}>
 				<span><strong>{target.name}{'novelty' in target && target.novelty ? ' — novelty contender' : ''}</strong>
 					<em>{target.blurb}</em>
 					{#if 'novelty' in target && target.novelty}<em>Very few votes available to win over.</em>{/if}
@@ -275,7 +290,44 @@
 	</div>
 {/if}
 
+{#if stage === 'day' && confirmation && risk}
+	<section class="card" aria-labelledby="special-confirm-title">
+		<h2 id="special-confirm-title">{confirmation.action.name}: review the risks</h2>
+		<p>{confirmation.action.description}</p>
+		{#if confirmation.target}<p>Target: {active.rivals.find((r) => r.id === confirmation?.target)?.name ?? groups.find((g) => g.id === confirmation?.target)?.name}</p>{/if}
+		<h3>Paid on every attempt</h3>
+		<p>Campaign budget: {pounds(confirmation.action.cost)}. Uses today's normal move, even if it fails.</p>
+		<p>Credibility: {risk.credibilityCostPct}% of your current {game.credibility.toFixed(1)} points ({risk.credibilityCost.toFixed(1)} points).</p>
+		<h3>{risk.failureChance === 0 ? 'Transaction effects' : 'Reward if successful'}</h3>
+		<ul>
+			{#each confirmation.action.effects as effect}
+				<li>{effect.on === 'all' ? 'All groups / operator' : effect.on === 'target' ? 'Selected target' : groups.find((g) => g.id === effect.on)?.name ?? effect.on}: {effect.stat} {effect.delta > 0 ? '+' : ''}{effect.delta}{effect.spin ? ' (scaled by gullibility)' : ''}</li>
+			{/each}
+		</ul>
+		<p class="hint">Support gains draw from the selected rival if targeted and cannot exceed available votes; stats are bounded. These are conditional rewards, not a guaranteed forecast.</p>
+		<h3>What could go wrong</h3>
+		{#if risk.failureChance > 0}
+			<p>{risk.track === 'ruthlessness' ? 'Chance of being caught' : 'Chance of failure'}: {(risk.failureChance * 100).toFixed(1)}% per attempt.</p>
+			<p>No success rewards on failure. Additional credibility loss: {risk.failureCredibilityPct}% of your credibility before this attempt ({risk.failureCredibilityCost.toFixed(1)} points, capped at what remains).</p>
+			<ul>{#each risk.failureEffects as effect}<li>{effect.on === 'all' ? 'All groups / operator' : effect.on}: {effect.stat} {effect.delta > 0 ? '+' : ''}{effect.delta}</li>{/each}</ul>
+			{#if risk.dismissalChance > 0}
+				<p>Dismissal if caught: {(risk.dismissalChance * 100).toFixed(1)}%. Overall dismissal risk per attempt: {(risk.overallDismissalChance * 100).toFixed(1)}%.</p>
+				{#if contract.dismissalRiskMultiplier < 1}<p>This client tolerates dirty tactics and reduces dismissal risk. They can still throw you under the bus.</p>{/if}
+				<p>Dismissal ends this account immediately, forfeits its fee and bonuses, and affects your reputation. Other accounts and your career continue.</p>
+			{/if}
+		{:else}
+			<p>This is a certain transaction: no random failure or dismissal risk.</p>
+		{/if}
+		<div class="row nav">
+			<button class="ghost" onclick={() => (confirmation = null)}>Cancel — back to actions</button>
+			<button disabled={!canAfford(game, confirmation.action) || unmetRequirements(game, confirmation.action).length > 0}
+				onclick={() => confirmation && play({ kind: 'action', actionId: confirmation.action.id, target: confirmation.target })}>Confirm special action</button>
+		</div>
+	</section>
+{/if}
+
 {#if stage === 'feedback' && last}
+	{#if last.specialOutcome}<h2>{last.specialOutcome === 'success' ? 'Special action succeeded' : last.specialOutcome === 'caught' ? 'Caught — scheme failed' : last.specialOutcome === 'dismissed' ? 'Thrown under the bus' : 'Special action failed'}</h2>{/if}
 	<p class="flavour">{last.flavour}</p>
 
 	{#if last.feedback.length > 0}
@@ -371,42 +423,42 @@
 	{/if}
 {/snippet}
 
-<details class="card">
+<details class="campaign-information">
 	<summary>Opponents &amp; public polling</summary>
 	{#each active.rivals as rival (rival.id)}
 		<p><strong>{rival.name}</strong>{rival.novelty ? ' — novelty contender (never a client)' : ''} — {rival.blurb}</p>
 	{/each}
 	<PollReportView report={publicReport} content={active} today={game.day} privateReport={false} />
-</details>
 
-<section class="card">
-	<h3>Commission a private poll</h3>
-	<p class="hint">One per account per day, in addition to your campaign move. Results arrive tomorrow.</p>
-	{#if pollMessage}<p role="status">{pollMessage}</p>{/if}
-	{#if game.pollPurchasedOnDay === game.day}
-		<p>Today’s poll is on order.</p>
-	{:else if finalDay}
-		<p>No campaign day remains to use a new poll.</p>
-	{:else}
-		<div class="actions">
-			{#each active.actions.filter((a) => a.pollMargin) as action (action.id)}
-				<button class="action" disabled={!canAfford(game, action)}
-					onclick={() => play({ kind: 'poll', actionId: action.id })}>
-					<span><strong>{action.name}</strong><em>{action.description}</em></span><span class="cost">{pounds(action.cost)}</span>
-				</button>
+	<section class="poll-purchase">
+		<h3>Commission a private poll</h3>
+		<p class="hint">One per account per day, in addition to your campaign move. Results arrive tomorrow.</p>
+		{#if pollMessage}<p role="status">{pollMessage}</p>{/if}
+		{#if game.pollPurchasedOnDay === game.day}
+			<p>Today’s poll is on order.</p>
+		{:else if finalDay}
+			<p>No campaign day remains to use a new poll.</p>
+		{:else}
+			<div class="actions">
+				{#each active.actions.filter((a) => a.pollMargin) as action (action.id)}
+					<button class="action" disabled={!canAfford(game, action)}
+						onclick={() => play({ kind: 'poll', actionId: action.id })}>
+						<span><strong>{action.name}</strong><em>{action.description}</em></span><span class="cost">{pounds(action.cost)}</span>
+					</button>
+				{/each}
+			</div>
+		{/if}
+	</section>
+
+	{#if game.reports.length > 0}
+		<details class="card" open>
+			<summary>Private polling reports ({game.reports.length})</summary>
+			{#each [...game.reports].reverse() as report (report.availableOnDay)}
+				<PollReportView {report} content={active} today={game.day} />
 			{/each}
-		</div>
+		</details>
 	{/if}
-</section>
-
-{#if game.reports.length > 0}
-	<details class="card" open>
-		<summary>Private polling reports ({game.reports.length})</summary>
-		{#each [...game.reports].reverse() as report (report.availableOnDay)}
-			<PollReportView {report} content={active} today={game.day} />
-		{/each}
-	</details>
-{/if}
+</details>
 
 {#if game.news.length > 0}
 	<details class="card">

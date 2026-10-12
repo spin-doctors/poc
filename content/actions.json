@@ -101,7 +101,7 @@
     "name": "The Inside Track",
     "category": "special",
     "description": "A quiet word with someone who owes you one. You stop guessing and start knowing.",
-    "flavour": "A returning officer you were decent to in 2019 buys you a coffee and talks, at length, about postal vote patterns. You take no notes. You do not need to.",
+    "flavour": "A retired pollster who trusts you shares their reading of published turnout figures. No confidential records, just experience and a coffee you now owe them.",
     "cost": 1000,
     "requires": [
       {
@@ -113,9 +113,77 @@
     "effects": [
       { "on": "all", "stat": "pollAccuracy", "delta": 1.25 },
       { "on": "all", "stat": "turnout", "delta": 3 },
-      { "on": "all", "stat": "support", "delta": 2 },
-      { "on": "all", "stat": "credibility", "delta": 2 }
-    ]
+      { "on": "all", "stat": "support", "delta": 2 }
+    ],
+    "special": {
+      "track": "credibility",
+      "credibilityCostPct": 3,
+      "failureChance": 0.15,
+      "failureCredibilityPct": 12,
+      "dismissalChance": 0,
+      "failureEffects": [{ "on": "all", "stat": "morale", "delta": -4 }],
+      "failureHeadline": "Inside tip proves outside the mark",
+      "failureFlavour": "Your trusted source misreads the figures. You have spent a favour and vouched for bad information; neither is easily forgotten."
+    }
+  },
+  {
+    "id": "verifiedSecrets",
+    "name": "Call In a Favour",
+    "category": "special",
+    "description": "Ask an investigative reporter to verify a rival's real conflicts of interest. Credible evidence, not an invented scandal.",
+    "flavour": "The paper publishes the documents and gives the opponent ample room to explain. Their explanation needs considerably more room.",
+    "cost": 3000,
+    "targeting": "rival",
+    "requires": [
+      {
+        "stat": "credibility",
+        "min": 76,
+        "label": "Credibility 76 — a reporter must trust your word"
+      }
+    ],
+    "effects": [
+      { "on": "all", "stat": "support", "delta": 6 },
+      { "on": "all", "stat": "morale", "delta": 4 }
+    ],
+    "special": {
+      "track": "credibility",
+      "credibilityCostPct": 4,
+      "failureChance": 0.2,
+      "failureCredibilityPct": 15,
+      "dismissalChance": 0,
+      "failureEffects": [{ "on": "all", "stat": "support", "delta": -1 }],
+      "failureHeadline": "Promised expose fails the fact check",
+      "failureFlavour": "The documents do not support your claim. Nothing is published, but the reporter remembers who wasted their time."
+    }
+  },
+  {
+    "id": "publicEndorsement",
+    "name": "Stake Your Good Name",
+    "category": "special",
+    "description": "Persuade respected community figures to endorse a properly costed promise. Your reputation is the collateral.",
+    "flavour": "A row of usually sceptical local voices backs the pledge. They make it very clear that they are trusting you, not the rosette.",
+    "cost": 5000,
+    "requires": [
+      {
+        "stat": "credibility",
+        "min": 85,
+        "label": "Credibility 85 — your word can carry a public endorsement"
+      }
+    ],
+    "effects": [
+      { "on": "all", "stat": "support", "delta": 6 },
+      { "on": "all", "stat": "turnout", "delta": 4 }
+    ],
+    "special": {
+      "track": "credibility",
+      "credibilityCostPct": 6,
+      "failureChance": 0.25,
+      "failureCredibilityPct": 20,
+      "dismissalChance": 0,
+      "failureEffects": [{ "on": "all", "stat": "morale", "delta": -6 }],
+      "failureHeadline": "Community leaders decline campaign pledge",
+      "failureFlavour": "The endorsers decide the promise is too optimistic. You vouched for it, and your good name is a little less good."
+    }
   },
   {
     "id": "deadCat",
@@ -136,9 +204,89 @@
       { "on": "all", "stat": "support", "delta": -1.5 },
       { "on": "retirees", "stat": "support", "delta": -3 },
       { "on": "all", "stat": "morale", "delta": -6 },
-      { "on": "all", "stat": "credibility", "delta": -14 },
+      { "on": "all", "stat": "credibility", "delta": -3 },
       { "on": "all", "stat": "ruthlessness", "delta": 10 }
-    ]
+    ],
+    "special": {
+      "track": "ruthlessness",
+      "credibilityCostPct": 0,
+      "failureChance": 0.25,
+      "failureCredibilityPct": 15,
+      "dismissalChance": 0.12,
+      "failureEffects": [
+        { "on": "all", "stat": "support", "delta": -2 },
+        { "on": "all", "stat": "morale", "delta": -6 }
+      ],
+      "failureHeadline": "Diversion traced back to campaign office",
+      "failureFlavour": "The irrelevant scandal is traced to your desk. Instead of distracting from the hospital, you have made the campaign the story."
+    }
+  },
+  {
+    "id": "frameRival",
+    "name": "Frame an Opponent",
+    "category": "special",
+    "description": "A fabricated criminal allegation. A monstrous gamble dressed up as a press release; getting caught could end your account.",
+    "flavour": "The invented allegation dominates the headlines. Your opponent loses support while demanding a retraction. This is not a victory you can defend.",
+    "cost": 8000,
+    "targeting": "rival",
+    "requires": [
+      {
+        "stat": "ruthlessness",
+        "min": 65,
+        "label": "Ruthlessness 65 — you are willing to ruin an innocent rival"
+      }
+    ],
+    "effects": [
+      { "on": "all", "stat": "support", "delta": 10 },
+      { "on": "all", "stat": "ruthlessness", "delta": 8 },
+      { "on": "all", "stat": "morale", "delta": -8 }
+    ],
+    "special": {
+      "track": "ruthlessness",
+      "credibilityCostPct": 0,
+      "failureChance": 0.4,
+      "failureCredibilityPct": 25,
+      "dismissalChance": 0.2,
+      "failureEffects": [
+        { "on": "all", "stat": "support", "delta": -4 },
+        { "on": "all", "stat": "morale", "delta": -12 }
+      ],
+      "failureHeadline": "Rival exonerated; campaign allegation exposed",
+      "failureFlavour": "Independent scrutiny exposes the fabrication. The rival is cleared and your client suddenly cannot remember your surname."
+    }
+  },
+  {
+    "id": "voterFraud",
+    "name": "Tamper With the Vote",
+    "category": "special",
+    "description": "Voter fraud. No euphemism makes it legitimate. Half of these attempts are caught, and even a friendly client may sacrifice you.",
+    "flavour": "An illicit scheme appears to boost support. The apparent gain comes with no moral victory and a campaign office full of people who will deny knowing you.",
+    "cost": 12000,
+    "requires": [
+      {
+        "stat": "ruthlessness",
+        "min": 80,
+        "label": "Ruthlessness 80 — democratic consent is no longer your concern"
+      }
+    ],
+    "effects": [
+      { "on": "all", "stat": "support", "delta": 12 },
+      { "on": "all", "stat": "ruthlessness", "delta": 6 },
+      { "on": "all", "stat": "morale", "delta": -10 }
+    ],
+    "special": {
+      "track": "ruthlessness",
+      "credibilityCostPct": 0,
+      "failureChance": 0.5,
+      "failureCredibilityPct": 35,
+      "dismissalChance": 0.25,
+      "failureEffects": [
+        { "on": "all", "stat": "support", "delta": -5 },
+        { "on": "all", "stat": "morale", "delta": -15 }
+      ],
+      "failureHeadline": "Election watchdog exposes campaign fraud",
+      "failureFlavour": "The watchdog exposes the scheme before it can produce a gain. Voters are furious; the client reaches for a prepared statement about rogue consultants."
+    }
   },
   {
     "id": "personalCheque",
@@ -159,6 +307,16 @@
       { "on": "all", "stat": "money", "delta": 15000 },
       { "on": "all", "stat": "credibility", "delta": -8 },
       { "on": "all", "stat": "ruthlessness", "delta": 6 }
-    ]
+    ],
+    "special": {
+      "track": "personalFunds",
+      "credibilityCostPct": 0,
+      "failureChance": 0,
+      "failureCredibilityPct": 0,
+      "dismissalChance": 0,
+      "failureEffects": [],
+      "failureHeadline": "Funding transfer",
+      "failureFlavour": "This funding transfer is certain."
+    }
   }
 ]

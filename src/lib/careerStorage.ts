@@ -3,7 +3,7 @@ import { z } from "zod/v3";
 import type { CareerEntry } from "./sim/career";
 
 /** Earlier keys held sequential campaign records and are deliberately ignored. */
-const KEY = "spin-doctors:career:v4";
+const KEY = "spin-doctors:career:v5";
 
 const moveSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -98,8 +98,11 @@ export function saveCareer(saved: SavedCareer): void {
 }
 
 export function discardLegacyCareer(): boolean {
-  const key = "spin-doctors:career:v3";
-  if (localStorage.getItem(key) === null) return false;
-  localStorage.removeItem(key);
-  return true;
+  let discarded = false;
+  for (const key of ["spin-doctors:career:v3", "spin-doctors:career:v4"]) {
+    if (localStorage.getItem(key) === null) continue;
+    localStorage.removeItem(key);
+    discarded = true;
+  }
+  return discarded;
 }

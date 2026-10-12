@@ -1,0 +1,114 @@
+[
+  {
+    "id": "editorial",
+    "day": 2,
+    "headline": "EVERY PAPER ENDORSES ITS OWNER",
+    "body": "The proprietor's newspapers independently reach the same conclusion, using the same photograph and the same typo.",
+    "responses": [
+      {
+        "label": "Acknowledge the ownership openly",
+        "hint": "Readers can handle a disclosure.",
+        "flavour": "The disclosure is awkward. The typo becomes the bigger story.",
+        "effects": [
+          { "on": "all", "stat": "credibility", "delta": 4 },
+          { "on": "all", "stat": "support", "delta": 2 },
+          { "on": "all", "stat": "morale", "delta": -3 }
+        ]
+      },
+      {
+        "label": "Celebrate the independent consensus",
+        "hint": "Nobody is fooled for long.",
+        "flavour": "The graduates post the ownership chart. Voss calls their chart regrettably effective.",
+        "effects": [
+          { "on": "graduates", "stat": "support", "delta": -5 },
+          { "on": "retirees", "stat": "support", "delta": 5 },
+          { "on": "all", "stat": "ruthlessness", "delta": 6 },
+          { "on": "all", "stat": "morale", "delta": 6 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "interview",
+    "day": 4,
+    "headline": "PROPRIETOR AGREES TO AN INTERVIEW SHE DOES NOT OWN",
+    "body": "A broadcaster promises difficult questions. Voss considers purchasing the broadcaster, then remembers the deadline.",
+    "responses": [
+      {
+        "label": "Prepare straight answers",
+        "hint": "A brief encounter with accountability.",
+        "flavour": "The candidate gives an unexpectedly solid answer about flood defences.",
+        "effects": [
+          { "on": "families", "stat": "support", "delta": 8 },
+          { "on": "farmers", "stat": "support", "delta": 6 },
+          { "on": "all", "stat": "credibility", "delta": 5 },
+          { "on": "all", "stat": "morale", "delta": -4 }
+        ]
+      },
+      {
+        "label": "Attack the interviewer's agenda",
+        "hint": "An argument instead of an answer.",
+        "flavour": "The clip is everywhere. So is the unanswered question.",
+        "effects": [
+          { "on": "graduates", "stat": "support", "delta": 8, "spin": true },
+          { "on": "retirees", "stat": "support", "delta": -5 },
+          { "on": "all", "stat": "morale", "delta": 4 },
+          { "on": "all", "stat": "ruthlessness", "delta": 5 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "denial",
+    "day": 7,
+    "headline": "CLIENT SENDS A PRE-WRITTEN DENIAL OF KNOWLEDGE",
+    "body": "The document blames a hypothetical consultant for hypothetical misconduct. It already contains your actual name.",
+    "responses": [
+      {
+        "label": "Demand it be withdrawn",
+        "hint": "You have noticed the bus approaching.",
+        "flavour": "Voss calls you sensitive. The document disappears, but the risk of being sacrificed does not.",
+        "effects": [
+          { "on": "all", "stat": "credibility", "delta": 5 },
+          { "on": "all", "stat": "morale", "delta": -5 }
+        ],
+        "next": "denial-followup"
+      },
+      {
+        "label": "Accept the nature of the relationship",
+        "hint": "Tolerance is not loyalty.",
+        "flavour": "She promises you are invaluable. The denial remains in her drafts.",
+        "effects": [
+          { "on": "all", "stat": "ruthlessness", "delta": 5 },
+          { "on": "all", "stat": "morale", "delta": 6 },
+          { "on": "all", "stat": "credibility", "delta": -4 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "denial-followup",
+    "headline": "WHAT DO YOU PUT IN WRITING?",
+    "body": "The campaign wants a note setting out the last stretch. This one may eventually be read aloud by someone wearing a wig.",
+    "responses": [
+      {
+        "label": "A lawful final push",
+        "hint": "Doors, pledges and actual voters.",
+        "flavour": "The note is refreshingly dull. The field team knows what to do.",
+        "effects": [
+          { "on": "all", "stat": "turnout", "delta": 3 },
+          { "on": "all", "stat": "morale", "delta": 4 }
+        ]
+      },
+      {
+        "label": "A ruthless media offensive",
+        "hint": "Any criminal special remains a separate, risky choice.",
+        "flavour": "Voss approves your combative tone. Nobody promises to protect you.",
+        "effects": [
+          { "on": "all", "stat": "support", "delta": 2 },
+          { "on": "all", "stat": "ruthlessness", "delta": 3 }
+        ]
+      }
+    ]
+  }
+]

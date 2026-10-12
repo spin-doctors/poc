@@ -1,0 +1,54 @@
+{
+  "id": "parliamentary-gravesend",
+  "tier": "parliamentary",
+  "election": "parliamentary seat",
+  "pitch": "A property baron wants a seat, a discreet operator, and absolutely no minutes of the meeting.",
+  "candidateName": "Sir Barnaby Vale",
+  "candidateBlurb": "A fictional developer who regards planning committees as networking events. Publicly champions transparency; privately orders opaque envelopes by the pallet. Comfortable with dirty tactics, provided the consultant carries the blame.",
+  "seat": "Gravesend Fen and North Quay",
+  "days": 8,
+  "budget": 75000,
+  "startingMorale": 75,
+  "startingCredibility": 45,
+  "startingRuthlessness": 75,
+  "personalFunds": 6000,
+  "dismissalRiskMultiplier": 0.5,
+  "objectives": [
+    {
+      "id": "share",
+      "label": "Reach 40% vote share",
+      "stat": "voteShare",
+      "target": 40
+    },
+    {
+      "id": "morale",
+      "label": "Keep the patron composed (morale at least 25)",
+      "stat": "morale",
+      "target": 25
+    },
+    {
+      "id": "win",
+      "label": "Bonus: win the seat",
+      "stat": "win",
+      "target": 1,
+      "optional": true,
+      "reward": { "funds": 9000, "recognition": 3 }
+    }
+  ],
+  "keepMessage": "Vale thanks his investors, his family and the returning officer, in that order. Your invoice is paid from an account whose name you do not recognise.",
+  "sackMessage": "Vale calls the campaign an unfortunate procurement decision. Security escorts the procurement decision out.",
+  "fee": 35000,
+  "recognition": { "kept": 15, "sacked": -10 },
+  "requires": [
+    {
+      "stat": "ruthlessness",
+      "min": 75,
+      "label": "Ruthlessness 75 — Vale wants an operator with a thoroughly dirty reputation"
+    }
+  ],
+  "appeal": [
+    { "stat": "ruthlessness", "weight": 2 },
+    { "stat": "credibility", "weight": -0.2 }
+  ],
+  "fallback": "council-ashcombe"
+}

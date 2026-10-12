@@ -9,6 +9,14 @@ import pendleContract from "../../../content/scenarios/council-pendle/contract.j
 import pendleEvents from "../../../content/scenarios/council-pendle/events.json";
 import pendleRivals from "../../../content/scenarios/council-pendle/rivals.json";
 import pendleGroups from "../../../content/scenarios/council-pendle/voter-groups.json";
+import blackmereContract from "../../../content/scenarios/parliamentary-blackmere/contract.json";
+import blackmereEvents from "../../../content/scenarios/parliamentary-blackmere/events.json";
+import blackmereRivals from "../../../content/scenarios/parliamentary-blackmere/rivals.json";
+import blackmereGroups from "../../../content/scenarios/parliamentary-blackmere/voter-groups.json";
+import gravesendContract from "../../../content/scenarios/parliamentary-gravesend/contract.json";
+import gravesendEvents from "../../../content/scenarios/parliamentary-gravesend/events.json";
+import gravesendRivals from "../../../content/scenarios/parliamentary-gravesend/rivals.json";
+import gravesendGroups from "../../../content/scenarios/parliamentary-gravesend/voter-groups.json";
 import harwellContract from "../../../content/scenarios/parliamentary-harwell/contract.json";
 import harwellEvents from "../../../content/scenarios/parliamentary-harwell/events.json";
 import harwellRivals from "../../../content/scenarios/parliamentary-harwell/rivals.json";
@@ -39,6 +47,18 @@ const bundles = [
     groups: harwellGroups,
     events: harwellEvents,
     rivals: harwellRivals,
+  },
+  {
+    contract: gravesendContract,
+    groups: gravesendGroups,
+    events: gravesendEvents,
+    rivals: gravesendRivals,
+  },
+  {
+    contract: blackmereContract,
+    groups: blackmereGroups,
+    events: blackmereEvents,
+    rivals: blackmereRivals,
   },
 ];
 

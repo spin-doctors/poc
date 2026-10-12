@@ -7,6 +7,7 @@ import type {
   VoterGroup,
 } from "../schema/content";
 import { nextRandom, randomRange } from "./rng";
+import { specialPreview } from "./specialActions";
 import type {
   CandidateStanding,
   ElectionResult,
@@ -75,6 +76,7 @@ export function createGame(
     turnTaken: false,
     history: [],
     finished: false,
+    dismissal: null,
   };
 }
 
@@ -350,7 +352,9 @@ export function applyMove(
   move: PlayerMove,
 ): MoveResult {
   const result = playTurn(state, content, move);
-  return move.kind !== "poll" && result.state.turnTaken
+  return move.kind !== "poll" &&
+    result.state.turnTaken &&
+    !result.state.finished
     ? { ...result, state: endDay(result.state, content) }
     : result;
 }
@@ -478,14 +482,107 @@ export function playTurn(
   if (!isUnlocked(state, action))
     throw new Error(`${action.name} is not unlocked`);
 
-  const paid = { ...state, money: state.money - action.cost };
+  let paid = { ...state, money: state.money - action.cost };
+  const risk = specialPreview(state, content, action);
+  let specialOutcome: MoveResult["specialOutcome"];
+  let effects = action.effects;
+  let flavour = action.flavour;
+  const attemptFeedback: FeedbackLine[] = [];
+  if (risk) {
+    specialOutcome = "success";
+    paid.credibility = round1(
+      Math.max(0, paid.credibility - risk.credibilityCost),
+    );
+    if (risk.credibilityCost > 0)
+      attemptFeedback.push({
+        groupId: null,
+        label: "Your credibility — favour spent",
+        stat: "credibility",
+        delta: -risk.credibilityCost,
+        certain: true,
+      });
+    if (risk.failureChance > 0) {
+      const roll = nextRandom(paid.rngState);
+      paid.rngState = roll.state;
+      if (roll.value < risk.failureChance) {
+        effects = risk.failureEffects;
+        flavour = risk.failureFlavour;
+        specialOutcome = risk.track === "ruthlessness" ? "caught" : "failed";
+        paid.credibility = round1(
+          Math.max(0, paid.credibility - risk.failureCredibilityCost),
+        );
+        attemptFeedback.push({
+          groupId: null,
+          label: "Your credibility — failed special",
+          stat: "credibility",
+          delta: -risk.failureCredibilityCost,
+          certain: true,
+        });
+        if (risk.dismissalChance > 0) {
+          const caught = nextRandom(paid.rngState);
+          paid.rngState = caught.state;
+          if (caught.value < risk.dismissalChance) {
+            specialOutcome = "dismissed";
+            paid.dismissal = {
+              actionId: action.id,
+              headline: "Spin doctor thrown under the bus",
+              body: `${risk.failureFlavour} The client denies authorising the scheme and sacks you. Your fee and bonuses are forfeited; your career continues.`,
+              credibilityLoss: 0,
+            };
+            flavour = paid.dismissal.body;
+          }
+        }
+      }
+    }
+  }
   const applied = applyEffects(
     paid,
     content,
-    action.effects,
+    effects,
     action.targeting === "group" ? move.target : undefined,
     action.targeting === "rival" ? move.target : undefined,
   );
+  if (risk) {
+    applied.state = {
+      ...applied.state,
+      news: [
+        ...applied.state.news,
+        {
+          id: `special:${state.history.length}`,
+          day: state.day,
+          kind: "special",
+          headline:
+            specialOutcome === "success"
+              ? `${action.name}: campaign claims a breakthrough`
+              : (paid.dismissal?.headline ?? risk.failureHeadline),
+          body: flavour,
+        },
+      ],
+    };
+  }
+  if (paid.dismissal) {
+    applied.state.dismissal = {
+      ...paid.dismissal,
+      credibilityLoss: round1(state.credibility - applied.state.credibility),
+    };
+    return {
+      state: {
+        ...applied.state,
+        finished: true,
+        turnTaken: true,
+        pendingEventId: null,
+        queuedEventId: null,
+        pendingPoll: null,
+        history: [...state.history, move],
+      },
+      flavour,
+      feedback: condense([...attemptFeedback, ...applied.feedback]),
+      gaffe: null,
+      triggeredEventId: null,
+      pollCommissioned: false,
+      specialOutcome,
+    };
+  }
   const gaffed = action.pollMargin
     ? { state: applied.state, gaffe: null }
     : rollGaffe(applied.state, content);
@@ -526,11 +623,12 @@ export function playTurn(
 
   return {
     state: { ...afterEvent, history: [...state.history, move] },
-    flavour: action.flavour,
-    feedback: condense(applied.feedback),
+    flavour,
+    feedback: condense([...attemptFeedback, ...applied.feedback]),
     gaffe: gaffed.gaffe,
     triggeredEventId: event?.id ?? null,
     pollCommissioned: Boolean(action.pollMargin),
+    specialOutcome,
   };
 }
 
@@ -652,6 +750,7 @@ export function forecastAction(
     !state.pollReport ||
     state.pollReport.availableOnDay !== state.day ||
     action.pollMargin ||
+    action.special ||
     !isAvailable(state, action) ||
     (action.targeting === "group" &&
       !content.groups.some((g) => g.id === targetId)) ||
@@ -677,6 +776,8 @@ export function runElection(
   state: GameState,
   content: Content,
 ): ElectionResult {
+  if (state.dismissal)
+    throw new Error("Dismissed campaigns do not have an election result");
   let rngState = state.rngState;
   const groups: GroupResult[] = [];
   let totalVotes = 0;

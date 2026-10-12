@@ -117,6 +117,8 @@ function after(
     stats: { ...career.stats, ...stats },
     history: [
       {
+        kind: "election",
+        dismissal: null,
         campaignId: 0,
         scenarioId,
         start: career.stats,
@@ -169,8 +171,12 @@ describe("career", () => {
   it("starts every scenario below the personal spending thresholds", () => {
     for (const scenario of Object.values(scenarios)) {
       const career = startCareer(scenarios, scenario.contract.id, careerSeed);
-      expect(career.stats.credibility).toBe(0);
-      expect(career.stats.ruthlessness).toBe(0);
+      expect(career.stats.credibility).toBe(
+        scenario.contract.startingCredibility,
+      );
+      expect(career.stats.ruthlessness).toBe(
+        scenario.contract.startingRuthlessness,
+      );
       expect(career.stats.personalFunds).toBe(6000);
       expect(career.stats.personalFunds).toBeLessThan(INCORPORATION_FEE);
       expect(canIncorporate(career)).toBe(false);
@@ -211,6 +217,8 @@ describe("career", () => {
     const outcome = run.playOut(0, winAshcombe);
     const contract = scenarios[defaultScenarioId].contract;
 
+    expect(outcome.kind).toBe("election");
+    if (outcome.kind !== "election") throw new Error("Expected an election");
     expect(outcome.election.sacked).toBe(false);
     expect(outcome.feeEarned).toBe(contract.fee);
     expect(outcome.recognitionDelta).toBeGreaterThanOrEqual(
@@ -267,10 +275,12 @@ describe("career", () => {
       ],
     };
     const decided = applyCareerEntry(complete, scenarios, { kind: "tick" });
-    expect(
-      decided.history[0].election.objectives.find((o) => o.id === "win")?.met,
-    ).toBe(true);
-    expect(decided.history[0].election.sacked).toBe(true);
+    const outcome = decided.history[0];
+    if (outcome.kind !== "election") throw new Error("Expected an election");
+    expect(outcome.election.objectives.find((o) => o.id === "win")?.met).toBe(
+      true,
+    );
+    expect(outcome.election.sacked).toBe(true);
     expect(decided.history[0].bonusFunds).toBe(0);
     expect(decided.history[0].bonusRecognition).toBe(0);
     expect(decided.stats.personalFunds).toBe(accepted.stats.personalFunds);
@@ -333,6 +343,7 @@ describe("career", () => {
     const run = driver();
     run.apply({ kind: "accept", scenarioId: defaultScenarioId });
     const outcome = run.playOut(0, loseAshcombe);
+    if (outcome.kind !== "election") throw new Error("Expected an election");
     expect(outcome.election.sacked).toBe(true);
     expect(outcome.feeEarned).toBe(0);
     expect(run.career.stats.recognition).toBe(0);

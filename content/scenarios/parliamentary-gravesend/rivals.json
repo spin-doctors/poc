@@ -1,0 +1,38 @@
+[
+  {
+    "id": "mercer",
+    "name": "Helen Mercer",
+    "blurb": "A formidable local councillor with a drawer full of inconvenient planning records.",
+    "support": {
+      "families": 40,
+      "retirees": 44,
+      "farmers": 48,
+      "graduates": 30
+    }
+  },
+  {
+    "id": "bell",
+    "name": "Idris Bell",
+    "blurb": "A tenants' organiser whose campaign office is also a bicycle repair shop.",
+    "support": {
+      "families": 20,
+      "retirees": 20,
+      "farmers": 21,
+      "graduates": 26
+    }
+  },
+  {
+    "id": "loony",
+    "name": "Admiral Teapot, Monster Raving Loony Party",
+    "blurb": "Promises a drawbridge over every pothole and a biscuit on every ballot.",
+    "novelty": true,
+    "support": { "families": 1, "retirees": 1, "farmers": 1, "graduates": 1 }
+  },
+  {
+    "id": "binface",
+    "name": "Count Binface",
+    "blurb": "The Recyclon visitor from Sigma IX returns with a dustbin helmet, a silver cape and considerably fewer property interests than the favourite.",
+    "novelty": true,
+    "support": { "families": 1, "retirees": 1, "farmers": 1, "graduates": 2 }
+  }
+]

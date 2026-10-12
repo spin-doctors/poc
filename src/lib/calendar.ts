@@ -34,7 +34,8 @@ export function reconcileCalendar(
     ticks++;
     date = offsetDate(date, 1);
     for (const outcome of next.history.slice(historyLength))
-      pendingElectionReminders.push({ campaignId: outcome.campaignId, date });
+      if (outcome.kind === "election")
+        pendingElectionReminders.push({ campaignId: outcome.campaignId, date });
   }
 
   return {
