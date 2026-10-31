@@ -10,6 +10,7 @@ const settingsSchema = z.object({
   /** Playtest-only systems (company, staff) that are not part of the core loop yet. */
   experimental: z.boolean().catch(false).default(false),
   instantAdvance: z.boolean().catch(false).default(false),
+  language: z.enum(["en", "es"]).catch("en").default("en"),
   reminders: z.boolean().catch(false).default(false),
   reminderTime: reminderTimeSchema.default("09:00"),
 });

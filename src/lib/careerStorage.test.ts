@@ -65,6 +65,7 @@ describe("career versions", () => {
       reminders: true,
       experimental: true,
       instantAdvance: false,
+      language: "en",
     });
     expect(loadCareer()).toBeNull();
     expect(discardLegacyCareer()).toBe(true);

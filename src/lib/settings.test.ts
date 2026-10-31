@@ -19,6 +19,7 @@ describe("game settings", () => {
     expect(loadSettings()).toEqual({
       experimental: false,
       instantAdvance: false,
+      language: "en",
       reminders: false,
       reminderTime: "09:00",
     });
@@ -31,6 +32,24 @@ describe("game settings", () => {
     saveSettings({ ...defaultSettings, experimental: true });
 
     expect(loadSettings().experimental).toBe(true);
+  });
+
+  it("round-trips the selected language", () => {
+    useMemoryStorage();
+    saveSettings({ ...defaultSettings, language: "es" });
+    expect(loadSettings().language).toBe("es");
+  });
+
+  it("defaults the language for existing settings and rejects unsupported languages", () => {
+    useMemoryStorage({
+      "spin-doctors:settings:v1": JSON.stringify({ reminders: true }),
+    });
+    expect(loadSettings()).toEqual({ ...defaultSettings, reminders: true });
+
+    useMemoryStorage({
+      "spin-doctors:settings:v1": JSON.stringify({ language: "fr" }),
+    });
+    expect(loadSettings()).toEqual(defaultSettings);
   });
 
   it("adds a morning reminder time to existing settings without losing opt-in", () => {

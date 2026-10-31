@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { t } from '$lib/i18n';
 	import { scenarios } from '$lib/content';
 	import PollReportView from './PollReportView.svelte';
 	import { formatDelta, pounds } from '$lib/format';
@@ -74,7 +75,7 @@
 	const menu = $derived(
 		CATEGORY_ORDER.flatMap<{ id: string; label: string; moves: GameAction[] }>((category) => category === 'special'
 			? SPECIAL_TRACKS.map((track) => ({
-				id: track, label: `Special: ${SPECIAL_LABELS[track]}`,
+				id: track, label: $t('Special: {track}', { track: $t(SPECIAL_LABELS[track]) }),
 				moves: visibleSpecialActions(game, active.actions.filter((a) => a.special?.track === track))
 			}))
 			: [{ id: category, label: CATEGORY_LABELS[category],
@@ -105,7 +106,7 @@
 			const result = onMove(move);
 			error = '';
 			if (move.kind === 'poll') {
-				pollMessage = 'Poll commissioned. Your private report arrives tomorrow; today’s campaign move is still separate.';
+				pollMessage = $t('Poll commissioned. Your private report arrives tomorrow; today’s campaign move is still separate.');
 			} else {
 				last = result;
 				selection = null;
@@ -114,7 +115,7 @@
 			}
 		} catch (cause) {
 			console.error('Could not play campaign move.', cause);
-			error = cause instanceof Error ? cause.message : 'Could not play this move.';
+			error = cause instanceof Error ? $t(cause.message) : $t('Could not play this move.');
 		}
 	}
 
@@ -123,36 +124,36 @@
 	}
 </script>
 
-<p class="dateline">{contract.candidateName} &middot; {contract.seat} &middot; {contract.election}</p>
+<p class="dateline">{contract.candidateName} &middot; {$t(contract.seat)} &middot; {$t(contract.election)}</p>
 {#if error}<p role="alert" class="error">{error}</p>{/if}
 
 {#if !simple}
 	<div class="row nav">
-		<button class="ghost" onclick={onBack}>&larr; Dashboard</button>
+		<button class="ghost" onclick={onBack}>&larr; {$t('Dashboard')}</button>
 	</div>
 {/if}
 
 <section class="status">
 	<div>
-		<span>Day</span>
+		<span>{$t('Day')}</span>
 		<strong>{Math.min(game.day, contract.days)} / {contract.days}</strong>
 	</div>
-	<div><span>Budget</span><strong>{pounds(game.money)}</strong></div>
+	<div><span>{$t('Budget')}</span><strong>{pounds(game.money)}</strong></div>
 	{#if !simple}
-		<div><span>{fundsLabel}</span><strong>{pounds(game.personalFunds)}</strong></div>
+		<div><span>{$t(fundsLabel)}</span><strong>{pounds(game.personalFunds)}</strong></div>
 	{/if}
-	<div><span>Candidate morale</span><strong>{Math.round(game.morale)}</strong></div>
-	<div><span>Credibility</span><strong>{game.credibility.toFixed(1)}</strong></div>
-	<div><span>Ruthlessness</span><strong>{game.ruthlessness.toFixed(1)}</strong></div>
+	<div><span>{$t('Candidate morale')}</span><strong>{Math.round(game.morale)}</strong></div>
+	<div><span>{$t('Credibility')}</span><strong>{game.credibility.toFixed(1)}</strong></div>
+	<div><span>{$t('Ruthlessness')}</span><strong>{game.ruthlessness.toFixed(1)}</strong></div>
 	<div>
-		<span>Poll</span>
+		<span>{$t('Poll')}</span>
 		<strong>{poll.share}% <span class="uncertain">&plusmn;{poll.margin}</span></strong>
 	</div>
 </section>
 
 {#if Object.keys(game.positions).length > 0}
-	<section class="position-strip" aria-live="polite" aria-label="Candidate public positions">
-		<strong>Candidate's public position</strong>
+	<section class="position-strip" aria-live="polite" aria-label={$t('Candidate public positions')}>
+		<strong>{$t("Candidate's public position")}</strong>
 		{#each Object.entries(game.positions) as [issue, position] (issue)}
 			<p><span>{issue}</span><span>{position}</span></p>
 		{/each}
@@ -163,70 +164,62 @@
 	<div class="card">
 		{#if simple && firstJob}
 			<p>
-				You are a freelance spin doctor, and your phone has just rung. You are not the candidate; you
-				are the one who makes the candidate look good. Hit the objectives on election night or you
-				are out of a job.
+				{$t('You are a freelance spin doctor, and your phone has just rung. You are not the candidate; you are the one who makes the candidate look good. Hit the objectives on election night or you are out of a job.')}
 			</p>
 		{/if}
-		<h2>Your new client</h2>
+		<h2>{$t('Your new client')}</h2>
 		<h3>{contract.candidateName}</h3>
-		<p>{contract.candidateBlurb}</p>
-		<h3>The contract</h3>
+		<p>{$t(contract.candidateBlurb)}</p>
+		<h3>{$t('The contract')}</h3>
 		<ul class="objectives">
 			{#each contract.objectives.filter((o) => !o.optional) as objective (objective.id)}
-				<li>{objective.label}</li>
+				<li>{$t(objective.label)}</li>
 			{/each}
-			<li>Budget: {pounds(contract.budget)} over {contract.days} days</li>
+			<li>{$t('Budget: {budget} over {days} days', { budget: pounds(contract.budget), days: contract.days })}</li>
 			{#if !simple}
-				<li>Your fee if you keep the account: {pounds(contract.fee)}</li>
+				<li>{$t('Your fee if you keep the account: {fee}', { fee: pounds(contract.fee) })}</li>
 			{/if}
 		</ul>
-		<h3>Optional bonuses</h3>
+		<h3>{$t('Optional bonuses')}</h3>
 		<ul class="objectives">
 			{#each contract.objectives.filter((o) => o.optional) as objective (objective.id)}
-				<li>{objective.label}: {pounds(objective.reward?.funds ?? 0)} and {objective.reward?.recognition ?? 0} recognition</li>
+				<li>{$t(objective.label)}: {pounds(objective.reward?.funds ?? 0)} {$t('and')} {objective.reward?.recognition ?? 0} {$t('recognition')}</li>
 			{/each}
 		</ul>
-		<p class="hint">Bonuses are paid only if you keep the account. A first-past-the-post win means beating every opponent, not necessarily reaching 50%.</p>
+		<p class="hint">{$t('Bonuses are paid only if you keep the account. A first-past-the-post win means beating every opponent, not necessarily reaching 50%.')}</p>
 		{#if simple}
-			<p class="hint">Miss any required objective and you are out of a job. You get one move a day, plus one optional paid poll.</p>
+			<p class="hint">{$t('Miss any required objective and you are out of a job. You get one move a day, plus one optional paid poll.')}</p>
 			<p class="hint">
-				Some moves are locked. Your credibility and your reputation for ruthlessness decide which
-				ones open up — and they follow you from client to client.
+				{$t('Some moves are locked. Your credibility and your reputation for ruthlessness decide which ones open up — and they follow you from client to client.')}
 			</p>
 		{:else}
+			<p class="hint">{$t('Miss any required objective and you are out of a job. You get one move and an optional poll each day on each account; a day you leave idle costs the candidate {penalty} morale.', { penalty: IDLE_MORALE_PENALTY })}</p>
 			<p class="hint">
-				Miss any required objective and you are out of a job. You get one move and an optional poll each day on each account; a day
-				you leave idle costs the candidate {IDLE_MORALE_PENALTY} morale.
-			</p>
-			<p class="hint">
-				Some moves are locked. Your credibility and your reputation for ruthlessness decide which
-				ones open up — and they are shared across every account you run.
+				{$t('Some moves are locked. Your credibility and your reputation for ruthlessness decide which ones open up — and they are shared across every account you run.')}
 			</p>
 		{/if}
-		<button onclick={() => (stage = 'day')}>Plan today's move</button>
+		<button onclick={() => (stage = 'day')}>{$t("Plan today's move")}</button>
 	</div>
 
 	<div class="card">
-		<h3>The electorate</h3>
+		<h3>{$t('The electorate')}</h3>
 		{#each groups as group (group.id)}
-			<p><strong>{group.name}</strong> — {group.blurb}</p>
+			<p><strong>{$t(group.name)}</strong> — {$t(group.blurb)}</p>
 		{/each}
 	</div>
 {/if}
 
 {#if stage === 'day' && !selection && !confirmation}
-	<h2>Day {game.day}</h2>
+	<h2>{$t('Day {day}', { day: game.day })}</h2>
 	<div class="actions">
 		{#if commissionedPoll}
 			<p class="poll-note">
-				Commissioned poll: projected vote share if you take each move. The reported margin is
-				&plusmn;{commissionedPoll.margin} points.
+				{$t('Commissioned poll: projected vote share if you take each move. The reported margin is ±{margin} points.', { margin: commissionedPoll.margin })}
 			</p>
 		{/if}
 		{#each menu as section (section.id)}
 			<details class="category" bind:open={openCategories[section.id]}>
-				<summary>{section.label} <span>({section.moves.length})</span></summary>
+				<summary>{$t(section.label)} <span>({section.moves.length})</span></summary>
 				{#each section.moves as action (action.id)}
 					{@const locks = unmetRequirements(game, action)}
 					{@const forecast = action.targeting === 'none' ? forecastAction(game, active, action) : null}
@@ -237,16 +230,16 @@
 						onclick={() => action.targeting === 'none' ? choose(action) : (selection = action)}
 					>
 						<span>
-							<strong>{action.name}</strong>
-								<em>{action.description}</em>
+							<strong>{$t(action.name)}</strong>
+								<em>{$t(action.description)}</em>
 							{#if forecast}
-								<em class="forecast">Projected vote share: {forecast.share}% &plusmn;{forecast.margin}</em>
+								<em class="forecast">{$t('Projected vote share: {share}% ±{margin}', { share: forecast.share, margin: forecast.margin })}</em>
 							{/if}
 							{#each locks as lock (lock.stat)}
-								<em class="lock">🔒 {lock.label}</em>
+								<em class="lock">🔒 {$t(lock.label)}</em>
 							{/each}
 						</span>
-						<span class="cost">{action.cost === 0 ? 'Free' : pounds(action.cost)}</span>
+						<span class="cost">{action.cost === 0 ? $t('Free') : pounds(action.cost)}</span>
 					</button>
 				{/each}
 			</details>
@@ -255,35 +248,35 @@
 {/if}
 
 {#if stage === 'day' && selection}
-	<h2>{selection.name}</h2>
-	<button class="ghost" onclick={() => (selection = null)}>&larr; Back to actions</button>
-	<p>Choose {selection.targeting === 'group' ? 'who to visit' : 'which opponent to target'}.
-		{selection.special ? 'You will review the risks before committing.' : 'This choice commits today’s move.'}</p>
+	<h2>{$t(selection.name)}</h2>
+	<button class="ghost" onclick={() => (selection = null)}>&larr; {$t('Back to actions')}</button>
+	<p>{$t(selection.targeting === 'group' ? 'Choose who to visit.' : 'Choose which opponent to target.')}
+		{$t(selection.special ? 'You will review the risks before committing.' : 'This choice commits today’s move.')}</p>
 	<div class="actions">
 		{#each (selection.targeting === 'group' ? groups : active.rivals) as target (target.id)}
 			{@const forecast = forecastAction(game, active, selection, target.id)}
 			<button class="action" disabled={!canAfford(game, selection) || unmetRequirements(game, selection).length > 0}
 				onclick={() => selection && choose(selection, target.id)}>
-				<span><strong>{target.name}{'novelty' in target && target.novelty ? ' — novelty contender' : ''}</strong>
-					<em>{target.blurb}</em>
-					{#if 'novelty' in target && target.novelty}<em>Very few votes available to win over.</em>{/if}
+				<span><strong>{$t(target.name)}{'novelty' in target && target.novelty ? ` — ${$t('novelty contender')}` : ''}</strong>
+					<em>{$t(target.blurb)}</em>
+					{#if 'novelty' in target && target.novelty}<em>{$t('Very few votes available to win over.')}</em>{/if}
 					{#if selection.targeting === 'rival'}
 						{@const standing = (latestReport ?? publicReport).standings.find((c) => c.id === target.id)}
 						{#if standing}
-							<em>{latestReport ? `Private poll, day ${latestReport.availableOnDay}` : 'Public poll'}:
-								{standing.share.toFixed(1)}% {latestReport && latestReport.availableOnDay < game.day ? '(historical)' : ''}</em>
+							<em>{latestReport ? $t('Private poll, day {day}', { day: latestReport.availableOnDay }) : $t('Public poll')}:
+								{standing.share.toFixed(1)}% {latestReport && latestReport.availableOnDay < game.day ? `(${$t('historical')})` : ''}</em>
 						{/if}
 						{#if latestReport}
 							{#each latestReport.groups as group (group.groupId)}
 								{@const estimate = group.standings.find((c) => c.id === target.id)}
-								{#if estimate}<em>{groups.find((g) => g.id === group.groupId)?.name}: {estimate.share.toFixed(1)}%
-									{#if 'novelty' in target && target.novelty}(range 0–2%){:else}&plusmn;{estimate.margin}{/if}</em>{/if}
+								{#if estimate}								<em>{$t(groups.find((g) => g.id === group.groupId)?.name ?? '')}: {estimate.share.toFixed(1)}%
+									{#if 'novelty' in target && target.novelty}({$t('range 0–2%')}){:else}&plusmn;{estimate.margin}{/if}</em>{/if}
 							{/each}
 						{:else}
-							<em>A private poll will reveal this opponent’s voter-group breakdown.</em>
+							<em>{$t('A private poll will reveal this opponent’s voter-group breakdown.')}</em>
 						{/if}
 					{/if}
-					{#if forecast}<em class="forecast">Projected vote share: {forecast.share}% &plusmn;{forecast.margin}</em>{/if}
+					{#if forecast}<em class="forecast">{$t('Projected vote share: {share}% ±{margin}', { share: forecast.share, margin: forecast.margin })}</em>{/if}
 				</span>
 			</button>
 		{/each}
@@ -292,70 +285,70 @@
 
 {#if stage === 'day' && confirmation && risk}
 	<section class="card" aria-labelledby="special-confirm-title">
-		<h2 id="special-confirm-title">{confirmation.action.name}: review the risks</h2>
-		<p>{confirmation.action.description}</p>
-		{#if confirmation.target}<p>Target: {active.rivals.find((r) => r.id === confirmation?.target)?.name ?? groups.find((g) => g.id === confirmation?.target)?.name}</p>{/if}
-		<h3>Paid on every attempt</h3>
-		<p>Campaign budget: {pounds(confirmation.action.cost)}. Uses today's normal move, even if it fails.</p>
-		<p>Credibility: {risk.credibilityCostPct}% of your current {game.credibility.toFixed(1)} points ({risk.credibilityCost.toFixed(1)} points).</p>
-		<h3>{risk.failureChance === 0 ? 'Transaction effects' : 'Reward if successful'}</h3>
+		<h2 id="special-confirm-title">{`${$t(confirmation.action.name)}: ${$t('review the risks')}`}</h2>
+		<p>{$t(confirmation.action.description)}</p>
+		{#if confirmation.target}<p>{$t('Target: {name}', { name: $t(active.rivals.find((r) => r.id === confirmation?.target)?.name ?? groups.find((g) => g.id === confirmation?.target)?.name ?? '') })}</p>{/if}
+		<h3>{$t('Paid on every attempt')}</h3>
+		<p>{$t('Campaign budget: {cost}. Uses today’s normal move, even if it fails.', { cost: pounds(confirmation.action.cost) })}</p>
+		<p>{$t('Credibility: {pct}% of your current {current} points ({cost} points).', { pct: risk.credibilityCostPct, current: game.credibility.toFixed(1), cost: risk.credibilityCost.toFixed(1) })}</p>
+		<h3>{risk.failureChance === 0 ? $t('Transaction effects') : $t('Reward if successful')}</h3>
 		<ul>
 			{#each confirmation.action.effects as effect}
-				<li>{effect.on === 'all' ? 'All groups / operator' : effect.on === 'target' ? 'Selected target' : groups.find((g) => g.id === effect.on)?.name ?? effect.on}: {effect.stat} {effect.delta > 0 ? '+' : ''}{effect.delta}{effect.spin ? ' (scaled by gullibility)' : ''}</li>
+				<li>{effect.on === 'all' ? $t('All groups / operator') : effect.on === 'target' ? $t('Selected target') : $t(groups.find((g) => g.id === effect.on)?.name ?? effect.on)}: {$t(effect.stat)} {effect.delta > 0 ? '+' : ''}{effect.delta}{effect.spin ? ` (${$t('scaled by gullibility')})` : ''}</li>
 			{/each}
 		</ul>
-		<p class="hint">Support gains draw from the selected rival if targeted and cannot exceed available votes; stats are bounded. These are conditional rewards, not a guaranteed forecast.</p>
-		<h3>What could go wrong</h3>
+		<p class="hint">{$t('Support gains draw from the selected rival if targeted and cannot exceed available votes; stats are bounded. These are conditional rewards, not a guaranteed forecast.')}</p>
+		<h3>{$t('What could go wrong')}</h3>
 		{#if risk.failureChance > 0}
-			<p>{risk.track === 'ruthlessness' ? 'Chance of being caught' : 'Chance of failure'}: {(risk.failureChance * 100).toFixed(1)}% per attempt.</p>
-			<p>No success rewards on failure. Additional credibility loss: {risk.failureCredibilityPct}% of your credibility before this attempt ({risk.failureCredibilityCost.toFixed(1)} points, capped at what remains).</p>
-			<ul>{#each risk.failureEffects as effect}<li>{effect.on === 'all' ? 'All groups / operator' : effect.on}: {effect.stat} {effect.delta > 0 ? '+' : ''}{effect.delta}</li>{/each}</ul>
+			<p>{$t(risk.track === 'ruthlessness' ? 'Chance of being caught: {chance}% per attempt.' : 'Chance of failure: {chance}% per attempt.', { chance: (risk.failureChance * 100).toFixed(1) })}</p>
+			<p>{$t('No success rewards on failure. Additional credibility loss: {pct}% of your credibility before this attempt ({cost} points, capped at what remains).', { pct: risk.failureCredibilityPct, cost: risk.failureCredibilityCost.toFixed(1) })}</p>
+			<ul>{#each risk.failureEffects as effect}<li>{effect.on === 'all' ? $t('All groups / operator') : $t(effect.on)}: {$t(effect.stat)} {effect.delta > 0 ? '+' : ''}{effect.delta}</li>{/each}</ul>
 			{#if risk.dismissalChance > 0}
-				<p>Dismissal if caught: {(risk.dismissalChance * 100).toFixed(1)}%. Overall dismissal risk per attempt: {(risk.overallDismissalChance * 100).toFixed(1)}%.</p>
-				{#if contract.dismissalRiskMultiplier < 1}<p>This client tolerates dirty tactics and reduces dismissal risk. They can still throw you under the bus.</p>{/if}
-				<p>Dismissal ends this account immediately, forfeits its fee and bonuses, and affects your reputation. Other accounts and your career continue.</p>
+				<p>{$t('Dismissal if caught: {caught}%. Overall dismissal risk per attempt: {overall}%.', { caught: (risk.dismissalChance * 100).toFixed(1), overall: (risk.overallDismissalChance * 100).toFixed(1) })}</p>
+				{#if contract.dismissalRiskMultiplier < 1}<p>{$t('This client tolerates dirty tactics and reduces dismissal risk. They can still throw you under the bus.')}</p>{/if}
+				<p>{$t('Dismissal ends this account immediately, forfeits its fee and bonuses, and affects your reputation. Other accounts and your career continue.')}</p>
 			{/if}
 		{:else}
-			<p>This is a certain transaction: no random failure or dismissal risk.</p>
+			<p>{$t('This is a certain transaction: no random failure or dismissal risk.')}</p>
 		{/if}
 		<div class="row nav">
-			<button class="ghost" onclick={() => (confirmation = null)}>Cancel — back to actions</button>
+			<button class="ghost" onclick={() => (confirmation = null)}>{$t('Cancel — back to actions')}</button>
 			<button disabled={!canAfford(game, confirmation.action) || unmetRequirements(game, confirmation.action).length > 0}
-				onclick={() => confirmation && play({ kind: 'action', actionId: confirmation.action.id, target: confirmation.target })}>Confirm special action</button>
+				onclick={() => confirmation && play({ kind: 'action', actionId: confirmation.action.id, target: confirmation.target })}>{$t('Confirm special action')}</button>
 		</div>
 	</section>
 {/if}
 
 {#if stage === 'feedback' && last}
-	{#if last.specialOutcome}<h2>{last.specialOutcome === 'success' ? 'Special action succeeded' : last.specialOutcome === 'caught' ? 'Caught — scheme failed' : last.specialOutcome === 'dismissed' ? 'Thrown under the bus' : 'Special action failed'}</h2>{/if}
-	<p class="flavour">{last.flavour}</p>
+	{#if last.specialOutcome}<h2>{$t(last.specialOutcome === 'success' ? 'Special action succeeded' : last.specialOutcome === 'caught' ? 'Caught — scheme failed' : last.specialOutcome === 'dismissed' ? 'Thrown under the bus' : 'Special action failed')}</h2>{/if}
+	<p class="flavour">{$t(last.flavour)}</p>
 
 	{#if last.feedback.length > 0}
 		<ul class="feedback">
 			{#each last.feedback as line, i (i)}
 				<li>
 					<span>
-						{line.label}
-						{#if !line.certain}<span class="uncertain">— you won't know until election night</span>{/if}
+						{$t(line.label)}
+						{#if !line.certain}<span class="uncertain">— {$t("you won't know until election night")}</span>{/if}
 					</span>
 					<span class="delta {line.delta > 0 ? 'up' : 'down'}">{formatDelta(line)}</span>
 				</li>
 			{/each}
 		</ul>
 	{:else if last.pollCommissioned}
-		<p class="hint">No voter movement today. The poll results arrive tomorrow.</p>
+		<p class="hint">{$t('No voter movement today. The poll results arrive tomorrow.')}</p>
 	{:else if !last.triggeredEventId}
-		<p class="hint">No measurable effect. It happens.</p>
+		<p class="hint">{$t('No measurable effect. It happens.')}</p>
 	{/if}
 
 	{#if last.gaffe}
 		<div class="card">
-			<div class="headline">{last.gaffe.headline}</div>
-			<p>Your candidate went off-script. You were not in the room.</p>
+			<div class="headline">{$t(last.gaffe.headline)}</div>
+			<p>{$t('Your candidate went off-script. You were not in the room.')}</p>
 			<ul class="feedback">
 				{#each last.gaffe.feedback as line, i (i)}
 					<li>
-						<span>{line.label}</span>
+						<span>{$t(line.label)}</span>
 						<span class="delta {line.delta > 0 ? 'up' : 'down'}">{formatDelta(line)}</span>
 					</li>
 				{/each}
@@ -364,11 +357,11 @@
 	{/if}
 
 	{#if pendingEvent}
-		<button onclick={() => (stage = 'event')}>Continue</button>
+		<button onclick={() => (stage = 'event')}>{$t('Continue')}</button>
 	{:else if simple}
 		{@render endDayButton()}
 	{:else}
-		<button onclick={onBack}>Back to dashboard</button>
+		<button onclick={onBack}>{$t('Back to dashboard')}</button>
 	{/if}
 {/if}
 
@@ -380,12 +373,12 @@
 	>
 		{#if pendingEvent.presentation === 'corrupted-feed'}
 			<div class="feed-glitch" aria-label="Simulated service interruption">
-				<span>FEED ERROR 0x00C10UD</span>
-				<span>RETRYING LOCAL COPY // SOURCE DATA INCONSISTENT</span>
+				<span>{$t('FEED ERROR 0x00C10UD')}</span>
+				<span>{$t('RETRYING LOCAL COPY // SOURCE DATA INCONSISTENT')}</span>
 			</div>
 		{/if}
-		<div class="headline">{pendingEvent.headline}</div>
-		<p>{pendingEvent.body}</p>
+		<div class="headline">{$t(pendingEvent.headline)}</div>
+		<p>{$t(pendingEvent.body)}</p>
 		<div class="actions">
 			{#each pendingEvent.responses as response, i (response.label)}
 				<button
@@ -393,8 +386,8 @@
 					onclick={() => play({ kind: 'respond', eventId: pendingEvent.id, responseIndex: i })}
 				>
 					<span>
-						<strong>{response.label}</strong>
-						{#if response.hint}<em>{response.hint}</em>{/if}
+						<strong>{$t(response.label)}</strong>
+						{#if response.hint}<em>{$t(response.hint)}</em>{/if}
 					</span>
 				</button>
 			{/each}
@@ -404,40 +397,40 @@
 
 {#if stage === 'done'}
 	<div class="card">
-		<h3>Done for today</h3>
+		<h3>{$t('Done for today')}</h3>
 		{#if simple}
-			<p>Today's move is in.</p>
+			<p>{$t("Today's move is in.")}</p>
 			{@render endDayButton()}
 		{:else}
-			<p>Today's move on this account is in. Come back once the day has passed.</p>
-			<button onclick={onBack}>Back to dashboard</button>
+			<p>{$t("Today's move on this account is in. Come back once the day has passed.")}</p>
+			<button onclick={onBack}>{$t('Back to dashboard')}</button>
 		{/if}
 	</div>
 {/if}
 
 {#snippet endDayButton()}
 	{#if instantAdvance}
-		<button onclick={nextDay}>{finalDay ? 'Tester: close polls and count' : `Tester: advance to day ${game.day + 1}`}</button>
+		<button onclick={nextDay}>{finalDay ? $t('Tester: close polls and count') : $t('Tester: advance to day {day}', { day: game.day + 1 })}</button>
 	{:else}
-		<p role="status">{finalDay ? 'The count opens' : 'Your next campaign day opens'} at {nextDayLabel}. Missed days count as idle days.</p>
+		<p role="status">{$t(finalDay ? 'The count opens at {time}. Missed days count as idle days.' : 'Your next campaign day opens at {time}. Missed days count as idle days.', { time: nextDayLabel })}</p>
 	{/if}
 {/snippet}
 
 <details class="campaign-information">
-	<summary>Opponents &amp; public polling</summary>
+	<summary>{$t('Opponents & public polling')}</summary>
 	{#each active.rivals as rival (rival.id)}
-		<p><strong>{rival.name}</strong>{rival.novelty ? ' — novelty contender (never a client)' : ''} — {rival.blurb}</p>
+		<p><strong>{$t(rival.name)}</strong>{rival.novelty ? ` — ${$t('novelty contender (never a client)')}` : ''} — {$t(rival.blurb)}</p>
 	{/each}
 	<PollReportView report={publicReport} content={active} today={game.day} privateReport={false} />
 
 	<section class="poll-purchase">
-		<h3>Commission a private poll</h3>
-		<p class="hint">One per account per day, in addition to your campaign move. Results arrive tomorrow.</p>
+		<h3>{$t('Commission a private poll')}</h3>
+		<p class="hint">{$t('One per account per day, in addition to your campaign move. Results arrive tomorrow.')}</p>
 		{#if pollMessage}<p role="status">{pollMessage}</p>{/if}
 		{#if game.pollPurchasedOnDay === game.day}
-			<p>Today’s poll is on order.</p>
+			<p>{$t('Today’s poll is on order.')}</p>
 		{:else if finalDay}
-			<p>No campaign day remains to use a new poll.</p>
+			<p>{$t('No campaign day remains to use a new poll.')}</p>
 		{:else}
 			<div class="actions">
 				{#each active.actions.filter((a) => a.pollMargin) as action (action.id)}
@@ -452,7 +445,7 @@
 
 	{#if game.reports.length > 0}
 		<details class="card" open>
-			<summary>Private polling reports ({game.reports.length})</summary>
+			<summary>{$t('Private polling reports ({count})', { count: game.reports.length })}</summary>
 			{#each [...game.reports].reverse() as report (report.availableOnDay)}
 				<PollReportView {report} content={active} today={game.day} />
 			{/each}
@@ -462,11 +455,11 @@
 
 {#if game.news.length > 0}
 	<details class="card">
-		<summary>Newspaper archive ({game.news.length})</summary>
+		<summary>{$t('Newspaper archive ({count})', { count: game.news.length })}</summary>
 		{#each [...game.news].reverse() as item (item.id)}
 			<article class="newspaper">
-				<p class="dateline">The Constituency Chronicle · Day {item.day}</p>
-				<h3>{item.headline}</h3><p>{item.body}</p>
+				<p class="dateline">{$t('The Constituency Chronicle')} · {$t('Day {day}', { day: item.day })}</p>
+				<h3>{$t(item.headline)}</h3><p>{$t(item.body)}</p>
 			</article>
 		{/each}
 	</details>

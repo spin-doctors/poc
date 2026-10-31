@@ -5,6 +5,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Capacitor } from '@capacitor/core';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		open: boolean;
@@ -40,7 +41,7 @@
 <div class="menu" bind:this={root}>
 	<button
 		class="ghost toggle"
-		aria-label={open ? 'Close menu' : 'Open menu'}
+		aria-label={$t(open ? 'Close menu' : 'Open menu')}
 		aria-expanded={open}
 		aria-controls="game-menu"
 		onclick={() => (open = !open)}
@@ -48,21 +49,21 @@
 		<span class="bars" aria-hidden="true"></span>
 	</button>
 	{#if open}
-		<nav id="game-menu" aria-label="Game menu">
+		<nav id="game-menu" aria-label={$t('Game menu')}>
 			<ul>
 				{#if showCareer}
-					<li><button class="ghost" onclick={() => choose('career')}>Career &amp; company</button></li>
+					<li><button class="ghost" onclick={() => choose('career')}>{$t('Career & company')}</button></li>
 				{/if}
-				<li><button class="ghost" onclick={() => choose('help')}>How to play</button></li>
+				<li><button class="ghost" onclick={() => choose('help')}>{$t('How to play')}</button></li>
 				<li>
 					<a
 						href={feedbackUrl}
 						target={externalTarget}
 						rel="noopener noreferrer"
-						onclick={() => (open = false)}>Send feedback</a
+						onclick={() => (open = false)}>{$t('Send feedback')}</a
 					>
 				</li>
-				<li><button class="ghost" onclick={() => choose('settings')}>Settings</button></li>
+				<li><button class="ghost" onclick={() => choose('settings')}>{$t('Settings')}</button></li>
 			</ul>
 		</nav>
 	{/if}
