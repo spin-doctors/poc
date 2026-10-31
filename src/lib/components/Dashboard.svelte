@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { scenarios } from '$lib/content';
 	import { pounds } from '$lib/format';
 	import {
@@ -31,10 +32,10 @@
 			const content = scenarios[campaign.scenarioId];
 			const state = campaignView(career, campaign.id);
 			const status = state.pendingEventId
-				? 'Story waiting'
+				? $t('Story waiting')
 				: state.turnTaken
-					? 'Done for today'
-					: 'Needs a move';
+					? $t('Done for today')
+					: $t('Needs a move');
 			return { campaign, content, state, status, poll: pollEstimate(state, content) };
 		})
 	);
@@ -44,29 +45,29 @@
 	);
 </script>
 
-<p class="dateline">Day {career.day} &middot; {career.company?.profile.name ?? 'Freelance operator'}</p>
+<p class="dateline">{$t('Day {day}', { day: career.day })} &middot; {career.company?.profile.name ?? $t('Freelance operator')}</p>
 
 <section class="status">
-	<div><span>{career.company ? 'Company cash' : 'Your funds'}</span><strong>{pounds(cash)}</strong></div>
-	<div><span>Credibility</span><strong>{Math.round(operator.credibility)}</strong></div>
-	<div><span>Ruthlessness</span><strong>{Math.round(operator.ruthlessness)}</strong></div>
-	<div><span>Recognition</span><strong>{Math.round(operator.recognition)}</strong></div>
-	<div><span>Accounts</span><strong>{career.active.length} / {capacity}</strong></div>
+	<div><span>{$t(career.company ? 'Company cash' : 'Your funds')}</span><strong>{pounds(cash)}</strong></div>
+	<div><span>{$t('Credibility')}</span><strong>{Math.round(operator.credibility)}</strong></div>
+	<div><span>{$t('Ruthlessness')}</span><strong>{Math.round(operator.ruthlessness)}</strong></div>
+	<div><span>{$t('Recognition')}</span><strong>{Math.round(operator.recognition)}</strong></div>
+	<div><span>{$t('Accounts')}</span><strong>{career.active.length} / {capacity}</strong></div>
 </section>
 
-<h2>Active accounts</h2>
+<h2>{$t('Active accounts')}</h2>
 {#if rows.length === 0}
-	<p class="hint">No clients on the books. Take a job from the offers below.</p>
+	<p class="hint">{$t('No clients on the books. Take a job from the offers below.')}</p>
 {:else}
 	<table class="accounts accounts-active">
 		<thead>
 			<tr>
-				<th>Client</th>
-				<th>Day</th>
-				<th>Budget</th>
-				<th>Poll</th>
-				<th>Morale</th>
-				<th>Today</th>
+				<th>{$t('Client')}</th>
+				<th>{$t('Day')}</th>
+				<th>{$t('Budget')}</th>
+				<th>{$t('Poll')}</th>
+				<th>{$t('Morale')}</th>
+				<th>{$t('Today')}</th>
 				<th></th>
 			</tr>
 		</thead>
@@ -80,7 +81,7 @@
 					<td>
 						{row.state.day} / {row.content.contract.days}
 						{#if row.state.day === row.content.contract.days}
-							<span class="sub">Polls tonight</span>
+							<span class="sub">{$t('Polls tonight')}</span>
 						{/if}
 					</td>
 					<td>{pounds(row.state.money)}</td>
@@ -89,7 +90,7 @@
 					<td class:attention={!row.state.turnTaken}>{row.status}</td>
 					<td>
 						<button class:ghost={row.state.turnTaken} onclick={() => onOpen(row.campaign.id)}>
-							Open
+							{$t('Open')}
 						</button>
 					</td>
 				</tr>
@@ -99,26 +100,27 @@
 {/if}
 
 <div class="card">
-	<h3>{instantAdvance ? 'Playtest' : 'The calendar'}</h3>
+	<h3>{instantAdvance ? $t('Playtest') : $t('The calendar')}</h3>
 	<p>
-		The next day opens at {nextDayLabel}.
+		{$t('The next day opens at {time}.', { time: nextDayLabel })}
 		{#if idle > 0}
-			{idle} account{idle === 1 ? '' : 's'} still {idle === 1 ? 'has' : 'have'} no move today and
-			will lose {IDLE_MORALE_PENALTY} morale.
+			{idle === 1
+				? $t('One account still has no move today and will lose {penalty} morale.', { penalty: IDLE_MORALE_PENALTY })
+				: $t('{count} accounts still have no move today and will lose {penalty} morale.', { count: idle, penalty: IDLE_MORALE_PENALTY })}
 		{/if}
 	</p>
-	{#if instantAdvance}<button class="ghost" onclick={onTick}>Tester: simulate next day</button>{/if}
+	{#if instantAdvance}<button class="ghost" onclick={onTick}>{$t('Tester: simulate next day')}</button>{/if}
 </div>
 
 {#if results.length > 0}
-	<h2>Results</h2>
+	<h2>{$t('Results')}</h2>
 	<table class="accounts">
 		<thead>
 			<tr>
-				<th>Client</th>
-				<th>Called</th>
-				<th>Share</th>
-				<th>Verdict</th>
+				<th>{$t('Client')}</th>
+				<th>{$t('Called')}</th>
+				<th>{$t('Share')}</th>
+				<th>{$t('Verdict')}</th>
 				<th></th>
 			</tr>
 		</thead>
@@ -126,22 +128,22 @@
 			{#each results as { outcome, index } (index)}
 				<tr>
 					<td>
-						<strong>{scenarios[outcome.scenarioId].contract.seat}</strong>
-						{#if outcome.decidedOnDay === career.day - 1}<span class="sub new">New</span>{/if}
+						<strong>{$t(scenarios[outcome.scenarioId].contract.seat)}</strong>
+						{#if outcome.decidedOnDay === career.day - 1}<span class="sub new">{$t('New')}</span>{/if}
 					</td>
-					<td>Day {outcome.decidedOnDay}</td>
-					<td>{outcome.kind === 'election' ? `${outcome.election.voteShare}%` : 'No count — dismissed early'}</td>
+					<td>{$t('Day {day}', { day: outcome.decidedOnDay })}</td>
+					<td>{outcome.kind === 'election' ? `${outcome.election.voteShare}%` : $t('No count — dismissed early')}</td>
 					<td class="delta {outcome.kind === 'dismissal' || outcome.election.sacked ? 'down' : 'up'}">
-						{outcome.kind === 'dismissal' ? 'Thrown under the bus' : outcome.election.sacked ? 'Sacked' : 'Kept'}
+						{$t(outcome.kind === 'dismissal' ? 'Thrown under the bus' : outcome.election.sacked ? 'Sacked' : 'Kept')}
 					</td>
-					<td><button class="ghost" onclick={() => onResult(index)}>Election night</button></td>
+					<td><button class="ghost" onclick={() => onResult(index)}>{$t('Election night')}</button></td>
 				</tr>
 			{/each}
 		</tbody>
 	</table>
 {/if}
 
-<h2>Who's calling</h2>
+<h2>{$t("Who's calling")}</h2>
 <div class="actions">
 	{#each offers as offer (offer.scenarioId)}
 		{@const job = scenarios[offer.scenarioId].contract}
@@ -153,23 +155,23 @@
 			onclick={() => onAccept(offer.scenarioId)}
 		>
 			<span>
-				<strong>{job.candidateName} — {job.seat}, {job.election}</strong>
-				<em>{job.pitch}</em>
-				<em>{job.days} days, {pounds(job.budget)} campaign budget</em>
+				<strong>{job.candidateName} — {$t(job.seat)}, {$t(job.election)}</strong>
+				<em>{$t(job.pitch)}</em>
+				<em>{$t('{days} days, {budget} campaign budget', { days: job.days, budget: pounds(job.budget) })}</em>
 				{#each offer.unmet as lock (lock.stat)}
-					<em class="lock">🔒 {lock.label}</em>
+					<em class="lock">🔒 {$t(lock.label)}</em>
 				{/each}
 				{#if offer.running}
-					<em class="lock">You are already running this campaign</em>
+					<em class="lock">{$t('You are already running this campaign')}</em>
 				{:else if offer.unmet.length === 0 && career.active.length >= capacity}
 					<em class="lock">
 						{career.company
-							? 'Every staffer is busy — hire more from company management'
-							: 'You can only run one account alone — incorporate and hire staff'}
+							? $t('Every staffer is busy — hire more from company management')
+							: $t('You can only run one account alone — incorporate and hire staff')}
 					</em>
 				{/if}
 			</span>
-			<span class="cost">Fee {pounds(job.fee)}</span>
+			<span class="cost">{$t('Fee {fee}', { fee: pounds(job.fee) })}</span>
 		</button>
 	{/each}
 </div>

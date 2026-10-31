@@ -31,6 +31,7 @@
 		type CompanyProfile
 	} from '$lib/sim/career';
 	import { defaultSettings, loadSettings, saveSettings, type GameSettings } from '$lib/settings';
+	import { language, setLanguage, t } from '$lib/i18n';
 	import type { PlayerMove } from '$lib/sim/types';
 
 	type View =
@@ -61,7 +62,7 @@
 	let notice = $state('');
 	let notificationPermission = $state('prompt');
 	let boundary = $state(nextMidnight());
-	const nextDayLabel = $derived(boundary.toLocaleString('en-GB', { weekday: 'long', hour: '2-digit', minute: '2-digit' }));
+	const nextDayLabel = $derived(boundary.toLocaleString($language === 'es' ? 'es-ES' : 'en-GB', { weekday: 'long', hour: '2-digit', minute: '2-digit' }));
 
 	/** The core single-campaign game; the multi-account dashboard is an experimental feature. */
 	const simple = $derived(!settings.experimental && isSoloCareer(career));
@@ -93,7 +94,7 @@
 			saveCareer(nextSave);
 			saved = nextSave;
 		} catch (cause) {
-			reportError(cause, 'Could not mark this election result as seen.');
+			reportError(cause, $t('Could not mark this election result as seen.'));
 		}
 	});
 
@@ -104,15 +105,16 @@
 			days: reminderDays(career, saved, scenarios)
 		};
 		notificationWork = notificationWork.then(() => replaceDailyReminders(request)).catch((cause) => {
-			console.error('Could not update daily reminders.', cause);
-			error = 'Could not update daily reminders. Check notification permissions in your device settings.';
+			console.error($t('Could not update daily reminders.'), cause);
+			error = $t('Could not update daily reminders. Check notification permissions in your device settings.');
 		});
 	}
 
 	onMount(() => {
 		try {
 			settings = loadSettings();
-			if (discardLegacyCareer()) notice = 'Special actions now have risk and dismissal outcomes. Your old career has been reset so past moves are not reinterpreted; your settings are preserved.';
+			setLanguage(settings.language);
+			if (discardLegacyCareer()) notice = $t('Special actions now have risk and dismissal outcomes. Your old career has been reset so past moves are not reinterpreted; your settings are preserved.');
 			const loaded = loadCareer();
 			if (loaded) {
 				career = replayCareer(scenarios, defaultScenarioId, loaded.careerSeed, loaded.log);
@@ -120,7 +122,7 @@
 			} else saveCareer(saved);
 			syncCalendar();
 		} catch (cause) {
-			reportError(cause, 'Could not restore your career. Start a new career from Settings, or check device storage.');
+			reportError(cause, $t('Could not restore your career. Start a new career from Settings, or check device storage.'));
 		}
 		appReady = true;
 		let disposed = false;
@@ -129,7 +131,7 @@
 		function arm() {
 			boundary = nextMidnight();
 			timer = setTimeout(() => {
-				try { syncCalendar(); } catch (cause) { reportError(cause, 'Could not advance the calendar.'); }
+				try { syncCalendar(); } catch (cause) { reportError(cause, $t('Could not advance the calendar.')); }
 				const nextOffset = new Date().getTimezoneOffset();
 				if (nextOffset !== offset) { offset = nextOffset; scheduleReminders(); }
 				arm();
@@ -137,10 +139,10 @@
 		}
 		function resume() {
 			clearTimeout(timer);
-			try { syncCalendar(); } catch (cause) { reportError(cause, 'Could not advance the calendar. Check device storage.'); }
+			try { syncCalendar(); } catch (cause) { reportError(cause, $t('Could not advance the calendar. Check device storage.')); }
 			scheduleReminders();
 			void getNotificationPermission().then((permission) => { notificationPermission = permission; })
-				.catch((cause) => reportError(cause, 'Could not read notification permissions.'));
+				.catch((cause) => reportError(cause, $t('Could not read notification permissions.')));
 			arm();
 		}
 		const visible = () => { if (document.visibilityState === 'visible') resume(); };
@@ -153,7 +155,7 @@
 		if (Capacitor.isNativePlatform()) {
 			void App.addListener('appStateChange', ({ isActive }) => { if (isActive) resume(); })
 				.then((listener) => { if (disposed) void listener.remove(); else removeNative = () => void listener.remove(); })
-				.catch((cause) => reportError(cause, 'Could not listen for app resume.'));
+				.catch((cause) => reportError(cause, $t('Could not listen for app resume.')));
 		}
 		void onReminderTap((kind) => {
 			resume();
@@ -166,7 +168,7 @@
 					? { kind: 'result', index: career.history.length - 1 }
 					: { kind: 'dashboard' };
 		}).then((remove) => { if (disposed) remove(); else removeTap = remove; })
-			.catch((cause) => reportError(cause, 'Could not handle notification taps.'));
+			.catch((cause) => reportError(cause, $t('Could not handle notification taps.')));
 		const removeBack = setGameBackHandler(() => {
 			if (menuOpen) {
 				menuOpen = false;
@@ -226,7 +228,7 @@
 			trackAnalyticsEvent('campaign-started');
 			view = { kind: 'campaign', id: career.active.at(-1)!.id };
 		} catch (cause) {
-			reportError(cause, 'Could not accept this client.');
+			reportError(cause, $t('Could not accept this client.'));
 		}
 	}
 
@@ -244,7 +246,7 @@
 	function move(campaignId: number, playerMove: PlayerMove) {
 		const before = career.day;
 		syncCalendar();
-		if (career.day !== before) throw new Error('A new day has opened. Choose your move again.');
+		if (career.day !== before) throw new Error($t('A new day has opened. Choose your move again.'));
 		const played = playCampaignMove(career, scenarios, campaignId, playerMove);
 		record({ kind: 'move', campaignId, move: playerMove }, played.career);
 		if (played.result.specialOutcome === 'dismissed') {
@@ -270,7 +272,7 @@
 				trackAnalyticsEvent(outcome.kind === 'dismissal' || outcome.election.sacked ? 'campaign-sacked' : 'campaign-kept');
 			return true;
 		} catch (cause) {
-			reportError(cause, 'Could not advance the day.');
+			reportError(cause, $t('Could not advance the day.'));
 			return false;
 		}
 	}
@@ -280,7 +282,7 @@
 			syncCalendar();
 			apply({ kind: 'incorporate', profile });
 			trackAnalyticsEvent('company-incorporated');
-		} catch (cause) { reportError(cause, 'Could not incorporate the company.'); }
+		} catch (cause) { reportError(cause, $t('Could not incorporate the company.')); }
 	}
 
 	function hire() {
@@ -288,11 +290,11 @@
 			syncCalendar();
 			apply({ kind: 'hire' });
 			trackAnalyticsEvent('staff-hired');
-		} catch (cause) { reportError(cause, 'Could not hire staff.'); }
+		} catch (cause) { reportError(cause, $t('Could not hire staff.')); }
 	}
 
 	function newCareer() {
-		if (!confirm('Walk away from this career and start again from nothing?')) return;
+		if (!confirm($t('Walk away from this career and start again from nothing?'))) return;
 		restart();
 	}
 
@@ -305,7 +307,7 @@
 			error = ''; notice = '';
 			view = { kind: 'dashboard' };
 			trackAnalyticsEvent('career-restarted');
-		} catch (cause) { reportError(cause, 'Could not save a new career.'); }
+		} catch (cause) { reportError(cause, $t('Could not save a new career.')); }
 	}
 
 	async function changeSettings(next: GameSettings) {
@@ -322,7 +324,8 @@
 			}
 			saveSettings(next);
 			settings = next;
-		} catch (cause) { reportError(cause, 'Could not save settings.'); }
+			setLanguage(next.language);
+		} catch (cause) { reportError(cause, $t('Could not save settings.')); }
 	}
 
 	function openFromMenu(destination: MenuDestination) {
@@ -347,7 +350,7 @@
 	{#if error}<p role="alert" class="error">{error}</p>{/if}
 
 	{#if !appReady}
-		<p role="status">Loading your campaign...</p>
+		<p role="status">{$t('Loading your campaign...')}</p>
 	{:else if view.kind === 'help'}
 		<HelpView onBack={toDashboard} />
 	{:else if view.kind === 'settings'}
@@ -388,7 +391,7 @@
 		{:else if lastOutcome}
 			<ElectionNight outcome={lastOutcome} simple onNext={takeNextClient} onBack={toDashboard} />
 		{:else}
-			<p role="status">Your phone is ringing...</p>
+			<p role="status">{$t('Your phone is ringing...')}</p>
 		{/if}
 	{:else if view.kind === 'campaign'}
 		{@const id = view.id}

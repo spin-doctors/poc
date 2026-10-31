@@ -5,6 +5,8 @@
 	import { Capacitor } from '@capacitor/core';
 	import { initAnalytics } from '$lib/analytics';
 	import { initAndroidNavigation } from '$lib/androidNavigation';
+	import { language, setLanguage } from '$lib/i18n';
+	import { loadSettings } from '$lib/settings';
 	import '../app.css';
 
 	let { children } = $props();
@@ -13,6 +15,7 @@
 	let externalTarget = $state('_blank');
 
 	onMount(initAnalytics);
+	onMount(() => setLanguage(loadSettings().language));
 	onMount(() => { if (Capacitor.isNativePlatform()) externalTarget = '_self'; });
 	onMount(() => {
 		const listener = initAndroidNavigation().catch((error: unknown) => {
@@ -25,6 +28,10 @@
 		};
 	});
 </script>
+
+<svelte:head>
+	<html lang={$language}></html>
+</svelte:head>
 
 {@render children()}
 
