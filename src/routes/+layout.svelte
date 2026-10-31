@@ -16,6 +16,9 @@
 
 	onMount(initAnalytics);
 	onMount(() => setLanguage(loadSettings().language));
+	$effect(() => {
+		document.documentElement.lang = $language;
+	});
 	onMount(() => { if (Capacitor.isNativePlatform()) externalTarget = '_self'; });
 	onMount(() => {
 		const listener = initAndroidNavigation().catch((error: unknown) => {
@@ -28,10 +31,6 @@
 		};
 	});
 </script>
-
-<svelte:head>
-	<html lang={$language}></html>
-</svelte:head>
 
 {@render children()}
 
